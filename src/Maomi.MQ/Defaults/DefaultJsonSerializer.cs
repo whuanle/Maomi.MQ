@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Maomi.MQ
+namespace Maomi.MQ.Defaults
 {
     public class DefaultJsonSerializer : IJsonSerializer
     {

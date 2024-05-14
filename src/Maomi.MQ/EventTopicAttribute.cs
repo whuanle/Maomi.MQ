@@ -10,6 +10,11 @@
 
         public string? Group { get; set; }
 
+        /// <summary>
+        /// 失败后是否放回队列，当 Qos 为 1 时，此配置无效.
+        /// </summary>
+        public bool Requeue { get; set; }
+
         private ushort _qos = 10;
 
 

@@ -62,9 +62,9 @@ namespace ConsoleApp1
             }
         }
 
-        
-        [Consumer("aaaa",Qos = "")]
-        public class MyConsumer : ISingleConsumer<TestEvent>
+
+        [Consumer("aaaa", Qos = 1)]
+        public class MyConsumer : IConsumer<TestEvent>
         {
             public async Task ExecuteAsync(EventBody<TestEvent> message)
             {
@@ -83,8 +83,31 @@ namespace ConsoleApp1
             }
         }
 
-        [EventTopic("aaaaa",Qos = 10,Group = "b")]
+        [EventTopic("aaaaa", Qos = 10)]
         public class TestEvent
+        {
+            public string Message { get; set; }
+
+            public override string ToString()
+            {
+                return Message;
+            }
+        }
+
+        [EventTopic("a1", Group = "b", Qos = 10)]
+        public class Test1Event
+        {
+            public string Message { get; set; }
+
+            public override string ToString()
+            {
+                return Message;
+            }
+        }
+
+
+        [EventTopic("b1", Group = "b", Qos = 10)]
+        public class Test2Event
         {
             public string Message { get; set; }
 

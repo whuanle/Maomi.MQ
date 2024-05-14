@@ -4,7 +4,7 @@ using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Client;
 using System.Threading.Channels;
 
-namespace Maomi.MQ
+namespace Maomi.MQ.Defaults
 {
 
     public class MessagePublisher : IMessagePublisher

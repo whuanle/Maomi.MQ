@@ -1,11 +1,29 @@
-﻿using Polly;
-using Polly.Retry;
-
-namespace Maomi.MQ
+﻿namespace Maomi.MQ
 {
+    /// <summary>
+    /// 消费者配置
+    /// </summary>
+
+    [AttributeUsage(AttributeTargets.Class,AllowMultiple = false,Inherited = true)]
     public class ConsumerAttribute : Attribute
     {
+        /// <summary>
+        /// 队列名称
+        /// </summary>
+        public string Queue { get; set; }
+
         private ushort _qos = 10;
+
+        /// <summary>
+        /// 当消息消费失败时，是否重新放回队列，当 <see cref="Qos"/> = 1 时，此配置无效.
+        /// </summary>
+        public bool Requeue { get; set; }
+
+        public ConsumerAttribute(string queue)
+        {
+            Queue = queue;
+        }
+
         public ushort Qos
         {
             get => _qos;
@@ -20,35 +38,6 @@ namespace Maomi.MQ
                     _qos = value;
                 }
             }
-        }
-    }
-
-    public class DefaultAsyncRetryPolicy
-    {
-        public int RetryCount { get; init; }
-
-    }
-
-    // 重试策略提供器
-    //  重试策略持久化器
-    // 消息唯一 id
-
-    public interface IPolicyFactory
-    {
-        AsyncRetryPolicy CreatePolicy(string queue);
-    }
-
-    public class DefaultPolicyFactory: IPolicyFactory
-    {
-        public AsyncRetryPolicy CreatePolicy(string queue)
-        {
-            // 创建异步重试策略
-            var retryPolicy = Policy
-                .Handle<Exception>()
-                .WaitAndRetryAsync(
-                    retryCount: 5,
-                    sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
-            return retryPolicy;
         }
     }
 }
