@@ -8,7 +8,7 @@
         /// <summary>
         /// 队列 Qos.
         /// </summary>
-        public int Qos { get; internal set; }
+        public ushort Qos { get; internal set; }
 
         /// <summary>
         /// 事件对应的队列名称.
@@ -38,6 +38,6 @@
         /// <summary>
         /// 事件的执行器.
         /// </summary>
-        public SortedDictionary<int, Type> Handlers { get; internal set; } = null!;
+        public SortedDictionary<int, Type> Handlers { get; private set; } = new ();
     }
 }

@@ -29,19 +29,18 @@ namespace Maomi.MQ.EventBus
             var logger = _serviceProvider.GetRequiredService<ILogger<TEvent>>();
             List<IEventHandler<TEvent>> eventHandlers = new List<IEventHandler<TEvent>>(_eventInfo.Handlers.Count);
 
-            foreach (var handlerType in _eventInfo.Handlers)
+            foreach (var handler in _eventInfo.Handlers)
             {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return;
-                }
-
                 // 构建执行链
                 try
                 {
-                    var eventHandler = _serviceProvider.GetRequiredService(handlerType.Value) as IEventHandler<TEvent>;
+                    var eventHandler = _serviceProvider.GetRequiredService(handler.Value) as IEventHandler<TEvent>;
                     eventHandlers.Add(eventHandler);
                     await eventHandler.HandlerAsync(eventBody, cancellationToken);
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        throw new OperationCanceledException(cancellationToken);
+                    }
                 }
                 // 执行失败，开始回退
                 catch (Exception ex)

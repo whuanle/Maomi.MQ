@@ -105,8 +105,8 @@ namespace Maomi.MQ.EventBus
         }
 
         // todo: 转化为委托
-        private static readonly MethodInfo ConsumerMethod = typeof(EventGroupConsumerHostSrvice).GetMethod("ConsumerAsync");
-        protected virtual async Task ConsumerAsync<TEvent>(EventInfo eventInfo,IChannel channel, object? sender, BasicDeliverEventArgs eventArgs)
+        private static readonly MethodInfo ConsumerMethod = typeof(EventGroupConsumerHostSrvice).GetMethod("ConsumerAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+        protected virtual async Task ConsumerAsync<TEvent>(EventInfo eventInfo, IChannel channel, object? sender, BasicDeliverEventArgs eventArgs)
         where TEvent : class
         {
             var scope = _serviceProvider.CreateScope();

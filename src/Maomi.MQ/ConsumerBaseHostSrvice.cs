@@ -12,7 +12,7 @@ namespace Maomi.MQ
     /// <summary>
     /// 
     /// </summary>
-    public class ConsumerHostSrvice<TConsumer, TEvent> : BackgroundService
+    public abstract class ConsumerBaseHostSrvice<TConsumer, TEvent> : BackgroundService
         where TEvent : class
         where TConsumer : IConsumer<TEvent>
     {
@@ -21,14 +21,19 @@ namespace Maomi.MQ
 
         protected readonly ConnectionFactory _connectionFactory;
         protected readonly Type _consumerType;
-        protected readonly ConsumerAttribute _consumerAttribute;
+        protected readonly ConsumerOptions _consumerOptions;
         protected readonly string _queueName;
         protected readonly IJsonSerializer _jsonSerializer;
         private readonly IPolicyFactory _policyFactory;
 
-        protected readonly ILogger<ConsumerHostSrvice<TConsumer, TEvent>> _logger;
+        protected readonly ILogger<ConsumerBaseHostSrvice<TConsumer, TEvent>> _logger;
 
-        public ConsumerHostSrvice(IServiceProvider serviceProvider, DefaultConnectionOptions connectionOptions, IJsonSerializer jsonSerializer, ILogger<MQ.ConsumerHostSrvice<TConsumer, TEvent>> logger, IPolicyFactory policyFactory)
+        public ConsumerBaseHostSrvice(IServiceProvider serviceProvider,
+            DefaultConnectionOptions connectionOptions, 
+            IJsonSerializer jsonSerializer, 
+            ILogger<MQ.ConsumerBaseHostSrvice<TConsumer, TEvent>> logger, 
+            IPolicyFactory policyFactory,
+            ConsumerOptions consumerOptions)
         {
             _jsonSerializer = jsonSerializer;
             _logger = logger;
@@ -37,20 +42,9 @@ namespace Maomi.MQ
             _connectionOptions = connectionOptions;
             _connectionFactory = connectionOptions.ConnectionFactory;
 
-            var consumerAttribute = _consumerType.GetCustomAttribute<ConsumerAttribute>();
-            if (consumerAttribute == null)
-            {
-                ArgumentNullException.ThrowIfNull(consumerAttribute);
-            }
-            _consumerAttribute = consumerAttribute;
+            _consumerOptions = consumerOptions;
 
-            var eventQueue = typeof(TEvent).GetCustomAttribute<EventTopicAttribute>();
-            if (eventQueue == null)
-            {
-                throw new InvalidOperationException($"{typeof(TEvent).Name} 没有配置 [EventQueue] 特性");
-            }
-
-            _queueName = connectionOptions.QueuePrefix + eventQueue.Queue;
+            _queueName = connectionOptions.QueuePrefix + _consumerOptions.Queue;
             _policyFactory = policyFactory;
         }
 
@@ -83,7 +77,7 @@ namespace Maomi.MQ
 
             using IConnection connection = await _connectionFactory.CreateConnectionAsync();
             using IChannel channel = await connection.CreateChannelAsync();
-            await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: _consumerAttribute.Qos, global: false);
+            await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: _consumerOptions.Qos, global: false);
 
             // 定义消费者
             var consumer = new EventingBasicConsumer(channel);
@@ -140,16 +134,55 @@ namespace Maomi.MQ
             }
             catch (Exception ex)
             {
-                if(_consumerAttribute.Qos == 1)
+                if(_consumerOptions.Qos == 1)
                 {
                     await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: true);
                 }
                 else
                 {
-                    await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: _consumerAttribute.Requeue);
+                    await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: _consumerOptions.Requeue);
                 }
                 throw;
             }
+        }
+    }
+
+    public class DefaultConsumerHostSrvice<TConsumer, TEvent> : ConsumerBaseHostSrvice<TConsumer, TEvent>
+        where TEvent : class
+        where TConsumer : IConsumer<TEvent>
+    {
+        public DefaultConsumerHostSrvice(IServiceProvider serviceProvider,
+            DefaultConnectionOptions connectionOptions,
+            IJsonSerializer jsonSerializer,
+            ILogger<ConsumerBaseHostSrvice<TConsumer, TEvent>> logger,
+            IPolicyFactory policyFactory) :
+            this(serviceProvider, connectionOptions, jsonSerializer, logger, policyFactory, GetConsumerOptions())
+        {
+        }
+
+        protected DefaultConsumerHostSrvice(IServiceProvider serviceProvider, 
+            DefaultConnectionOptions connectionOptions, 
+            IJsonSerializer jsonSerializer, 
+            ILogger<ConsumerBaseHostSrvice<TConsumer, TEvent>> logger, 
+            IPolicyFactory policyFactory, ConsumerOptions consumerOptions) : 
+            base(serviceProvider, connectionOptions, jsonSerializer, logger, policyFactory, consumerOptions)
+        {
+        }
+
+        protected static ConsumerOptions GetConsumerOptions()
+        {
+            var consumerAttribute = typeof(TConsumer).GetCustomAttribute<ConsumerAttribute>();
+            if (consumerAttribute == null)
+            {
+                ArgumentNullException.ThrowIfNull(consumerAttribute);
+            }
+
+            return new ConsumerOptions
+            {
+                Qos = consumerAttribute.Qos,
+                Queue = consumerAttribute.Queue,
+                Requeue = consumerAttribute.Requeue
+            };
         }
     }
 }

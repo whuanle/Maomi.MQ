@@ -10,9 +10,10 @@ namespace Maomi.MQ.EventBus
     /// </summary>
     public class EventBusTypeFilter : ITypeFilter
     {
-        private readonly Dictionary<Type, EventInfo> Events = new();
         private static readonly MethodInfo AddHostedMethod = typeof(ServiceCollectionHostedServiceExtensions)
             .GetMethod(nameof(ServiceCollectionHostedServiceExtensions.AddHostedService), BindingFlags.Static | BindingFlags.Public, [typeof(IServiceCollection)])!;
+
+        private readonly Dictionary<Type, EventInfo> _eventInfos = new();
 
         public EventBusTypeFilter()
         {
@@ -22,48 +23,70 @@ namespace Maomi.MQ.EventBus
         /// <inheritdoc />
         public void Build(IServiceCollection services)
         {
-            Dictionary<string, List<EventInfo>> eventGroup = new();
+            Dictionary<string, List<EventInfo>> eventGroups = new();
 
-            foreach (var item in Events)
+            foreach (var item in _eventInfos)
             {
                 var eventType = item.Key;
+                var eventInfo = item.Value;
+
                 Type? hostType = null;
 
-                if (item.Value.Middleware == null)
+                // If there is no IEventMiddleware<T> interface implemented for an event, the default DefaultEventMiddleware<T> is used.
+                if (eventInfo.Middleware == null)
                 {
-                    item.Value.Middleware = typeof(DefaultEventMiddleware<>).MakeGenericType(eventType);
+                    eventInfo.Middleware = typeof(DefaultEventMiddleware<>).MakeGenericType(eventType);
                 }
 
-                services.Add(new ServiceDescriptor(typeof(IConsumer<>).MakeGenericType(eventType), typeof(EventBusConsumer<>).MakeGenericType(eventType), ServiceLifetime.Transient));
                 services.AddTransient(typeof(HandlerBroker<>).MakeGenericType(eventType));
-                services.AddKeyedSingleton(serviceKey: item.Key, serviceType: typeof(EventInfo), implementationInstance: item.Value);
 
-                // 分组
-                if (!string.IsNullOrEmpty(item.Value.Group))
+                services.AddKeyedSingleton(serviceKey: eventInfo.EventType, serviceType: typeof(ConsumerOptions), implementationInstance: new ConsumerOptions
                 {
-                    if (!eventGroup.TryGetValue(item.Value.Group, out var group)) 
+                    Qos = eventInfo.Qos,
+                    Queue = eventInfo.Queue,
+                    Requeue = eventInfo.Requeue
+                });
+
+                services.Add(new ServiceDescriptor(
+                    serviceType: typeof(IEventMiddleware<>).MakeGenericType(eventType),
+                    implementationType: eventInfo.Middleware,
+                    lifetime: ServiceLifetime.Transient));
+
+                services.Add(new ServiceDescriptor(
+                    serviceType: typeof(IConsumer<>).MakeGenericType(eventType),
+                    implementationType: typeof(EventBusConsumer<>).MakeGenericType(eventType),
+                    lifetime: ServiceLifetime.Transient));
+
+                services.AddKeyedSingleton(serviceKey: item.Key, serviceType: typeof(EventInfo), implementationInstance: eventInfo);
+
+                // Group.
+                // Do not use EventBusConsumerHostSrvice<EventBusConsumer<T>,T>.
+                if (!string.IsNullOrEmpty(eventInfo.Group))
+                {
+                    if (!eventGroups.TryGetValue(eventInfo.Group, out var eventInfoList))
                     {
-                        group = new List<EventInfo>();
-                        eventGroup.Add(item.Value.Group, group);
+                        eventInfoList = new List<EventInfo>();
+                        eventGroups.Add(eventInfo.Group, eventInfoList);
                     }
-                    group.Add(item.Value);
+                    eventInfoList.Add(eventInfo);
 
                     continue;
                 }
 
-                hostType = typeof(ConsumerHostSrvice<,>).MakeGenericType(typeof(EventBusConsumer<>).MakeGenericType(eventType), eventType);
+                // Use EventBusConsumerHostSrvice<EventBusConsumer<T>,T>.
+                hostType = typeof(EventBusConsumerHostSrvice<,>).MakeGenericType(typeof(EventBusConsumer<>).MakeGenericType(eventType), eventType);
                 AddHostedMethod.MakeGenericMethod(hostType).Invoke(null, new object[] { services });
             }
 
-            // 分组处理器
-            // todo: 设计HandlerBroker、EventBusConsumer、MultipleConsumerHostSrvice，支持多 queue 订阅
-            foreach (var group in eventGroup)
+            // Use EventGroupConsumerHostSrvice processing group of consumers.
+            foreach (var group in eventGroups)
             {
                 var eventGroupInfo = new EventGroupInfo
                 {
                     Group = group.Key,
-                    EventInfos = new Dictionary<string, EventInfo>()
+                    EventInfos = group.Value.ToDictionary(x => x.Queue, x => x)
                 };
+
                 services.AddKeyedSingleton(serviceKey: group.Key, serviceType: typeof(EventGroupInfo), implementationInstance: eventGroupInfo);
                 services.AddHostedService<EventGroupConsumerHostSrvice>(s =>
                 {
@@ -82,71 +105,78 @@ namespace Maomi.MQ.EventBus
         /// <inheritdoc />
         public void Filter(Type type, IServiceCollection services)
         {
+            /*
+               Filter the following types:
+               IEventMiddleware<T>
+               IEventHandler<T>
+             */
+
             if (!type.IsClass)
             {
                 return;
             }
 
-            EventInfo eventInfo;
-            Type eventType = null!;
+            Type? eventType = null;
 
-            var middleware = type.GetInterfaces().Where(x => x.IsGenericType)
+            var middlewareInterface = type.GetInterfaces().Where(x => x.IsGenericType)
                     .FirstOrDefault(x => x.GetGenericTypeDefinition() == typeof(IEventMiddleware<>));
 
-            if (middleware != null)
+            if (middlewareInterface != null)
             {
-                services.AddTransient(middleware);
-                eventType = middleware.GenericTypeArguments[0];
+                eventType = middlewareInterface.GenericTypeArguments[0];
             }
 
-            var handler = type.GetInterfaces().Where(x => x.IsGenericType)
+            var handlerInterface = type.GetInterfaces().Where(x => x.IsGenericType)
                     .FirstOrDefault(x => x.GetGenericTypeDefinition() == typeof(IEventHandler<>));
 
-            if (handler != null)
+            if (handlerInterface != null)
             {
-                services.AddTransient(handler);
-                eventType = handler.GenericTypeArguments[0];
+                services.AddTransient(type);
+                eventType = handlerInterface.GenericTypeArguments[0];
             }
 
+            // IEventMiddleware<T> and IEventHandler<T> are not found.
             if (eventType == null)
             {
                 return;
             }
 
-            if (!Events.TryGetValue(eventType, out eventInfo!))
+            EventInfo eventInfo;
+
+            if (!_eventInfos.TryGetValue(eventType, out eventInfo!))
             {
-                var eventQueue = eventType.GetCustomAttribute<EventTopicAttribute>();
-                if (eventQueue == null)
+                var eventTopicAttribute = eventType.GetCustomAttribute<EventTopicAttribute>();
+                if (eventTopicAttribute == null)
                 {
-                    throw new InvalidOperationException($"{eventType.Name} 没有配置 [EventQueue] 特性");
+                    throw new ArgumentNullException($"{eventType.Name} type is not configured with the [EventTopic] attribute.");
                 }
 
                 eventInfo = new EventInfo
                 {
                     EventType = eventType,
-                    Queue = eventQueue.Queue,
-                    Qos = eventQueue.Qos,
-                    Group = eventQueue.Group,
-                    Requeue = eventQueue.Requeue,
-                    Handlers = new Dictionary<int, Type>()
+                    Queue = eventTopicAttribute.Queue,
+                    Qos = eventTopicAttribute.Qos,
+                    Group = eventTopicAttribute.Group,
+                    Requeue = eventTopicAttribute.Requeue,
                 };
+                _eventInfos.Add(eventType, eventInfo);
             }
 
-            if (middleware != null)
+            if (middlewareInterface != null)
             {
-                eventInfo.Middleware = middleware;
+                eventInfo.Middleware = type;
             }
 
-            if (handler != null)
+            if (handlerInterface != null)
             {
-                var eventOrder = handler.GetCustomAttribute<EventOrderAttribute>();
+                var eventOrder = type.GetCustomAttribute<EventOrderAttribute>();
                 if (eventOrder == null)
                 {
-                    throw new InvalidOperationException($"{handler.Name} 没有配置 [EventOrder] 特性");
+                    throw new ArgumentNullException($"{type.Name} type is not configured with the [EventOrder] attribute.");
                 }
-                if (!eventInfo.Handlers.TryAdd(eventOrder.Order, handler))
+                if (!eventInfo.Handlers.TryAdd(eventOrder.Order, type))
                 {
-                    throw new InvalidOperationException($"{eventInfo.Handlers[eventOrder.Order].Name} 与 {handler.Name} 的 Order 重复");
+                    throw new ArgumentException($"The Order values of {eventInfo.Handlers[eventOrder.Order].Name} and {type.Name} are repeated, with Order = {eventOrder.Order}.");
                 }
             }
         }

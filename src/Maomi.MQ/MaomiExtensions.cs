@@ -10,9 +10,19 @@ using System.Reflection;
 
 namespace Maomi.MQ
 {
-
+    /// <summary>
+    /// Maomi.MQ 扩展.
+    /// </summary>
     public static partial class MaomiExtensions
     {
+        /// <summary>
+        /// 注入 Maomi.MQ 服务.
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="connectionAction">全局 MQ 配置.</param>
+        /// <param name="factoryAction">RabbitMQ 连接配置.</param>
+        /// <param name="assemblies"></param>
+        /// <returns></returns>
         public static IServiceCollection AddMaomiMQ(this IServiceCollection services, 
             Action<ConnectionOptions> connectionAction,
             Action<ConnectionFactory> factoryAction, 
@@ -53,6 +63,7 @@ namespace Maomi.MQ
                 new ConsumerTypeFilter(),
                 new EventBusTypeFilter()
             };
+
             foreach (var assembly in assemblies)
             {
                 foreach (var type in assembly.GetTypes())
