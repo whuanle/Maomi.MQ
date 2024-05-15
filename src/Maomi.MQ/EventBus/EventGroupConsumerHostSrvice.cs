@@ -9,29 +9,26 @@ using System.Reflection;
 
 namespace Maomi.MQ.EventBus
 {
-    // 发布的时候依然每个 topic 一个队列，但是一个 HostService 全部消费
-
     /// <summary>
-    /// 
+    /// 事件分组消费者，将同一分组下的队列放到一个通道下执行.
     /// </summary>
-    public class MultipleConsumerHostSrvice : BackgroundService
+    public class EventGroupConsumerHostSrvice : BackgroundService
     {
         protected readonly IServiceProvider _serviceProvider;
         protected readonly DefaultConnectionOptions _connectionOptions;
 
         protected readonly ConnectionFactory _connectionFactory;
-        protected readonly Type _consumerType;
         protected readonly IJsonSerializer _jsonSerializer;
         private readonly IPolicyFactory _policyFactory;
 
-        protected readonly ILogger<MultipleConsumerHostSrvice> _logger;
+        protected readonly ILogger<EventGroupConsumerHostSrvice> _logger;
 
         private readonly EventGroupInfo _eventGroupInfo;
 
-        public MultipleConsumerHostSrvice(IServiceProvider serviceProvider,
+        public EventGroupConsumerHostSrvice(IServiceProvider serviceProvider,
             DefaultConnectionOptions connectionOptions,
             IJsonSerializer jsonSerializer,
-            ILogger<MultipleConsumerHostSrvice> logger,
+            ILogger<EventGroupConsumerHostSrvice> logger,
             IPolicyFactory policyFactory,
             EventGroupInfo eventGroupInfo)
         {
@@ -108,7 +105,7 @@ namespace Maomi.MQ.EventBus
         }
 
         // todo: 转化为委托
-        private static readonly MethodInfo ConsumerMethod = typeof(MultipleConsumerHostSrvice).GetMethod("ConsumerAsync");
+        private static readonly MethodInfo ConsumerMethod = typeof(EventGroupConsumerHostSrvice).GetMethod("ConsumerAsync");
         protected virtual async Task ConsumerAsync<TEvent>(EventInfo eventInfo,IChannel channel, object? sender, BasicDeliverEventArgs eventArgs)
         where TEvent : class
         {

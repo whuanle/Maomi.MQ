@@ -1,7 +1,7 @@
 ﻿namespace Maomi.MQ
 {
     /// <summary>
-    /// 消费者配置
+    /// 消费者配置.
     /// </summary>
 
     [AttributeUsage(AttributeTargets.Class,AllowMultiple = false,Inherited = true)]

@@ -124,7 +124,13 @@ namespace Maomi.MQ
                         await consumer.FallbackAsync(eventBody);
                     });
 
-                var policyWrap = Policy.WrapAsync(fallbackPolicy, retryPolicy);
+                // todo: 要测试验证一下，是否每次失败都会调用
+                var retryAnyPolicy = Policy.Handle<Exception>().RetryAsync(async (ex, count) =>
+                {
+                    await consumer.FaildAsync(eventBody);
+                });
+
+                var policyWrap = Policy.WrapAsync(fallbackPolicy, retryAnyPolicy, retryPolicy);
 
                 await policyWrap.ExecuteAsync(async () =>
                 {

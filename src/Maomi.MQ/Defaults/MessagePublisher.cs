@@ -1,12 +1,12 @@
 ﻿using IdGen;
 using Maomi.MQ.Pool;
-using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Client;
-using System.Threading.Channels;
 
 namespace Maomi.MQ.Defaults
 {
-
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public class MessagePublisher : IMessagePublisher
     {
         private readonly DefaultConnectionOptions _connectionOptions;
@@ -14,6 +14,9 @@ namespace Maomi.MQ.Defaults
         private readonly ConnectionPool _connectionPool;
         private readonly IIdGenerator<long> _idGen;
 
+        /// <summary>
+        /// <inheritdoc />
+        /// </summary>
         public MessagePublisher(DefaultConnectionOptions connectionOptions, IJsonSerializer jsonSerializer, ConnectionPool connectionPool, IIdGenerator<long> idGen)
         {
             _connectionOptions = connectionOptions;
@@ -22,6 +25,7 @@ namespace Maomi.MQ.Defaults
             _idGen = idGen;
         }
 
+        /// <inheritdoc />
         public async Task PublishAsync<TEvent>(string queue, TEvent message, Action<IBasicProperties>? properties = null)
             where TEvent : class
         {

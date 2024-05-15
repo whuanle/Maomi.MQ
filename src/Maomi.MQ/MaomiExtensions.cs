@@ -2,11 +2,9 @@
 using Maomi.MQ.Defaults;
 using Maomi.MQ.EventBus;
 using Maomi.MQ.Extensions;
-using Maomi.MQ.Helpers;
 using Maomi.MQ.Pool;
 using Maomi.MQ.Retry;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Client;
 using System.Reflection;
 
@@ -15,7 +13,6 @@ namespace Maomi.MQ
 
     public static partial class MaomiExtensions
     {
-
         public static IServiceCollection AddMaomiMQ(this IServiceCollection services, 
             Action<ConnectionOptions> connectionAction,
             Action<ConnectionFactory> factoryAction, 

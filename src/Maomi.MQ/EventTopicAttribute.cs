@@ -1,5 +1,8 @@
 ﻿namespace Maomi.MQ
 {
+    /// <summary>
+    /// 事件主题.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public class EventTopicAttribute : Attribute
     {

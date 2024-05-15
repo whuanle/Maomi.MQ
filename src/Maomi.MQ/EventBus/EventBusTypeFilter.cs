@@ -5,9 +5,12 @@ using System.Reflection;
 
 namespace Maomi.MQ.EventBus
 {
+    /// <summary>
+    /// 事件总线类型过滤器.
+    /// </summary>
     public class EventBusTypeFilter : ITypeFilter
     {
-        public readonly Dictionary<Type, EventInfo> Events = new();
+        private readonly Dictionary<Type, EventInfo> Events = new();
         private static readonly MethodInfo AddHostedMethod = typeof(ServiceCollectionHostedServiceExtensions)
             .GetMethod(nameof(ServiceCollectionHostedServiceExtensions.AddHostedService), BindingFlags.Static | BindingFlags.Public, [typeof(IServiceCollection)])!;
 
@@ -16,10 +19,11 @@ namespace Maomi.MQ.EventBus
             ArgumentNullException.ThrowIfNull(AddHostedMethod);
         }
 
-
+        /// <inheritdoc />
         public void Build(IServiceCollection services)
         {
             Dictionary<string, List<EventInfo>> eventGroup = new();
+
             foreach (var item in Events)
             {
                 var eventType = item.Key;
@@ -61,13 +65,13 @@ namespace Maomi.MQ.EventBus
                     EventInfos = new Dictionary<string, EventInfo>()
                 };
                 services.AddKeyedSingleton(serviceKey: group.Key, serviceType: typeof(EventGroupInfo), implementationInstance: eventGroupInfo);
-                services.AddHostedService<MultipleConsumerHostSrvice>(s =>
+                services.AddHostedService<EventGroupConsumerHostSrvice>(s =>
                 {
-                    return new MultipleConsumerHostSrvice(
+                    return new EventGroupConsumerHostSrvice(
                         s,
                         s.GetRequiredService<DefaultConnectionOptions>(),
                         s.GetRequiredService<IJsonSerializer>(),
-                        s.GetRequiredService<ILogger<MultipleConsumerHostSrvice>>(),
+                        s.GetRequiredService<ILogger<EventGroupConsumerHostSrvice>>(),
                         s.GetRequiredService<IPolicyFactory>(),
                         eventGroupInfo
                         );
@@ -75,6 +79,7 @@ namespace Maomi.MQ.EventBus
             }
         }
 
+        /// <inheritdoc />
         public void Filter(Type type, IServiceCollection services)
         {
             if (!type.IsClass)
@@ -145,11 +150,5 @@ namespace Maomi.MQ.EventBus
                 }
             }
         }
-    }
-
-    public class EventGroupInfo
-    {
-        public string Group { get; set; }
-        public Dictionary<string,EventInfo> EventInfos { get; set; }
     }
 }

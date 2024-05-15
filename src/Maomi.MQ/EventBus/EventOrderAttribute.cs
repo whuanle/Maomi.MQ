@@ -1,13 +1,13 @@
 ﻿namespace Maomi.MQ.EventBus
 {
     /// <summary>
-    /// 标识类中有事件执行器
+    /// 标识事件执行器的顺序.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public class EventOrderAttribute : Attribute
     {
         /// <summary>
-        /// 事件排序
+        /// 事件执行序号.
         /// </summary>
         public int Order { get; set; } = 0;
 
@@ -16,6 +16,4 @@
             Order = order;
         }
     }
-
-    // todo: queue 分组
 }

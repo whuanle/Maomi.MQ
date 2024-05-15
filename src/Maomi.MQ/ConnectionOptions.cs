@@ -2,6 +2,9 @@
 
 namespace Maomi.MQ
 {
+    /// <summary>
+    /// 连接配置.
+    /// </summary>
     public class ConnectionOptions
     {
         /// <summary>

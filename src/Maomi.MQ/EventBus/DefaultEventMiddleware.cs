@@ -1,12 +1,12 @@
 ﻿namespace Maomi.MQ.EventBus
 {
+    /// <inheritdoc />
     public class DefaultEventMiddleware<TEvent> : IEventMiddleware<TEvent>
     {
-        public Task HandleAsync(EventBody<TEvent> @event, EventHandlerDelegate<TEvent> next)
+        /// <inheritdoc />
+        public Task HandleAsync(EventBody<TEvent> eventBody, EventHandlerDelegate<TEvent> next)
         {
-            return next(@event, CancellationToken.None);
+            return next(eventBody, CancellationToken.None);
         }
     }
-
-    // todo: queue 分组
 }
