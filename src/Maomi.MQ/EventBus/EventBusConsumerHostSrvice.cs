@@ -9,7 +9,7 @@ namespace Maomi.MQ.EventBus
         where TConsumer : IConsumer<TEvent>
     {
         public EventBusConsumerHostSrvice(IServiceProvider serviceProvider,
-            DefaultConnectionOptions connectionOptions,
+            DefaultMqOptions connectionOptions,
             IJsonSerializer jsonSerializer,
             ILogger<ConsumerBaseHostSrvice<TConsumer, TEvent>> logger,
             IPolicyFactory policyFactory) :
@@ -18,7 +18,7 @@ namespace Maomi.MQ.EventBus
         }
 
         protected EventBusConsumerHostSrvice(IServiceProvider serviceProvider,
-            DefaultConnectionOptions connectionOptions,
+            DefaultMqOptions connectionOptions,
             IJsonSerializer jsonSerializer,
             ILogger<ConsumerBaseHostSrvice<TConsumer, TEvent>> logger,
             IPolicyFactory policyFactory, ConsumerOptions consumerOptions) :

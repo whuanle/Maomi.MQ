@@ -7,9 +7,9 @@ namespace Maomi.MQ.Pool
     /// </summary>
     public class ConnectionPooledObjectPolicy : PooledObjectPolicy<ConnectionObject>
     {
-        private readonly DefaultConnectionOptions _connectionOptions;
+        private readonly DefaultMqOptions _connectionOptions;
 
-        public ConnectionPooledObjectPolicy(DefaultConnectionOptions connectionOptions)
+        public ConnectionPooledObjectPolicy(DefaultMqOptions connectionOptions)
         {
             _connectionOptions = connectionOptions;
         }

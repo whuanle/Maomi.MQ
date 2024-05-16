@@ -28,14 +28,14 @@ namespace Maomi.MQ.EventBus
         }
 
         /// <inheritdoc />
-        public Task FaildAsync(EventBody<TEvent> message)
+        public Task FaildAsync(EventBody<TEvent>? message)
         {
             // todo: 日志
             return Task.CompletedTask;
         }
 
         /// <inheritdoc />
-        public Task FallbackAsync(EventBody<TEvent> message)
+        public Task FallbackAsync(EventBody<TEvent>? message)
         {
             // todo: 日志
             return Task.CompletedTask;

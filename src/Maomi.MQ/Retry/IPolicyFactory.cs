@@ -12,6 +12,6 @@ namespace Maomi.MQ.Retry
         /// </summary>
         /// <param name="queue">队列名称</param>
         /// <returns></returns>
-        AsyncRetryPolicy CreatePolicy(string queue);
+        Task<AsyncRetryPolicy> CreatePolicy(string queue);
     }
 }

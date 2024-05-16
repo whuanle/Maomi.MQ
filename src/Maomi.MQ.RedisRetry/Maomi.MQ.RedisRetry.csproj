@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StackExchange.Redis" Version="2.7.33" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Maomi.MQ\Maomi.MQ.csproj" />
+  </ItemGroup>
+
+</Project>

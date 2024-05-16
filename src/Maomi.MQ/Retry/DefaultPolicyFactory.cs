@@ -16,7 +16,7 @@ namespace Maomi.MQ.Retry
             _logger = logger;
         }
 
-        public AsyncRetryPolicy CreatePolicy(string queue)
+        public virtual Task<AsyncRetryPolicy> CreatePolicy(string queue)
         {
             // 创建异步重试策略
             var retryPolicy = Policy
@@ -24,14 +24,16 @@ namespace Maomi.MQ.Retry
                 .WaitAndRetryAsync(
                     retryCount: 5,
                     sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
-                    onRetry: async (Exception exception, TimeSpan retryCount, Context context) =>
+                    onRetry: async (Exception exception, TimeSpan timeSpan, int retryCount, Context context) =>
                     {
-                        await FaildAsync(queue, exception, retryCount, context);
+                        _logger.LogDebug("重试");
+                        await FaildAsync(queue, exception, timeSpan, retryCount, context);
                     });
-            return retryPolicy;
+            return Task.FromResult(retryPolicy);
         }
 
-        public Task FaildAsync(string queue, Exception ex, TimeSpan retryCount, Context context)
+        // 每次失败重试，重新放到 redis
+        public virtual Task FaildAsync(string queue, Exception ex, TimeSpan timeSpan, int retryCount, Context context)
         {
             return Task.CompletedTask;
         }

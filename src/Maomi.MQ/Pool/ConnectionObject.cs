@@ -7,14 +7,14 @@ namespace Maomi.MQ.Pool
     /// </summary>
     public class ConnectionObject : IDisposable
     {
-        private readonly DefaultConnectionOptions _connectionOptions;
+        private readonly DefaultMqOptions _connectionOptions;
         public readonly IConnection _connection;
         private readonly IChannel _channel;
 
         public IConnection Connection => _connection;
         public IChannel Channel => _channel;
 
-        public ConnectionObject(DefaultConnectionOptions connectionOptions)
+        public ConnectionObject(DefaultMqOptions connectionOptions)
         {
             _connectionOptions = connectionOptions;
             _connection = connectionOptions.ConnectionFactory.CreateConnectionAsync().Result;

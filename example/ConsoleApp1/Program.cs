@@ -72,12 +72,12 @@ namespace ConsoleApp1
                 throw new NotImplementedException();
             }
 
-            public async Task FaildAsync(EventBody<TestEvent> message)
+            public async Task FaildAsync(EventBody<TestEvent>? message)
             {
                 await Task.CompletedTask;
             }
 
-            public async Task FallbackAsync(EventBody<TestEvent> message)
+            public async Task FallbackAsync(EventBody<TestEvent>? message)
             {
 
             }

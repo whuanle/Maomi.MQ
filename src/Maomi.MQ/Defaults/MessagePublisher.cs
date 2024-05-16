@@ -9,7 +9,7 @@ namespace Maomi.MQ.Defaults
     /// </summary>
     public class MessagePublisher : IMessagePublisher
     {
-        private readonly DefaultConnectionOptions _connectionOptions;
+        private readonly DefaultMqOptions _connectionOptions;
         private readonly IJsonSerializer _jsonSerializer;
         private readonly ConnectionPool _connectionPool;
         private readonly IIdGenerator<long> _idGen;
@@ -17,7 +17,7 @@ namespace Maomi.MQ.Defaults
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public MessagePublisher(DefaultConnectionOptions connectionOptions, IJsonSerializer jsonSerializer, ConnectionPool connectionPool, IIdGenerator<long> idGen)
+        public MessagePublisher(DefaultMqOptions connectionOptions, IJsonSerializer jsonSerializer, ConnectionPool connectionPool, IIdGenerator<long> idGen)
         {
             _connectionOptions = connectionOptions;
             _jsonSerializer = jsonSerializer;

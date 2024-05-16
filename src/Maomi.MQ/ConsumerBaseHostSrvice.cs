@@ -17,7 +17,7 @@ namespace Maomi.MQ
         where TConsumer : IConsumer<TEvent>
     {
         protected readonly IServiceProvider _serviceProvider;
-        protected readonly DefaultConnectionOptions _connectionOptions;
+        protected readonly DefaultMqOptions _connectionOptions;
 
         protected readonly ConnectionFactory _connectionFactory;
         protected readonly Type _consumerType;
@@ -29,7 +29,7 @@ namespace Maomi.MQ
         protected readonly ILogger<ConsumerBaseHostSrvice<TConsumer, TEvent>> _logger;
 
         public ConsumerBaseHostSrvice(IServiceProvider serviceProvider,
-            DefaultConnectionOptions connectionOptions, 
+            DefaultMqOptions connectionOptions, 
             IJsonSerializer jsonSerializer, 
             ILogger<MQ.ConsumerBaseHostSrvice<TConsumer, TEvent>> logger, 
             IPolicyFactory policyFactory,
@@ -103,11 +103,11 @@ namespace Maomi.MQ
             var ioc = scope.ServiceProvider;
 
             var consumer = ioc.GetRequiredService<IConsumer<TEvent>>();
-       
+            EventBody<TEvent> eventBody = null!;
+
             try
             {
-                var eventBody = _jsonSerializer.Deserialize<EventBody<TEvent>>(eventArgs.Body.Span)!;
-
+                eventBody = _jsonSerializer.Deserialize<EventBody<TEvent>>(eventArgs.Body.Span)!;
                 var retryPolicy = _policyFactory.CreatePolicy(_queueName);
 
                 // 创建异步回退策略
@@ -118,13 +118,7 @@ namespace Maomi.MQ
                         await consumer.FallbackAsync(eventBody);
                     });
 
-                // todo: 要测试验证一下，是否每次失败都会调用
-                var retryAnyPolicy = Policy.Handle<Exception>().RetryAsync(async (ex, count) =>
-                {
-                    await consumer.FaildAsync(eventBody);
-                });
-
-                var policyWrap = Policy.WrapAsync(fallbackPolicy, retryAnyPolicy, retryPolicy);
+                var policyWrap = Policy.WrapAsync(fallbackPolicy, retryPolicy);
 
                 await policyWrap.ExecuteAsync(async () =>
                 {
@@ -134,7 +128,16 @@ namespace Maomi.MQ
             }
             catch (Exception ex)
             {
-                if(_consumerOptions.Qos == 1)
+                try
+                {
+                    await consumer.FaildAsync(eventBody);
+                }
+                catch (Exception ex1)
+                {
+
+                }
+
+                if (_consumerOptions.Qos == 1)
                 {
                     await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: true);
                 }
@@ -152,7 +155,7 @@ namespace Maomi.MQ
         where TConsumer : IConsumer<TEvent>
     {
         public DefaultConsumerHostSrvice(IServiceProvider serviceProvider,
-            DefaultConnectionOptions connectionOptions,
+            DefaultMqOptions connectionOptions,
             IJsonSerializer jsonSerializer,
             ILogger<ConsumerBaseHostSrvice<TConsumer, TEvent>> logger,
             IPolicyFactory policyFactory) :
@@ -161,7 +164,7 @@ namespace Maomi.MQ
         }
 
         protected DefaultConsumerHostSrvice(IServiceProvider serviceProvider, 
-            DefaultConnectionOptions connectionOptions, 
+            DefaultMqOptions connectionOptions, 
             IJsonSerializer jsonSerializer, 
             ILogger<ConsumerBaseHostSrvice<TConsumer, TEvent>> logger, 
             IPolicyFactory policyFactory, ConsumerOptions consumerOptions) : 

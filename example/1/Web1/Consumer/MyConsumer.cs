@@ -15,15 +15,16 @@ namespace Web1.Consumer
         }
 
         // 每次失败时被执行
-        public async Task FaildAsync(EventBody<TestEvent> message)
+        public async Task FaildAsync(EventBody<TestEvent>? message)
         {
+            Console.WriteLine($"重试 {message.Body.Message}");
             await Task.CompletedTask;
         }
 
         // 最后一次失败时执行
-        public async Task FallbackAsync(EventBody<TestEvent> message)
+        public async Task FallbackAsync(EventBody<TestEvent>? message)
         {
-
+            Console.WriteLine($"最后一次 {message.Body.Message}");
         }
     }
 

@@ -5,7 +5,7 @@ namespace Maomi.MQ
     /// <summary>
     /// 连接配置.
     /// </summary>
-    public class ConnectionOptions
+    public class MqOptions
     {
         /// <summary>
         /// 消息队列前缀，所有消息队列会自动加前缀.
@@ -18,7 +18,7 @@ namespace Maomi.MQ
         public int WorkId { get; set; }
     }
 
-    public class DefaultConnectionOptions: ConnectionOptions
+    public class DefaultMqOptions: MqOptions
     {
         public ConnectionFactory ConnectionFactory { get; set; }
     }

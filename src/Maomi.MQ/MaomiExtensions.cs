@@ -24,7 +24,7 @@ namespace Maomi.MQ
         /// <param name="assemblies"></param>
         /// <returns></returns>
         public static IServiceCollection AddMaomiMQ(this IServiceCollection services, 
-            Action<ConnectionOptions> connectionAction,
+            Action<MqOptions> connectionAction,
             Action<ConnectionFactory> factoryAction, 
             params Assembly[] assemblies)
         {
@@ -35,7 +35,7 @@ namespace Maomi.MQ
                 factoryAction.Invoke(connectionFactory);
             }
 
-            var connectionOptions = new DefaultConnectionOptions
+            var connectionOptions = new DefaultMqOptions
             {
                 ConnectionFactory = connectionFactory
             };
@@ -47,7 +47,7 @@ namespace Maomi.MQ
 
             services.AddIdGen(connectionOptions.WorkId, () => IdGeneratorOptions.Default);
 
-            services.AddSingleton<ConnectionOptions>(connectionOptions);
+            services.AddSingleton<MqOptions>(connectionOptions);
             services.AddSingleton(connectionOptions);
             services.AddSingleton<ConnectionPooledObjectPolicy>();
             services.AddSingleton<ConnectionPool>();

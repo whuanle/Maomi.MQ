@@ -92,7 +92,7 @@ namespace Maomi.MQ.EventBus
                 {
                     return new EventGroupConsumerHostSrvice(
                         s,
-                        s.GetRequiredService<DefaultConnectionOptions>(),
+                        s.GetRequiredService<DefaultMqOptions>(),
                         s.GetRequiredService<IJsonSerializer>(),
                         s.GetRequiredService<ILogger<EventGroupConsumerHostSrvice>>(),
                         s.GetRequiredService<IPolicyFactory>(),

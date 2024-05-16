@@ -15,7 +15,7 @@ namespace Maomi.MQ.EventBus
     public class EventGroupConsumerHostSrvice : BackgroundService
     {
         protected readonly IServiceProvider _serviceProvider;
-        protected readonly DefaultConnectionOptions _connectionOptions;
+        protected readonly DefaultMqOptions _connectionOptions;
 
         protected readonly ConnectionFactory _connectionFactory;
         protected readonly IJsonSerializer _jsonSerializer;
@@ -26,7 +26,7 @@ namespace Maomi.MQ.EventBus
         private readonly EventGroupInfo _eventGroupInfo;
 
         public EventGroupConsumerHostSrvice(IServiceProvider serviceProvider,
-            DefaultConnectionOptions connectionOptions,
+            DefaultMqOptions connectionOptions,
             IJsonSerializer jsonSerializer,
             ILogger<EventGroupConsumerHostSrvice> logger,
             IPolicyFactory policyFactory,
@@ -114,10 +114,11 @@ namespace Maomi.MQ.EventBus
 
             var consumer = ioc.GetRequiredService<IConsumer<TEvent>>();
 
+            EventBody<TEvent> eventBody = null!;
 
             try
             {
-                var eventBody = _jsonSerializer.Deserialize<EventBody<TEvent>>(eventArgs.Body.Span)!;
+                eventBody = _jsonSerializer.Deserialize<EventBody<TEvent>>(eventArgs.Body.Span)!;
 
                 var retryPolicy = _policyFactory.CreatePolicy(eventInfo.Queue);
 
@@ -145,6 +146,15 @@ namespace Maomi.MQ.EventBus
             }
             catch (Exception ex)
             {
+                try
+                {
+                    await consumer.FaildAsync(eventBody);
+                }
+                catch (Exception ex1)
+                {
+
+                }
+
                 if (eventInfo.Qos == 1)
                 {
                     await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: true);
