@@ -15,6 +15,10 @@ namespace Maomi.MQ
         /// <param name="message">事件对象.</param>
         /// <param name="properties">RabbitMQ 消息属性.</param>
         /// <returns></returns>
-        Task PublishAsync<TEvent>(string queue, TEvent message, Action<IBasicProperties>? properties = null) where TEvent : class;
+        Task PublishAsync<TEvent>(string queue, TEvent message, Action<IBasicProperties>? properties = null)
+            where TEvent : class;
+
+
+        Task PublishAsync<TEvent>(string queue, TEvent message, BasicProperties properties);
     }
 }

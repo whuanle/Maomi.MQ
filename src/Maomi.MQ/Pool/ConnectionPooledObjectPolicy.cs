@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.ObjectPool;
+﻿using Maomi.MQ.Defaults;
+using Microsoft.Extensions.ObjectPool;
 
 namespace Maomi.MQ.Pool
 {

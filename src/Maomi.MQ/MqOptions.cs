@@ -1,25 +1,27 @@
-﻿using RabbitMQ.Client;
+﻿using System.Reflection;
 
-namespace Maomi.MQ
+namespace Maomi.MQ;
+
+/// <summary>
+/// Global configuration. <br />
+/// 全局配置.
+/// </summary>
+public class MqOptions
 {
     /// <summary>
-    /// 连接配置.
+    /// Application name.<br />
+    /// 应用名称.
     /// </summary>
-    public class MqOptions
-    {
-        /// <summary>
-        /// 消息队列前缀，所有消息队列会自动加前缀.
-        /// </summary>
-        public string? QueuePrefix { get; set; }
+    public string ApplicationName { get; init; } = null!;
 
-        /// <summary>
-        /// 0-1024
-        /// </summary>
-        public int WorkId { get; set; }
-    }
+    /// <summary>
+    /// Application version.<br />
+    /// 应用版本号.
+    /// </summary>
+    public string ApplicationVersion { get; init; } = Assembly.GetEntryAssembly()?.GetName()?.Version?.ToString() ?? "1.0.0";
 
-    public class DefaultMqOptions: MqOptions
-    {
-        public ConnectionFactory ConnectionFactory { get; set; }
-    }
+    /// <summary>
+    /// 0-1024.
+    /// </summary>
+    public int WorkId { get; init; }
 }

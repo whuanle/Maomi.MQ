@@ -1,4 +1,5 @@
-﻿using Maomi.MQ.Retry;
+﻿using Maomi.MQ.Defaults;
+using Maomi.MQ.Retry;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

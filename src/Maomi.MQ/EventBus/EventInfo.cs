@@ -38,6 +38,6 @@
         /// <summary>
         /// 事件的执行器.
         /// </summary>
-        public SortedDictionary<int, Type> Handlers { get; private set; } = new ();
+        public SortedDictionary<int, Type> Handlers { get; private set; } = new();
     }
 }

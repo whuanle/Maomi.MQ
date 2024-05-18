@@ -1,4 +1,5 @@
-﻿using RabbitMQ.Client;
+﻿using Maomi.MQ.Defaults;
+using RabbitMQ.Client;
 
 namespace Maomi.MQ.Pool
 {
