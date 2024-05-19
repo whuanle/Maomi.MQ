@@ -1,6 +1,8 @@
-
+using Maomi.MQ.Defaults;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Maomi.MQ.Tests.CustomConsumer;
 
@@ -9,8 +11,7 @@ public class CustomConsumerTest
     [Fact]
     public async Task Test1()
     {
-        var testService = new TestsService();
-        using var host = testService.BuildHost();
+        using var host = BuildHost();
         var services = host.Services;
         _ = host.RunAsync();
 
@@ -19,6 +20,38 @@ public class CustomConsumerTest
         await waitReadyFactory.Wait();
 
 
+    }
+
+    public IHost BuildHost()
+    {
+        var host = new HostBuilder()
+            .ConfigureLogging(options =>
+            {
+                options.AddConsole();
+                options.AddDebug();
+            })
+            .ConfigureHostConfiguration(options =>
+            {
+                options
+                .AddJsonFile("appsettings.json")
+                .AddJsonFile("appsettings.Development.json");
+            })
+            .ConfigureServices((context, services) =>
+            {
+                var rabbitmqHostName = context.Configuration["RabbitMQ:HostName"]!;
+
+                services.AddMaomiMQ(options =>
+                {
+                    options.WorkId = 1;
+                }, options =>
+                {
+                    options.HostName = rabbitmqHostName;
+                },
+                [typeof(TestsService).Assembly],
+                Array.Empty<EmptyTypeFilter>());
+            }).Build();
+
+        return host;
     }
 }
 
@@ -29,14 +62,14 @@ public class CustomConsumerService : IConsumer<CustomConsumerTestEvent>
 
     }
 
-    public Task FaildAsync(EventBody<CustomConsumerTestEvent>? message)
+    public Task FaildAsync(Exception ex, int retryCount, EventBody<CustomConsumerTestEvent>? message)
     {
         return Task.CompletedTask;
     }
 
-    public Task FallbackAsync(EventBody<CustomConsumerTestEvent>? message)
+    public Task<bool> FallbackAsync(EventBody<CustomConsumerTestEvent>? message)
     {
-        return Task.CompletedTask;
+        return Task.FromResult(true) ;
     }
 }
 
@@ -44,3 +77,7 @@ public class CustomConsumerTestEvent
 {
     public string Message { get; set; }
 }
+
+/*
+ 
+*/

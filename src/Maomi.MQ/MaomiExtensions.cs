@@ -34,7 +34,7 @@ public static partial class MaomiExtensions
         this IServiceCollection services,
         Action<MqOptions> mqOptionsBuilder,
         Action<ConnectionFactory> factoryBuilder,
-        params Assembly[] assemblies)
+        Assembly[] assemblies)
     {
         ITypeFilter[] typeFilters =
         [
