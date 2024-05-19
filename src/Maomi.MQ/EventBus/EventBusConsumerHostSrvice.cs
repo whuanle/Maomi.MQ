@@ -28,19 +28,22 @@ public class EventBusConsumerHostSrvice<TConsumer, TEvent> : ConsumerBaseHostSrv
     /// <param name="jsonSerializer"></param>
     /// <param name="logger"></param>
     /// <param name="policyFactory"></param>
+    /// <param name="waitReadyFactory"></param>
     public EventBusConsumerHostSrvice(
         IServiceProvider serviceProvider,
         DefaultMqOptions connectionOptions,
         IJsonSerializer jsonSerializer,
         ILogger<ConsumerBaseHostSrvice<TConsumer, TEvent>> logger,
-        IPolicyFactory policyFactory)
+        IRetryPolicyFactory policyFactory,
+        IWaitReadyFactory waitReadyFactory)
         : this(
             serviceProvider,
             connectionOptions,
             jsonSerializer,
             logger,
             policyFactory,
-            serviceProvider.GetRequiredKeyedService<ConsumerOptions>(typeof(TEvent)))
+            serviceProvider.GetRequiredKeyedService<ConsumerOptions>(typeof(TEvent)),
+            waitReadyFactory)
     {
     }
 
@@ -53,14 +56,16 @@ public class EventBusConsumerHostSrvice<TConsumer, TEvent> : ConsumerBaseHostSrv
     /// <param name="logger"></param>
     /// <param name="policyFactory"></param>
     /// <param name="consumerOptions"></param>
+    /// <param name="waitReadyFactory"></param>
     protected EventBusConsumerHostSrvice(
         IServiceProvider serviceProvider,
         DefaultMqOptions connectionOptions,
         IJsonSerializer jsonSerializer,
         ILogger<ConsumerBaseHostSrvice<TConsumer, TEvent>> logger,
-        IPolicyFactory policyFactory,
-        ConsumerOptions consumerOptions)
-        : base(serviceProvider, connectionOptions, jsonSerializer, logger, policyFactory, consumerOptions)
+        IRetryPolicyFactory policyFactory,
+        ConsumerOptions consumerOptions,
+        IWaitReadyFactory waitReadyFactory)
+        : base(serviceProvider, connectionOptions, jsonSerializer, logger, policyFactory, consumerOptions, waitReadyFactory)
     {
     }
 }

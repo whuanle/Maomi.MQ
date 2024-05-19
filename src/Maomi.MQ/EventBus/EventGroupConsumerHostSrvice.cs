@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Polly;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Maomi.MQ.EventBus;
@@ -22,13 +23,18 @@ namespace Maomi.MQ.EventBus;
 /// </summary>
 public class EventGroupConsumerHostSrvice : BackgroundService
 {
+    private static readonly MethodInfo ConsumerMethod = typeof(EventGroupConsumerHostSrvice)
+        .GetMethod("ConsumerAsync", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
     private readonly IServiceProvider _serviceProvider;
     private readonly DefaultMqOptions _connectionOptions;
     private readonly ConnectionFactory _connectionFactory;
     private readonly IJsonSerializer _jsonSerializer;
-    private readonly IPolicyFactory _policyFactory;
+    private readonly IRetryPolicyFactory _policyFactory;
     private readonly ILogger<EventGroupConsumerHostSrvice> _logger;
     private readonly EventGroupInfo _eventGroupInfo;
+    private readonly IWaitReadyFactory _waitReadyFactory;
+    private readonly TaskCompletionSource _taskCompletionSource;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EventGroupConsumerHostSrvice"/> class.
@@ -38,13 +44,16 @@ public class EventGroupConsumerHostSrvice : BackgroundService
     /// <param name="jsonSerializer"></param>
     /// <param name="logger"></param>
     /// <param name="policyFactory"></param>
+    /// <param name="waitReadyFactory"></param>
     /// <param name="eventGroupInfo"></param>
+    /// <param name="circuitBreakerFactory"></param>
     public EventGroupConsumerHostSrvice(
         IServiceProvider serviceProvider,
         DefaultMqOptions connectionOptions,
         IJsonSerializer jsonSerializer,
         ILogger<EventGroupConsumerHostSrvice> logger,
-        IPolicyFactory policyFactory,
+        IRetryPolicyFactory policyFactory,
+        IWaitReadyFactory waitReadyFactory,
         EventGroupInfo eventGroupInfo)
     {
         _jsonSerializer = jsonSerializer;
@@ -53,26 +62,43 @@ public class EventGroupConsumerHostSrvice : BackgroundService
         _connectionOptions = connectionOptions;
         _connectionFactory = connectionOptions.ConnectionFactory;
         _policyFactory = policyFactory;
+        _waitReadyFactory = waitReadyFactory;
         _eventGroupInfo = eventGroupInfo;
+
+        _taskCompletionSource = new();
+        _waitReadyFactory.AddTask(_taskCompletionSource.Task);
     }
 
     /// <inheritdoc/>
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
-        using (IConnection connection = await _connectionFactory.CreateConnectionAsync())
+        try
         {
-            using (IChannel channel = await connection.CreateChannelAsync())
+            using (IConnection connection = await _connectionFactory.CreateConnectionAsync())
             {
-                foreach (var item in _eventGroupInfo.EventInfos)
+                using (IChannel channel = await connection.CreateChannelAsync())
                 {
-                    await channel.QueueDeclareAsync(
-                        queue: item.Value.Queue,
-                        durable: true,
-                        exclusive: false,
-                        autoDelete: false,
-                        arguments: null);
+                    foreach (var item in _eventGroupInfo.EventInfos)
+                    {
+                        await channel.QueueDeclareAsync(
+                            queue: item.Value.Queue,
+                            durable: true,
+                            exclusive: false,
+                            autoDelete: false,
+                            arguments: null);
+
+                        _logger.LogDebug("Declared queue [{Queue}].", item.Value.Queue);
+                    }
                 }
             }
+
+            _taskCompletionSource.TrySetResult();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while declaring the queue.");
+            _taskCompletionSource?.TrySetException(ex);
+            throw;
         }
 
         await base.StartAsync(cancellationToken);
@@ -87,6 +113,7 @@ public class EventGroupConsumerHostSrvice : BackgroundService
         using IConnection connection = await _connectionFactory.CreateConnectionAsync();
         using IChannel channel = await connection.CreateChannelAsync();
 
+        // If each queue in a packet is configured with a different Qos, calculate the Qos based on the average value.
         var qos = (ushort)_eventGroupInfo.EventInfos.Average(x => x.Value.Qos);
         if (qos <= 0)
         {
@@ -97,13 +124,12 @@ public class EventGroupConsumerHostSrvice : BackgroundService
 
         foreach (var item in _eventGroupInfo.EventInfos)
         {
-            // 定义消费者
             var consumer = new EventingBasicConsumer(channel);
+            var consumerHandler = BuildConsumerHandler(item.Value.EventType);
 
-            var method = ConsumerMethod.MakeGenericMethod(item.Value.EventType);
             consumer.Received += async (sender, eventArgs) =>
             {
-                await (Task)method.Invoke(this, new object[] { item.Value, channel, sender, eventArgs });
+                await (Task)consumerHandler.DynamicInvoke(this, new object[] { item.Value, channel, eventArgs })!;
             };
 
             await channel.BasicConsumeAsync(
@@ -112,71 +138,124 @@ public class EventGroupConsumerHostSrvice : BackgroundService
                 consumer: consumer);
         }
 
-        while (true)
+        while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(1000);
+            await Task.Delay(10000, stoppingToken);
         }
     }
 
-    private static readonly MethodInfo ConsumerMethod = typeof(EventGroupConsumerHostSrvice).GetMethod("ConsumerAsync", BindingFlags.Instance | BindingFlags.NonPublic);
-    
-    protected virtual async Task ConsumerAsync<TEvent>(EventInfo eventInfo, IChannel channel, object? sender, BasicDeliverEventArgs eventArgs)
-    where TEvent : class
+    /// <summary>
+    /// Consumer messsage.
+    /// </summary>
+    /// <typeparam name="TEvent">Event model.</typeparam>
+    /// <param name="eventInfo"></param>
+    /// <param name="channel"></param>
+    /// <param name="eventArgs"></param>
+    /// <returns><see cref="Task"/>.</returns>
+    protected virtual async Task ConsumerAsync<TEvent>(EventInfo eventInfo, IChannel channel, BasicDeliverEventArgs eventArgs)
+        where TEvent : class
     {
         var scope = _serviceProvider.CreateScope();
         var ioc = scope.ServiceProvider;
 
         var consumer = ioc.GetRequiredService<IConsumer<TEvent>>();
 
-        EventBody<TEvent> eventBody = null!;
+        EventBody<TEvent>? eventBody = null;
 
         try
         {
             eventBody = _jsonSerializer.Deserialize<EventBody<TEvent>>(eventArgs.Body.Span)!;
 
-            var retryPolicy = await _policyFactory.CreatePolicy(eventInfo.Queue);
-
-            var fallbackPolicy = Policy
+            // Executed on the last retry.
+            // 最后一次重试失败时执行.
+            var fallbackPolicy = Policy<bool>
                 .Handle<Exception>()
                 .FallbackAsync(async (c) =>
                 {
-                    await consumer.FallbackAsync(eventBody);
+                    try
+                    {
+                        return await consumer.FallbackAsync(eventBody);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "An error occurred while executing the FallbackAsync method,queue [{Queue}],id [{Id}].", eventInfo.Queue, eventBody.Id);
+                        return false;
+                    }
                 });
 
-            var retryAnyPolicy = Policy.Handle<Exception>().RetryAsync(async (ex, count) =>
+            // Each retry.
+            // 每次失败时执行.
+            var retryEachPolicy = Policy.Handle<Exception>().RetryAsync(async (ex, count) =>
             {
-                await consumer.FaildAsync(eventBody);
+                try
+                {
+                    await consumer.FaildAsync(ex, count, eventBody);
+                }
+                catch (Exception faildEx)
+                {
+                    _logger.LogWarning(faildEx, "An error occurred while executing the FaildAsync method,queue [{Queue}],id [{Id}].", eventInfo.Queue, eventBody.Id);
+                }
             });
 
-            var policyWrap = Policy.WrapAsync(fallbackPolicy, retryAnyPolicy, retryPolicy);
+            // Custom retry policy.
+            // 自定义重试策略.
+            var customRetryPolicy = await _policyFactory.CreatePolicy(eventInfo.Queue);
 
-            await policyWrap.ExecuteAsync(async () =>
+            var policyWrap = fallbackPolicy.WrapAsync(customRetryPolicy).WrapAsync(retryEachPolicy);
+
+            var executeResult = await policyWrap.ExecuteAsync(async () =>
             {
                 await consumer.ExecuteAsync(eventBody);
+                return true;
             });
 
-            await channel.BasicAckAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false);
-        }
-        catch (Exception ex)
-        {
-            try
+            // The execution completed normally, or the FallbackAsync function was executed to compensate for the last retry.
+            // 正常执行完成，或执行了 FallbackAsync 函数补偿最后一次重试.
+            if (executeResult)
             {
-                await consumer.FaildAsync(eventBody);
-            }
-            catch (Exception ex1)
-            {
-
-            }
-
-            if (eventInfo.Qos == 1)
-            {
-                await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: true);
+                await channel.BasicAckAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false);
             }
             else
             {
-                await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: eventInfo.Requeue);
+                // Whether to put it back to the queue when the last retry fails.
+                // 最后一次重试失败时，是否放回队列.
+                await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: eventInfo.RetryFaildRequeue);
             }
-            throw;
         }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "An error occurred while processing the message,queue [{Queue}],id [{Id}].", eventInfo.Queue, eventBody?.Id);
+
+            try
+            {
+                await consumer.FaildAsync(ex, -1, eventBody);
+            }
+            catch (Exception faildEx)
+            {
+                _logger.LogWarning(faildEx, "An error occurred while executing the FaildAsync method,queue [{Queue}],id [{Id}].", eventInfo.Queue, eventBody?.Id);
+            }
+
+            await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: eventInfo.ExecptionRequeue);
+        }
+    }
+
+    /// <summary>
+    /// Build delegate.
+    /// </summary>
+    /// <param name="type"></param>
+    /// <returns>Delegate.</returns>
+    protected static Delegate BuildConsumerHandler(Type type)
+    {
+        ParameterExpression consumer = Expression.Variable(typeof(EventGroupConsumerHostSrvice), "coosumer");
+        ParameterExpression eventInfo = Expression.Parameter(typeof(EventInfo), "eventInfo");
+        ParameterExpression channel = Expression.Parameter(typeof(IChannel), "channel");
+        ParameterExpression eventArgs = Expression.Parameter(typeof(BasicDeliverEventArgs), "eventArgs");
+
+        MethodCallExpression method = Expression.Call(
+            consumer,
+            ConsumerMethod.MakeGenericMethod(type),
+            new Expression[] { eventInfo, channel, eventArgs });
+
+        return Expression.Lambda(method).Compile();
     }
 }

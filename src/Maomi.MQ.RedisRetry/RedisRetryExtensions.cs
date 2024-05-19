@@ -10,9 +10,9 @@ namespace Maomi.MQ.RedisRetry
         public static IServiceCollection AddMaomiMQRedisRetry(this IServiceCollection services, Func<IServiceProvider, IDatabase> func)
         {
 
-            services.AddTransient<IPolicyFactory, RedisRetryPolicyFactory>(s=>
+            services.AddTransient<IRetryPolicyFactory, RedisRetryPolicyFactory>(s=>
             {
-                var logger = s.GetRequiredService<ILogger<DefaultPolicyFactory>>();
+                var logger = s.GetRequiredService<ILogger<DefaultRetryPolicyFactory>>();
                 var redis = func.Invoke(s);
                 var mqOptions = s.GetRequiredService<MqOptions>();
                 return new RedisRetryPolicyFactory(logger, redis, mqOptions);

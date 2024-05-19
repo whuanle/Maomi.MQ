@@ -1,14 +1,30 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿// <copyright file="ITypeFilter.cs" company="Maomi">
+// Copyright (c) Maomi. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/Maomi.MQ
+// </copyright>
 
-namespace Maomi.MQ
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Maomi.MQ;
+
+/// <summary>
+/// Type filter.<br />
+/// 类型过滤器.
+/// </summary>
+public interface ITypeFilter
 {
     /// <summary>
-    /// 类型过滤器.
+    /// Filter type.<br />
+    /// 过滤类型，处理类型.
     /// </summary>
-    public interface ITypeFilter
-    {
-        void Filter(Type type, IServiceCollection services);
+    /// <param name="services"></param>
+    /// <param name="type"></param>
+    void Filter(IServiceCollection services, Type type);
 
-        void Build(IServiceCollection services);
-    }
+    /// <summary>
+    /// Build.
+    /// </summary>
+    /// <param name="services"></param>
+    void Build(IServiceCollection services);
 }

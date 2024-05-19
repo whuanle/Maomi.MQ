@@ -6,15 +6,15 @@ using StackExchange.Redis;
 
 namespace Maomi.MQ.RedisRetry
 {
-    public class RedisRetryPolicyFactory : IPolicyFactory
+    public class RedisRetryPolicyFactory : IRetryPolicyFactory
     {
         private const int MaxLength = 5;
 
-        private readonly ILogger<DefaultPolicyFactory> _logger;
+        private readonly ILogger<DefaultRetryPolicyFactory> _logger;
         private readonly IDatabase _redis;
         private readonly MqOptions _mqOptions;
 
-        public RedisRetryPolicyFactory(ILogger<DefaultPolicyFactory> logger, IDatabase redis, MqOptions mqOptions)
+        public RedisRetryPolicyFactory(ILogger<DefaultRetryPolicyFactory> logger, IDatabase redis, MqOptions mqOptions)
         {
             _logger = logger;
             _redis = redis;

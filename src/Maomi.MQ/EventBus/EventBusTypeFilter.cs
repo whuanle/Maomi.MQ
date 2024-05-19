@@ -49,13 +49,14 @@ public class EventBusTypeFilter : ITypeFilter
                 eventInfo.Middleware = typeof(DefaultEventMiddleware<>).MakeGenericType(eventType);
             }
 
-            services.AddTransient(typeof(HandlerBroker<>).MakeGenericType(eventType));
+            services.AddTransient(typeof(HandlerMediator<>).MakeGenericType(eventType));
 
             services.AddKeyedSingleton(serviceKey: eventInfo.EventType, serviceType: typeof(ConsumerOptions), implementationInstance: new ConsumerOptions
             {
                 Qos = eventInfo.Qos,
                 Queue = eventInfo.Queue,
-                Requeue = eventInfo.Requeue
+                RetryFaildRequeue = eventInfo.RetryFaildRequeue,
+                ExecptionRequeue = eventInfo.ExecptionRequeue
             });
 
             services.Add(new ServiceDescriptor(
@@ -107,14 +108,15 @@ public class EventBusTypeFilter : ITypeFilter
                     s.GetRequiredService<DefaultMqOptions>(),
                     s.GetRequiredService<IJsonSerializer>(),
                     s.GetRequiredService<ILogger<EventGroupConsumerHostSrvice>>(),
-                    s.GetRequiredService<IPolicyFactory>(),
+                    s.GetRequiredService<IRetryPolicyFactory>(),
+                    s.GetRequiredService<IWaitReadyFactory>(),
                     eventGroupInfo);
             });
         }
     }
 
     /// <inheritdoc />
-    public void Filter(Type type, IServiceCollection services)
+    public void Filter(IServiceCollection services, Type type)
     {
         /*
            Filter the following types:
@@ -168,7 +170,8 @@ public class EventBusTypeFilter : ITypeFilter
                 Queue = eventTopicAttribute.Queue,
                 Qos = eventTopicAttribute.Qos,
                 Group = eventTopicAttribute.Group,
-                Requeue = eventTopicAttribute.Requeue,
+                RetryFaildRequeue = eventTopicAttribute.RetryFaildRequeue,
+                ExecptionRequeue = eventTopicAttribute.ExecptionRequeue,
             };
             _eventInfos.Add(eventType, eventInfo);
         }

@@ -1,28 +1,40 @@
-﻿using Maomi.MQ.Defaults;
+﻿// <copyright file="ConnectionPooledObjectPolicy.cs" company="Maomi">
+// Copyright (c) Maomi. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/Maomi.MQ
+// </copyright>
+
+using Maomi.MQ.Defaults;
 using Microsoft.Extensions.ObjectPool;
 
-namespace Maomi.MQ.Pool
+namespace Maomi.MQ.Pool;
+
+/// <summary>
+/// Object pool policy.<br />
+/// 对象池策略.
+/// </summary>
+public class ConnectionPooledObjectPolicy : PooledObjectPolicy<ConnectionObject>
 {
+    private readonly DefaultMqOptions _connectionOptions;
+
     /// <summary>
-    /// 对象池策略.
+    /// Initializes a new instance of the <see cref="ConnectionPooledObjectPolicy"/> class.
     /// </summary>
-    public class ConnectionPooledObjectPolicy : PooledObjectPolicy<ConnectionObject>
+    /// <param name="connectionOptions"></param>
+    public ConnectionPooledObjectPolicy(DefaultMqOptions connectionOptions)
     {
-        private readonly DefaultMqOptions _connectionOptions;
+        _connectionOptions = connectionOptions;
+    }
 
-        public ConnectionPooledObjectPolicy(DefaultMqOptions connectionOptions)
-        {
-            _connectionOptions = connectionOptions;
-        }
+    /// <inheritdoc/>
+    public override ConnectionObject Create()
+    {
+        return new ConnectionObject(_connectionOptions);
+    }
 
-        public override ConnectionObject Create()
-        {
-            return new ConnectionObject(_connectionOptions);
-        }
-
-        public override bool Return(ConnectionObject obj)
-        {
-            return true;
-        }
+    /// <inheritdoc/>
+    public override bool Return(ConnectionObject obj)
+    {
+        return true;
     }
 }

@@ -17,7 +17,7 @@ public class EventBusConsumer<TEvent> : IConsumer<TEvent>
     where TEvent : class
 {
     private readonly IEventMiddleware<TEvent> _eventMiddleware;
-    private readonly HandlerBroker<TEvent> _handlerBroker;
+    private readonly HandlerMediator<TEvent> _handlerBroker;
     private readonly ILogger<EventBusConsumer<TEvent>> _logger;
 
     /// <summary>
@@ -26,7 +26,7 @@ public class EventBusConsumer<TEvent> : IConsumer<TEvent>
     /// <param name="eventMiddleware"></param>
     /// <param name="handlerBroker"></param>
     /// <param name="logger"></param>
-    public EventBusConsumer(IEventMiddleware<TEvent> eventMiddleware, HandlerBroker<TEvent> handlerBroker, ILogger<EventBusConsumer<TEvent>> logger)
+    public EventBusConsumer(IEventMiddleware<TEvent> eventMiddleware, HandlerMediator<TEvent> handlerBroker, ILogger<EventBusConsumer<TEvent>> logger)
     {
         _eventMiddleware = eventMiddleware;
         _handlerBroker = handlerBroker;

@@ -36,6 +36,32 @@ public static partial class MaomiExtensions
         Action<ConnectionFactory> factoryBuilder,
         params Assembly[] assemblies)
     {
+        ITypeFilter[] typeFilters =
+        [
+            new ConsumerTypeFilter(),
+            new EventBusTypeFilter()
+        ];
+
+        return AddMaomiMQ(services, mqOptionsBuilder, factoryBuilder, assemblies, typeFilters);
+    }
+
+    /// <summary>
+    /// Use the Maomi.MQ service.<br />
+    /// 注入 Maomi.MQ 服务.
+    /// </summary>
+    /// <param name="services">services.</param>
+    /// <param name="mqOptionsBuilder">Global MQ configuration.<br />全局 MQ 配置.</param>
+    /// <param name="factoryBuilder">RabbitMQ connection configuration<br/>RabbitMQ 连接配置.</param>
+    /// <param name="assemblies">The assembly to be scanned.<br />需要扫描的程序集.</param>
+    /// <param name="typeFilters"></param>
+    /// <returns><see cref="IServiceCollection"/>.</returns>
+    public static IServiceCollection AddMaomiMQ(
+        this IServiceCollection services,
+        Action<MqOptions> mqOptionsBuilder,
+        Action<ConnectionFactory> factoryBuilder,
+        Assembly[] assemblies,
+        ITypeFilter[] typeFilters)
+    {
         ConnectionFactory connectionFactory = new ConnectionFactory();
 
         if (factoryBuilder != null)
@@ -60,17 +86,15 @@ public static partial class MaomiExtensions
         services.AddSingleton<ConnectionPooledObjectPolicy>();
         services.AddSingleton<ConnectionPool>();
 
-        services.AddSingleton<IPolicyFactory, DefaultPolicyFactory>();
         services.AddSingleton<IJsonSerializer, DefaultJsonSerializer>();
 
-        services.AddSingleton<IMessagePublisher, MessagePublisher>();
+        services.AddSingleton<IMessagePublisher, DefaultMessagePublisher>();
+
+        services.AddSingleton<IWaitReadyFactory, DefaultWaitReadyFactory>();
+        services.AddSingleton<IRetryPolicyFactory, DefaultRetryPolicyFactory>();
+        services.AddSingleton<ICircuitBreakerFactory, DefaultCircuitBreakerFactory>();
 
         List<Type> types = new();
-        var typeFilters = new List<ITypeFilter>()
-        {
-            new ConsumerTypeFilter(),
-            new EventBusTypeFilter()
-        };
 
         foreach (var assembly in assemblies)
         {
@@ -78,7 +102,7 @@ public static partial class MaomiExtensions
             {
                 foreach (var item in typeFilters)
                 {
-                    item.Filter(type, services);
+                    item.Filter(services, type);
                 }
             }
         }

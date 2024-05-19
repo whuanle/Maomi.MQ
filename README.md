@@ -12,7 +12,7 @@
 
 增加重试策略 redis 持久化器
 
-链路追踪，meter
+链路追踪，meter，日志 scope
 
 4，单元测试
 

@@ -1,22 +1,28 @@
-﻿// <copyright file="ConsumerOptions.cs" company="Maomi">
+﻿// <copyright file="EventTopicAttribute.cs" company="Maomi">
 // Copyright (c) Maomi. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-namespace Maomi.MQ;
+namespace Maomi.MQ.EventBus;
 
 /// <summary>
-/// Consumer options.<br />
-/// 消费者配置.
+/// 事件主题.
 /// </summary>
-public class ConsumerOptions
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+public class EventTopicAttribute : Attribute
 {
     /// <summary>
     /// Queue name.<br />
     /// 队列名称.
     /// </summary>
     public string Queue { get; set; } = null!;
+
+    /// <summary>
+    /// Group.<br />
+    /// 分组名称.
+    /// </summary>
+    public string? Group { get; set; }
 
     /// <summary>
     /// Whether to return to the queue when the number of consumption failures reaches the condition.<br />
@@ -30,8 +36,33 @@ public class ConsumerOptions
     /// </summary>
     public bool ExecptionRequeue { get; internal set; }
 
+    private ushort _qos = 10;
+
     /// <summary>
     /// Qos.
     /// </summary>
-    public ushort Qos { get; set; }
+    public ushort Qos
+    {
+        get => _qos;
+        set
+        {
+            if (value <= 0)
+            {
+                _qos = 1;
+            }
+            else
+            {
+                _qos = value;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EventTopicAttribute"/> class.
+    /// </summary>
+    /// <param name="queue">Queue name.</param>
+    public EventTopicAttribute(string queue)
+    {
+        Queue = queue;
+    }
 }

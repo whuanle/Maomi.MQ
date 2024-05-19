@@ -1,38 +1,44 @@
-﻿using Microsoft.Extensions.ObjectPool;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿// <copyright file="ConnectionPool.cs" company="Maomi">
+// Copyright (c) Maomi. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/Maomi.MQ
+// </copyright>
 
-namespace Maomi.MQ.Pool
+using Microsoft.Extensions.ObjectPool;
+
+namespace Maomi.MQ.Pool;
+
+/// <summary>
+/// Object pool.<br />
+/// 连接对象池.
+/// </summary>
+public class ConnectionPool : ObjectPool<ConnectionObject>
 {
+    private readonly DefaultObjectPoolProvider _defaultObjectPoolProvider;
+    private readonly ConnectionPooledObjectPolicy _connectionPooledObjectPolicy;
+    private readonly ObjectPool<ConnectionObject> _objectPool;
+
     /// <summary>
-    /// 连接对象池.
+    /// Initializes a new instance of the <see cref="ConnectionPool"/> class.
     /// </summary>
-    public class ConnectionPool : ObjectPool<ConnectionObject>
+    /// <param name="connectionPooledObjectPolicy"></param>
+    public ConnectionPool(ConnectionPooledObjectPolicy connectionPooledObjectPolicy)
     {
-        private readonly DefaultObjectPoolProvider _defaultObjectPoolProvider;
-        private readonly ConnectionPooledObjectPolicy _connectionPooledObjectPolicy;
-        private readonly ObjectPool<ConnectionObject> _objectPool;
+        _connectionPooledObjectPolicy = connectionPooledObjectPolicy;
+        _defaultObjectPoolProvider = new DefaultObjectPoolProvider();
 
-        public ConnectionPool(ConnectionPooledObjectPolicy connectionPooledObjectPolicy)
-        {
-            _connectionPooledObjectPolicy = connectionPooledObjectPolicy;
-            _defaultObjectPoolProvider = new DefaultObjectPoolProvider();
+        _objectPool = _defaultObjectPoolProvider.Create<ConnectionObject>(_connectionPooledObjectPolicy);
+    }
 
-            _objectPool = _defaultObjectPoolProvider.Create<ConnectionObject>(_connectionPooledObjectPolicy);
-        }
+    /// <inheritdoc/>
+    public override ConnectionObject Get()
+    {
+        return _objectPool.Get();
+    }
 
-        public override ConnectionObject Get()
-        {
-            return _objectPool.Get();
-        }
-
-        public override void Return(ConnectionObject obj)
-        {
-            _objectPool.Return(obj);
-        }
+    /// <inheritdoc/>
+    public override void Return(ConnectionObject obj)
+    {
+        _objectPool.Return(obj);
     }
 }
