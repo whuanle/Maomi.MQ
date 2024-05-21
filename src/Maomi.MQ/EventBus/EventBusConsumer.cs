@@ -4,6 +4,8 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
+using Maomi.MQ.Defaults;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Maomi.MQ.EventBus;
@@ -16,6 +18,7 @@ namespace Maomi.MQ.EventBus;
 public class EventBusConsumer<TEvent> : IConsumer<TEvent>
     where TEvent : class
 {
+    private readonly IServiceProvider _serviceProvider;
     private readonly IEventMiddleware<TEvent> _eventMiddleware;
     private readonly HandlerMediator<TEvent> _handlerBroker;
     private readonly ILogger<EventBusConsumer<TEvent>> _logger;
@@ -26,11 +29,12 @@ public class EventBusConsumer<TEvent> : IConsumer<TEvent>
     /// <param name="eventMiddleware"></param>
     /// <param name="handlerBroker"></param>
     /// <param name="logger"></param>
-    public EventBusConsumer(IEventMiddleware<TEvent> eventMiddleware, HandlerMediator<TEvent> handlerBroker, ILogger<EventBusConsumer<TEvent>> logger)
+    public EventBusConsumer(IEventMiddleware<TEvent> eventMiddleware, HandlerMediator<TEvent> handlerBroker, ILogger<EventBusConsumer<TEvent>> logger, IServiceProvider serviceProvider)
     {
         _eventMiddleware = eventMiddleware;
         _handlerBroker = handlerBroker;
         _logger = logger;
+        _serviceProvider = serviceProvider;
     }
 
     /// <inheritdoc />
@@ -40,14 +44,15 @@ public class EventBusConsumer<TEvent> : IConsumer<TEvent>
     }
 
     /// <inheritdoc />
-    public Task FaildAsync(EventBody<TEvent>? message)
+    public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
     {
         return Task.CompletedTask;
     }
 
     /// <inheritdoc />
-    public Task FallbackAsync(EventBody<TEvent>? message)
+    public Task<bool> FallbackAsync(EventBody<TEvent>? message)
     {
-        return Task.CompletedTask;
+        var eventInfo = _serviceProvider.GetRequiredKeyedService<EventInfo>(typeof(TEvent));
+        return Task.FromResult(!eventInfo.RetryFaildRequeue);
     }
 }

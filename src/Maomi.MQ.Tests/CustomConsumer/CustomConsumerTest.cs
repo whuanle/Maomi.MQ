@@ -47,7 +47,7 @@ public class CustomConsumerTest
                 {
                     options.HostName = rabbitmqHostName;
                 },
-                [typeof(TestsService).Assembly],
+                [typeof(CustomConsumerTest).Assembly],
                 Array.Empty<EmptyTypeFilter>());
             }).Build();
 

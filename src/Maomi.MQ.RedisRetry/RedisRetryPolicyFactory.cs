@@ -12,19 +12,16 @@ namespace Maomi.MQ.RedisRetry
 
         private readonly ILogger<DefaultRetryPolicyFactory> _logger;
         private readonly IDatabase _redis;
-        private readonly MqOptions _mqOptions;
 
-        public RedisRetryPolicyFactory(ILogger<DefaultRetryPolicyFactory> logger, IDatabase redis, MqOptions mqOptions)
+        public RedisRetryPolicyFactory(ILogger<DefaultRetryPolicyFactory> logger, IDatabase redis)
         {
             _logger = logger;
             _redis = redis;
-            _mqOptions = mqOptions;
         }
 
         public virtual async Task<AsyncRetryPolicy> CreatePolicy(string queue)
         {
-            var queueName = _mqOptions.QueuePrefix + queue;
-            var existRetry = await _redis.StringGetAsync(queueName);
+            var existRetry = await _redis.StringGetAsync(queue);
             var currentRetryCount = 0;
 
             if (existRetry.HasValue)
@@ -63,7 +60,7 @@ namespace Maomi.MQ.RedisRetry
         // 每次失败重试，重新放到 redis
         public virtual async Task FaildAsync(string queue, Exception ex, TimeSpan timeSpan, int retryCount, Context context)
         {
-            var queueName = _mqOptions.QueuePrefix + queue;
+            var queueName = queue;
             long value = await _redis.StringIncrementAsync(queueName, retryCount);
         }
     }

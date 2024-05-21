@@ -44,13 +44,13 @@ public class ConsumerAttribute : Attribute
     /// Whether to return to the queue when the number of consumption failures reaches the condition.<br />
     /// 消费失败次数达到条件时，是否放回队列.
     /// </summary>
-    public bool RetryFaildRequeue { get; internal set; }
+    public bool RetryFaildRequeue { get; set; }
 
     /// <summary>
     /// Whether to put back to the queue when an exception occurs, such as a serialization error, rather than an exception occurred during consumption.
     /// 出现异常时是否放回队列，例如序列化错误等原因导致的，而不是消费时发生异常导致的.
     /// </summary>
-    public bool ExecptionRequeue { get; internal set; }
+    public bool ExecptionRequeue { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConsumerAttribute"/> class.

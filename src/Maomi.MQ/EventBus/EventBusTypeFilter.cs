@@ -51,6 +51,7 @@ public class EventBusTypeFilter : ITypeFilter
 
             services.AddTransient(typeof(HandlerMediator<>).MakeGenericType(eventType));
 
+            services.AddKeyedSingleton(serviceKey: item.Key, serviceType: typeof(EventInfo), implementationInstance: eventInfo);
             services.AddKeyedSingleton(serviceKey: eventInfo.EventType, serviceType: typeof(ConsumerOptions), implementationInstance: new ConsumerOptions
             {
                 Qos = eventInfo.Qos,
@@ -69,7 +70,6 @@ public class EventBusTypeFilter : ITypeFilter
                 implementationType: typeof(EventBusConsumer<>).MakeGenericType(eventType),
                 lifetime: ServiceLifetime.Transient));
 
-            services.AddKeyedSingleton(serviceKey: item.Key, serviceType: typeof(EventInfo), implementationInstance: eventInfo);
 
             // Group.
             // Do not use EventBusConsumerHostSrvice<EventBusConsumer<T>,T>.

@@ -79,7 +79,7 @@ public class DefaultConsumerHostService<TConsumer, TEvent> : ConsumerBaseHostSrv
     /// Get options.
     /// </summary>
     /// <returns><see cref="ConsumerOptions"/>.</returns>
-    protected static ConsumerOptions GetConsumerOptions()
+    public static ConsumerOptions GetConsumerOptions()
     {
         var consumerAttribute = typeof(TConsumer).GetCustomAttribute<ConsumerAttribute>();
         if (consumerAttribute == null)
@@ -91,7 +91,8 @@ public class DefaultConsumerHostService<TConsumer, TEvent> : ConsumerBaseHostSrv
         {
             Qos = consumerAttribute.Qos,
             Queue = consumerAttribute.Queue,
-            Requeue = consumerAttribute.Requeue
+            ExecptionRequeue = consumerAttribute.ExecptionRequeue,
+            RetryFaildRequeue = consumerAttribute.RetryFaildRequeue
         };
     }
 }
