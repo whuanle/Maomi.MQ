@@ -4,43 +4,7 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-using System.Data;
-using System.Runtime.Intrinsics.X86;
-using System.Security.Cryptography;
-using Maomi.MQ.Barrier.Dtmimp;
-
-namespace Maomi.MQ.Barrier;
-
-public interface DBSpecial
-{
-    string GetPlaceHoldSQL(string sql);
-    string GetInsertIgnoreTemplate(string tableAndValues, string pgConstraint);
-    string GetXaSQL(string command, string xid);
-}
-
-
-public class MysqlDBSpecial : DBSpecial
-{
-    public string GetInsertIgnoreTemplate(string tableAndValues, string pgConstraint)
-    {
-        return string.Format("insert ignore into {0}", tableAndValues);
-    }
-
-    public string GetPlaceHoldSQL(string sql)
-    {
-        return sql;
-    }
-
-    public string GetXaSQL(string command, string xid)
-    {
-        if (command == "abort")
-        {
-            command = "rollback";
-        }
-
-        return string.Format("xa {0} {1}", command, xid);
-    }
-}
+namespace Maomi.MQ.Barrier.DB;
 
 public class PostgresDBSpecial : DBSpecial
 {

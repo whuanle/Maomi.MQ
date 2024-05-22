@@ -33,7 +33,7 @@ public class EventbusTypeFilterTests
         typeFilter.Build(services);
 
         var serviceDescriptors = services.ToArray();
-        var handlerMediator = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(HandlerMediator<Test2Event>)); ;
+        var handlerMediator = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(HandlerMediator<Test2Event>));
         Assert.NotNull(handlerMediator);
         Assert.Equal(ServiceLifetime.Transient, handlerMediator.Lifetime);
 
@@ -46,11 +46,11 @@ public class EventbusTypeFilterTests
         Assert.Equal(ServiceLifetime.Singleton, eventInfo.Lifetime);
 
         Assert.Equal(ServiceLifetime.Singleton, eventInfo.Lifetime);
-        var eventMiddleware = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(IEventMiddleware<Test2Event>)); ;
+        var eventMiddleware = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(IEventMiddleware<Test2Event>));
         Assert.NotNull(eventMiddleware);
         Assert.Equal(ServiceLifetime.Transient, eventMiddleware.Lifetime);
 
-        var eventBusConsumer = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(IConsumer<Test2Event>)); ;
+        var eventBusConsumer = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(IConsumer<Test2Event>));
         Assert.NotNull(eventBusConsumer);
         Assert.Equal(ServiceLifetime.Transient, eventBusConsumer.Lifetime);
 
@@ -61,7 +61,40 @@ public class EventbusTypeFilterTests
         Assert.Equal(typeof(EventBusConsumerHostSrvice<EventBusConsumer<Test2Event>, Test2Event>), consumerHostService.ImplementationType);
     }
 
-    // 事件分组
+    [Fact]
+    public void EventGroup()
+    {
+        var services = new ServiceCollection();
+        var typeFilter = new EventBusTypeFilter();
+        typeFilter.Filter(services, typeof(Test3EventHandler));
+        typeFilter.Filter(services, typeof(Test3EventMiddleware));
+        typeFilter.Build(services);
+
+        var serviceDescriptors = services.ToArray();
+        var handlerMediator = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(HandlerMediator<Test3Event>)); ;
+        Assert.NotNull(handlerMediator);
+        Assert.Equal(ServiceLifetime.Transient, handlerMediator.Lifetime);
+
+        var eventInfo = serviceDescriptors.FirstOrDefault(x => object.Equals(x.ServiceKey, typeof(Test3Event)) && x.ServiceType == typeof(EventInfo));
+        Assert.NotNull(eventInfo);
+        Assert.Equal(ServiceLifetime.Singleton, eventInfo.Lifetime);
+
+        var eventGroupInfo = serviceDescriptors
+            .FirstOrDefault(x => "group".Equals(x.ServiceKey) && x.ServiceType == typeof(EventGroupInfo))?.ImplementationInstance as EventGroupInfo;
+        Assert.NotNull(eventGroupInfo);
+        Assert.Equal("group", eventGroupInfo.Group);
+
+        var eventMiddleware = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(IEventMiddleware<Test3Event>));
+        Assert.NotNull(eventMiddleware);
+        Assert.Equal(typeof(Test3EventMiddleware), eventMiddleware.ImplementationType);
+        Assert.Equal(ServiceLifetime.Transient, eventMiddleware.Lifetime);
+
+        var hostedServices = serviceDescriptors.Where(x => x.ServiceType == typeof(IHostedService)).ToArray();
+        Assert.Single(hostedServices);
+        var consumerHostService = hostedServices.FirstOrDefault();
+        Assert.NotNull(consumerHostService);
+        Assert.Equal(typeof(EventGroupConsumerHostSrvice), consumerHostService.ImplementationType);
+    }
 
     public class Test1_0Event
     {
@@ -96,5 +129,26 @@ public class EventbusTypeFilterTests
     {
         public Task CancelAsync(EventBody<Test2Event> eventBody, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task HandlerAsync(EventBody<Test2Event> eventBody, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    [EventTopic("test", Group = "group", Qos = 10, RetryFaildRequeue = true, ExecptionRequeue = true)]
+    public class Test3Event
+    {
+        public int Id { get; set; }
+    }
+
+    [EventOrder(0)]
+    public class Test3EventHandler : IEventHandler<Test3Event>
+    {
+        public Task CancelAsync(EventBody<Test3Event> eventBody, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task HandlerAsync(EventBody<Test3Event> eventBody, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    public class Test3EventMiddleware : IEventMiddleware<Test3Event>
+    {
+        public Task HandleAsync(EventBody<Test3Event> eventBody, EventHandlerDelegate<Test3Event> next)
+        {
+            return next(eventBody, CancellationToken.None);
+        }
     }
 }

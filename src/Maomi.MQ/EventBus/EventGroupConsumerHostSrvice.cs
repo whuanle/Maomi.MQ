@@ -28,7 +28,7 @@ public class EventGroupConsumerHostSrvice : BackgroundService
 
     private readonly IServiceProvider _serviceProvider;
     private readonly DefaultMqOptions _connectionOptions;
-    private readonly ConnectionFactory _connectionFactory;
+    private readonly IConnectionFactory _connectionFactory;
     private readonly IJsonSerializer _jsonSerializer;
     private readonly IRetryPolicyFactory _policyFactory;
     private readonly ILogger<EventGroupConsumerHostSrvice> _logger;

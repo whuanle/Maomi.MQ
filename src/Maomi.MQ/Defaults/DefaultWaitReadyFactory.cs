@@ -18,7 +18,7 @@ public class DefaultWaitReadyFactory : IWaitReadyFactory
     }
 
     /// <inheritdoc/>
-    public Task Wait()
+    public Task WaitReady()
     {
         return Task.WhenAll(_tasks);
     }

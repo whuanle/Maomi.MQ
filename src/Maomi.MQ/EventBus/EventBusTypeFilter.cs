@@ -70,7 +70,6 @@ public class EventBusTypeFilter : ITypeFilter
                 implementationType: typeof(EventBusConsumer<>).MakeGenericType(eventType),
                 lifetime: ServiceLifetime.Transient));
 
-
             // Group.
             // Do not use EventBusConsumerHostSrvice<EventBusConsumer<T>,T>.
             if (!string.IsNullOrEmpty(eventInfo.Group))

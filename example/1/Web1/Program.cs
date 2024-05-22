@@ -20,8 +20,8 @@ namespace Web1
                 options.WorkId = 1;
             }, options =>
             {
-                options.HostName = "192.168.3.248";
-            }, typeof(Program).Assembly);
+                options.HostName = "192.168.1.4";
+            }, new System.Reflection.Assembly[] { typeof(Program).Assembly });
 
             var app = builder.Build();
 

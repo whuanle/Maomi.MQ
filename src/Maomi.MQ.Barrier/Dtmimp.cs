@@ -1,13 +1,12 @@
-﻿using Maomi.MQ.Barrier.Dtmimp;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Maomi.MQ.Barrier.DB;
 
 namespace Maomi.MQ.Barrier;
-public partial class Dtmimp1
+public partial class Dtmimp
 {
+    public const string Mysql = "Mysql";
+
+    public const string Postgres = "Postgres";
+
     /// <summary>
     /// ResultFailure for result of a trans/trans branch,Same as HTTP status 409 and GRPC code 10.
     /// </summary>
@@ -110,19 +109,23 @@ public partial class Dtmimp1
     /// <summary>
     // ProtocolHTTP const for protocol http
     public const string ProtocolHTTP = "http";
-}
 
+    public const string DBTYPE_MYSQL = "mysql";
+    public const string DBTYPE_POSTGRES = "postgres";
+    public const string DBTYPE_SQLSERVER = "sqlserver";
+    public const string PG_CONSTRAINT = "uniq_barrier";
+    public const string MSG_BARRIER_REASON = "rollback";
+    public const string MSG_BRANCHID = "00";
+    public const string MSG_BARRIER_ID = "01";
 
-public partial class Dtmimp1
-{
     private static readonly Dictionary<string, DBSpecial> DbSpecials = new()
     {
-        {Consts.DBTypeMysql,new MysqlDBSpecial() },
-        { Consts.DBTypePostgres,new PostgresDBSpecial() }
+        { DBTypeMysql, new MysqlDBSpecial() },
+        { DBTypePostgres, new PostgresDBSpecial() }
     };
 
-    public static DBSpecial GetDBSpecial(string dbType)
+    public static DBSpecial GetDBSpecial(DBType dbType)
     {
-        return DbSpecials[dbType];
+        return DbSpecials[dbType.ToString().ToLower()];
     }
 }

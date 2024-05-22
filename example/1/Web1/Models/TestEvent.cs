@@ -2,11 +2,11 @@
 {
     public class TestEvent
     {
-        public string Message { get; set; }
+        public int Id { get; set; }
 
         public override string ToString()
         {
-            return Message;
+            return Id.ToString();
         }
     }
 

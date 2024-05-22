@@ -16,5 +16,5 @@ public class DefaultMqOptions : MqOptions
     /// <summary>
     /// RabbitMQ connection factory.
     /// </summary>
-    public ConnectionFactory ConnectionFactory { get; init; } = null!;
+    public IConnectionFactory ConnectionFactory { get; init; } = null!;
 }

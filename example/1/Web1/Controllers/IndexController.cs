@@ -25,7 +25,7 @@ namespace Web1.Controllers
             {
                 await _messagePublisher.PublishAsync("web1",new TestEvent
                 {
-                    Message = i.ToString()
+                    Id = i
                 });
             }
 

@@ -37,7 +37,7 @@ public abstract class ConsumerBaseHostSrvice<TConsumer, TEvent> : BackgroundServ
     /// <summary>
     /// <see cref="ConnectionFactory"/>.
     /// </summary>
-    protected readonly ConnectionFactory _connectionFactory;
+    protected readonly IConnectionFactory _connectionFactory;
 
     /// <summary>
     /// Type.

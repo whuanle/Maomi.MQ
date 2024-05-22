@@ -8,12 +8,6 @@ using System.Text.Json.Serialization;
 
 namespace Maomi.MQ.Barrier;
 
-public class DBType
-{
-    public const string Mysql = "Mysql";
-    public const string Postgres = "Postgres";
-}
-
 /// <summary>
 /// BranchIDGen used to generate a sub branch id.
 /// </summary>

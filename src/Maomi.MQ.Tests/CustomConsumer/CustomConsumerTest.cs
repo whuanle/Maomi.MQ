@@ -17,7 +17,7 @@ public class CustomConsumerTest
 
         var waitReadyFactory = services.GetRequiredService<IWaitReadyFactory>();
 
-        await waitReadyFactory.Wait();
+        await waitReadyFactory.WaitReady();
 
 
     }
