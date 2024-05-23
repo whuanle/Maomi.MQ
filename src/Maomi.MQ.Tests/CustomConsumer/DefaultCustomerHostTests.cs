@@ -6,14 +6,16 @@ using Moq;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Net.Sockets;
+using static Maomi.MQ.Tests.CustomConsumer.DefaultCustomerHostTests;
 
 namespace Maomi.MQ.Tests.CustomConsumer;
 
-public class DefaultCustomerHostTests
+public partial class DefaultCustomerHostTests
 {
     private readonly Mock<IConnectionFactory> _mockConnectionFactory = new();
     private readonly Mock<IConnection> _mockConnection = new Mock<IConnection>();
     private readonly Mock<IChannel> _mockChannel = new Mock<IChannel>();
+
     public DefaultCustomerHostTests()
     {
         _mockConnectionFactory
@@ -42,17 +44,17 @@ public class DefaultCustomerHostTests
         var waitReadyFactory = new DefaultWaitReadyFactory();
 
         var typeFilter = new ConsumerTypeFilter();
-        typeFilter.Filter(services, typeof(Consumer1));
+        typeFilter.Filter(services, typeof(EmptyConsumer<IdEvent>));
         var ioc = services.BuildServiceProvider();
 
-        using var hostService = new TestDefaultConsumerHostService<Consumer1, TestEvent1>(
+        using var hostService = new TestDefaultConsumerHostService<EmptyConsumer<IdEvent>, IdEvent>(
             ioc,
             new DefaultMqOptions
             {
                 ConnectionFactory = _mockConnectionFactory.Object
             },
             new DefaultJsonSerializer(),
-            LoggerHeler.Create<ConsumerBaseHostSrvice<Consumer1, TestEvent1>>(),
+            LoggerHeler.Create<ConsumerBaseHostSrvice<EmptyConsumer<IdEvent>, IdEvent>>(),
             new DefaultRetryPolicyFactory(LoggerHeler.Create<DefaultRetryPolicyFactory>()),
             waitReadyFactory
             );
@@ -74,17 +76,17 @@ public class DefaultCustomerHostTests
             .Throws(new SocketException(400, "error"));
 
         var typeFilter = new ConsumerTypeFilter();
-        typeFilter.Filter(services, typeof(Consumer1));
+        typeFilter.Filter(services, typeof(EmptyConsumer<IdEvent>));
         var ioc = services.BuildServiceProvider();
 
-        using var hostService = new TestDefaultConsumerHostService<Consumer1, TestEvent1>(
+        using var hostService = new TestDefaultConsumerHostService<EmptyConsumer<IdEvent>, IdEvent>(
             ioc,
             new DefaultMqOptions
             {
                 ConnectionFactory = _mockConnectionFactory.Object
             },
             new DefaultJsonSerializer(),
-            LoggerHeler.Create<ConsumerBaseHostSrvice<Consumer1, TestEvent1>>(),
+            LoggerHeler.Create<ConsumerBaseHostSrvice<EmptyConsumer<IdEvent>, IdEvent>>(),
             new DefaultRetryPolicyFactory(LoggerHeler.Create<DefaultRetryPolicyFactory>()),
             waitReadyFactory
             );
@@ -107,17 +109,17 @@ public class DefaultCustomerHostTests
         var waitReadyFactory = new DefaultWaitReadyFactory();
 
         var typeFilter = new ConsumerTypeFilter();
-        typeFilter.Filter(services, typeof(Consumer1));
+        typeFilter.Filter(services, typeof(EmptyConsumer<IdEvent>));
         var ioc = services.BuildServiceProvider();
 
-        using var hostService = new DefaultConsumerHostService<Consumer1, TestEvent1>(
+        using var hostService = new DefaultConsumerHostService<EmptyConsumer<IdEvent>, IdEvent>(
             ioc,
             new DefaultMqOptions
             {
                 ConnectionFactory = _mockConnectionFactory.Object
             },
             new DefaultJsonSerializer(),
-            LoggerHeler.Create<ConsumerBaseHostSrvice<Consumer1, TestEvent1>>(),
+            LoggerHeler.Create<ConsumerBaseHostSrvice<EmptyConsumer<IdEvent>, IdEvent>>(),
             new DefaultRetryPolicyFactory(LoggerHeler.Create<DefaultRetryPolicyFactory>()),
             waitReadyFactory
             );
@@ -134,20 +136,20 @@ public class DefaultCustomerHostTests
         var jsonSerializer = new DefaultJsonSerializer();
 
         var typeFilter = new ConsumerTypeFilter();
-        typeFilter.Filter(services, typeof(Consumer1));
-        services.AddSingleton<IConsumer<TestEvent1>, Consumer1>();
+        typeFilter.Filter(services, typeof(EmptyConsumer<IdEvent>));
+        services.AddSingleton<IConsumer<IdEvent>, EmptyConsumer<IdEvent>>();
         var ioc = services.BuildServiceProvider();
 
-        var consumer = ioc.GetRequiredService<IConsumer<TestEvent1>>() as Consumer1;
+        var consumer = ioc.GetRequiredService<IConsumer<IdEvent>>() as EmptyConsumer<IdEvent>;
         Assert.NotNull(consumer);
-        using var hostService = new TestDefaultConsumerHostService<Consumer1, TestEvent1>(
+        using var hostService = new TestDefaultConsumerHostService<EmptyConsumer<IdEvent>, IdEvent>(
             ioc,
             new DefaultMqOptions
             {
                 ConnectionFactory = _mockConnectionFactory.Object
             },
             jsonSerializer,
-            LoggerHeler.Create<ConsumerBaseHostSrvice<Consumer1, TestEvent1>>(),
+            LoggerHeler.Create<ConsumerBaseHostSrvice<EmptyConsumer<IdEvent>, IdEvent>>(),
             new DefaultRetryPolicyFactory(LoggerHeler.Create<DefaultRetryPolicyFactory>()),
             waitReadyFactory
             );
@@ -155,11 +157,11 @@ public class DefaultCustomerHostTests
         await hostService.StartAsync(CancellationToken.None);
         await waitReadyFactory.WaitReady();
 
-        var eventBody = new EventBody<TestEvent1>()
+        var eventBody = new EventBody<IdEvent>()
         {
             Id = 1,
             CreateTime = DateTimeOffset.Now,
-            Body = new TestEvent1
+            Body = new IdEvent
             {
                 Id = 1
             }
@@ -176,44 +178,131 @@ public class DefaultCustomerHostTests
         Assert.Equal(eventBody.Body.Id, consumer.EventBody.Body.Id);
     }
 
-    // 测试各种重试策略
-
-    public class TestEvent1
+    public async Task<TConsumer> Retry<TConsumer, TEvent>(Action<IServiceCollection>? action = null)
+        where TConsumer : class, IConsumer<TEvent>, IRetry
+        where TEvent : class
     {
-        public int Id { get; set; }
+        var services = new ServiceCollection();
+        var waitReadyFactory = new DefaultWaitReadyFactory();
+        var jsonSerializer = new DefaultJsonSerializer();
+        var retryFactory = new TestRetryPolicyFactory(LoggerHeler.Create<DefaultRetryPolicyFactory>());
+
+        services.AddSingleton<IWaitReadyFactory>(waitReadyFactory);
+        services.AddSingleton<IJsonSerializer>(jsonSerializer);
+        services.AddSingleton<IRetryPolicyFactory>(retryFactory);
+
+        var typeFilter = new ConsumerTypeFilter();
+        typeFilter.Filter(services, typeof(TConsumer));
+        services.AddSingleton<IConsumer<TEvent>, TConsumer>();
+        if (action != null)
+        {
+            action.Invoke(services);
+        }
+        var ioc = services.BuildServiceProvider();
+
+        var consumer = ioc.GetRequiredService<IConsumer<IdEvent>>() as TConsumer;
+        Assert.NotNull(consumer);
+        using var hostService = new TestDefaultConsumerHostService<TConsumer, TEvent>(
+            ioc,
+            new DefaultMqOptions
+            {
+                ConnectionFactory = _mockConnectionFactory.Object
+            },
+            ioc.GetRequiredService<IJsonSerializer>(),
+            LoggerHeler.Create<ConsumerBaseHostSrvice<TConsumer, TEvent>>(),
+            ioc.GetRequiredService<IRetryPolicyFactory>(),
+            ioc.GetRequiredService<IWaitReadyFactory>()
+            );
+
+        await hostService.StartAsync(CancellationToken.None);
+        await waitReadyFactory.WaitReady();
+
+        var eventBody = new EventBody<IdEvent>()
+        {
+            Id = 1,
+            CreateTime = DateTimeOffset.Now,
+            Body = new IdEvent
+            {
+                Id = 1
+            }
+        };
+
+        var bytes = jsonSerializer.Serializer(eventBody);
+        var buffer = new byte[1000];
+        IAmqpWriteable _basicProperties = new BasicProperties { Persistent = true, AppId = "AppId", ContentEncoding = "content" };
+        int offset = _basicProperties.WriteTo(buffer);
+        await hostService.PublishAsync(_mockChannel.Object, new BasicDeliverEventArgs("aa", 1, false, "test", "", new ReadOnlyBasicProperties(buffer.AsSpan()), bytes));
+
+        return consumer;
     }
 
-    [Consumer("tes", Qos = 1, RetryFaildRequeue = true, ExecptionRequeue = true)]
-    public class Consumer1 : IConsumer<TestEvent1>
+    [Fact]
+    public async Task Retry_Five_Times()
     {
-        public EventBody<TestEvent1> EventBody { get;private set; }
+        var consumer = await Retry<Exception_NoRequeue_Consumer<IdEvent>, IdEvent>();
 
-        public Task ExecuteAsync(EventBody<TestEvent1> message)
-        {
-            EventBody = message;
-            return Task.CompletedTask;
-        }
-        public Task FaildAsync(Exception ex, int retryCount, EventBody<TestEvent1>? message) => Task.CompletedTask;
-        public Task<bool> FallbackAsync(EventBody<TestEvent1>? message) => Task.FromResult(true);
+        Assert.Equal(6, consumer.RetryCount);
+        Assert.True(consumer.IsFallbacked);
     }
 
-    public class TestDefaultConsumerHostService<TConsumer, TEvent> : DefaultConsumerHostService<TConsumer, TEvent>
-    where TEvent : class
-    where TConsumer : IConsumer<TEvent>
+    // Retry faild,fallback false,requeue
+    [Fact]
+    public async Task RetryFaild_And_Fallback_False_Requeue()
     {
-        public TestDefaultConsumerHostService(IServiceProvider serviceProvider, DefaultMqOptions connectionOptions, IJsonSerializer jsonSerializer, ILogger<ConsumerBaseHostSrvice<TConsumer, TEvent>> logger, IRetryPolicyFactory policyFactory, IWaitReadyFactory waitReadyFactory) : base(serviceProvider, connectionOptions, jsonSerializer, logger, policyFactory, waitReadyFactory)
-        {
-        }
-
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            return Task.CompletedTask;
-        }
-
-        // Analog received data.
-        public async Task PublishAsync(IChannel channel, BasicDeliverEventArgs eventArgs)
-        {
-            await base.ConsumerAsync(channel, eventArgs);
-        }
+        await Retry<Faild_Fallback_False_Requeue_Consumer<IdEvent>, IdEvent>();
+        // requeue: true
+        _mockChannel.Verify(a => a.BasicNackAsync(It.IsAny<ulong>(), It.IsAny<bool>(), true, It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    // Retry faild,fallback false
+    [Fact]
+    public async Task RetryFaild_And_Fallback_False_NoRequeue()
+    {
+        await Retry<Faild_Fallback_True_Consumer<IdEvent>, IdEvent>();
+        _mockChannel.Verify(a => a.BasicNackAsync(It.IsAny<ulong>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockChannel.Verify(a => a.BasicAckAsync(It.IsAny<ulong>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RetryFaild_And_Fallback_True()
+    {
+        await Retry<Faild_Fallback_True_Consumer<IdEvent>, IdEvent>();
+        // requeue: false
+        _mockChannel.Verify(a => a.BasicNackAsync(It.IsAny<ulong>(), It.IsAny<bool>(), false, It.IsAny<CancellationToken>()), Times.Once);
+        _mockChannel.Verify(a => a.BasicAckAsync(It.IsAny<ulong>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Exception_NoRequeue()
+    {
+        var consumer = await Retry<Exception_NoRequeue_Consumer<IdEvent>, IdEvent>((services) =>
+        {
+            services.AddSingleton<IJsonSerializer, ExceptionJsonSerializer>();
+        });
+        // requeue: false
+        _mockChannel.Verify(a => a.BasicNackAsync(It.IsAny<ulong>(), It.IsAny<bool>(), false, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Exception_Requeue()
+    {
+        var eventBody = new EventBody<IdEvent>()
+        {
+            Id = 1,
+            CreateTime = DateTimeOffset.Now,
+            Body = new IdEvent
+            {
+                Id = 1
+            }
+        };
+
+        var consumer = await Retry<Exception_Requeue_Consumer<IdEvent>, IdEvent>((services) =>
+        {
+            services.AddSingleton<IJsonSerializer, ExceptionJsonSerializer>();
+        });
+        // requeue: true
+        _mockChannel.Verify(a => a.BasicNackAsync(It.IsAny<ulong>(), It.IsAny<bool>(), true, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal(-1, consumer.RetryCount);
+    }
+
 }

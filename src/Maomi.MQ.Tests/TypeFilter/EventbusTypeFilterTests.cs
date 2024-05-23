@@ -79,8 +79,10 @@ public class EventbusTypeFilterTests
         Assert.NotNull(eventInfo);
         Assert.Equal(ServiceLifetime.Singleton, eventInfo.Lifetime);
 
-        var eventGroupInfo = serviceDescriptors
-            .FirstOrDefault(x => "group".Equals(x.ServiceKey) && x.ServiceType == typeof(EventGroupInfo))?.ImplementationInstance as EventGroupInfo;
+        var serviceDescriptor = serviceDescriptors
+            .FirstOrDefault(x => "group".Equals(x.ServiceKey) && x.ServiceType == typeof(EventGroupInfo));
+        Assert.NotNull(serviceDescriptor);
+        var eventGroupInfo = serviceDescriptor.KeyedImplementationInstance as EventGroupInfo;
         Assert.NotNull(eventGroupInfo);
         Assert.Equal("group", eventGroupInfo.Group);
 
@@ -93,7 +95,7 @@ public class EventbusTypeFilterTests
         Assert.Single(hostedServices);
         var consumerHostService = hostedServices.FirstOrDefault();
         Assert.NotNull(consumerHostService);
-        Assert.Equal(typeof(EventGroupConsumerHostSrvice), consumerHostService.ImplementationType);
+        Assert.Equal(typeof(EventGroupConsumerHostService), consumerHostService!.ImplementationFactory!.Method.ReturnType);
     }
 
     public class Test1_0Event

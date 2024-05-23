@@ -38,19 +38,19 @@ public class EventBusConsumer<TEvent> : IConsumer<TEvent>
     }
 
     /// <inheritdoc />
-    public async Task ExecuteAsync(EventBody<TEvent> message)
+    public virtual async Task ExecuteAsync(EventBody<TEvent> message)
     {
         await _eventMiddleware.HandleAsync(message, _handlerBroker.Handler);
     }
 
     /// <inheritdoc />
-    public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
+    public virtual Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
     {
         return Task.CompletedTask;
     }
 
     /// <inheritdoc />
-    public Task<bool> FallbackAsync(EventBody<TEvent>? message)
+    public virtual Task<bool> FallbackAsync(EventBody<TEvent>? message)
     {
         var eventInfo = _serviceProvider.GetRequiredKeyedService<EventInfo>(typeof(TEvent));
         return Task.FromResult(!eventInfo.RetryFaildRequeue);

@@ -21,9 +21,9 @@ namespace Maomi.MQ.EventBus;
 /// Queues in the same group are executed on a channel.<br />
 /// 将同一分组下的队列放到一个通道下执行.
 /// </summary>
-public class EventGroupConsumerHostSrvice : BackgroundService
+public partial class EventGroupConsumerHostService : BackgroundService
 {
-    private static readonly MethodInfo ConsumerMethod = typeof(EventGroupConsumerHostSrvice)
+    private static readonly MethodInfo ConsumerMethod = typeof(EventGroupConsumerHostService)
         .GetMethod("ConsumerAsync", BindingFlags.Instance | BindingFlags.NonPublic)!;
 
     private readonly IServiceProvider _serviceProvider;
@@ -31,13 +31,13 @@ public class EventGroupConsumerHostSrvice : BackgroundService
     private readonly IConnectionFactory _connectionFactory;
     private readonly IJsonSerializer _jsonSerializer;
     private readonly IRetryPolicyFactory _policyFactory;
-    private readonly ILogger<EventGroupConsumerHostSrvice> _logger;
+    private readonly ILogger<EventGroupConsumerHostService> _logger;
     private readonly EventGroupInfo _eventGroupInfo;
     private readonly IWaitReadyFactory _waitReadyFactory;
     private readonly TaskCompletionSource _taskCompletionSource;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="EventGroupConsumerHostSrvice"/> class.
+    /// Initializes a new instance of the <see cref="EventGroupConsumerHostService"/> class.
     /// </summary>
     /// <param name="serviceProvider"></param>
     /// <param name="connectionOptions"></param>
@@ -47,11 +47,11 @@ public class EventGroupConsumerHostSrvice : BackgroundService
     /// <param name="waitReadyFactory"></param>
     /// <param name="eventGroupInfo"></param>
     /// <param name="circuitBreakerFactory"></param>
-    public EventGroupConsumerHostSrvice(
+    public EventGroupConsumerHostService(
         IServiceProvider serviceProvider,
         DefaultMqOptions connectionOptions,
         IJsonSerializer jsonSerializer,
-        ILogger<EventGroupConsumerHostSrvice> logger,
+        ILogger<EventGroupConsumerHostService> logger,
         IRetryPolicyFactory policyFactory,
         IWaitReadyFactory waitReadyFactory,
         EventGroupInfo eventGroupInfo)
@@ -238,7 +238,14 @@ public class EventGroupConsumerHostSrvice : BackgroundService
             await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: eventInfo.ExecptionRequeue);
         }
     }
+}
 
+/// <summary>
+/// Queues in the same group are executed on a channel.<br />
+/// 将同一分组下的队列放到一个通道下执行.
+/// </summary>
+public partial class EventGroupConsumerHostService
+{
     /// <summary>
     /// Build delegate.
     /// </summary>
@@ -246,7 +253,7 @@ public class EventGroupConsumerHostSrvice : BackgroundService
     /// <returns>Delegate.</returns>
     protected static Delegate BuildConsumerHandler(Type type)
     {
-        ParameterExpression consumer = Expression.Variable(typeof(EventGroupConsumerHostSrvice), "coosumer");
+        ParameterExpression consumer = Expression.Variable(typeof(EventGroupConsumerHostService), "coosumer");
         ParameterExpression eventInfo = Expression.Parameter(typeof(EventInfo), "eventInfo");
         ParameterExpression channel = Expression.Parameter(typeof(IChannel), "channel");
         ParameterExpression eventArgs = Expression.Parameter(typeof(BasicDeliverEventArgs), "eventArgs");

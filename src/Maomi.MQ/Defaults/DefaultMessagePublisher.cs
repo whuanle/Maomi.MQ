@@ -54,26 +54,33 @@ public class DefaultMessagePublisher : IMessagePublisher
             properties.Invoke(basicProperties);
         }
 
-        await PublishAsync(queue, message, properties);
+        await PublishAsync(queue, message, basicProperties);
     }
 
     /// <inheritdoc />
     public async Task PublishAsync<TEvent>(string queue, TEvent message, BasicProperties properties)
     {
-        var connection = _connectionPool.Get();
         var eventBody = new EventBody<TEvent>
         {
             Id = _idGen.CreateId(),
             CreateTime = DateTimeOffset.Now,
             Body = message
         };
+
+        await PublishAsync(queue, eventBody, properties);
+    }
+
+    /// <inheritdoc />
+    public async Task PublishAsync<TEvent>(string queue, EventBody<TEvent> message, BasicProperties properties)
+    {
+        var connection = _connectionPool.Get();
         try
         {
             await connection.Channel.BasicPublishAsync(
                 exchange: string.Empty,
                 routingKey: queue,
                 basicProperties: properties,
-                body: _jsonSerializer.Serializer(eventBody),
+                body: _jsonSerializer.Serializer(message),
                 mandatory: true);
         }
         finally

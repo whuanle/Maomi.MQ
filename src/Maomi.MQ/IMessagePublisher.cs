@@ -36,4 +36,15 @@ public interface IMessagePublisher
     /// <param name="properties"><see cref="IBasicProperties"/>.<br />RabbitMQ 消息属性.</param>
     /// <returns><see cref="Task"/>.</returns>
     Task PublishAsync<TEvent>(string queue, TEvent message, BasicProperties properties);
+
+    /// <summary>
+    /// Publish messagge.<br />
+    /// 发布消息.
+    /// </summary>
+    /// <typeparam name="TEvent">Event model.<br />事件模型类.</typeparam>
+    /// <param name="queue">Queue name.<br />队列名称.</param>
+    /// <param name="message">Event object.<br />事件对象.</param>
+    /// <param name="properties"><see cref="IBasicProperties"/>.<br />RabbitMQ 消息属性.</param>
+    /// <returns><see cref="Task"/>.</returns>
+    Task PublishAsync<TEvent>(string queue, EventBody<TEvent> message, BasicProperties properties);
 }

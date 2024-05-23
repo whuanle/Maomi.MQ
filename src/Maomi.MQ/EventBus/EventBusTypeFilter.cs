@@ -100,13 +100,13 @@ public class EventBusTypeFilter : ITypeFilter
             };
 
             services.AddKeyedSingleton(serviceKey: group.Key, serviceType: typeof(EventGroupInfo), implementationInstance: eventGroupInfo);
-            services.AddHostedService<EventGroupConsumerHostSrvice>(s =>
+            services.AddHostedService<EventGroupConsumerHostService>(s =>
             {
-                return new EventGroupConsumerHostSrvice(
+                return new EventGroupConsumerHostService(
                     s,
                     s.GetRequiredService<DefaultMqOptions>(),
                     s.GetRequiredService<IJsonSerializer>(),
-                    s.GetRequiredService<ILogger<EventGroupConsumerHostSrvice>>(),
+                    s.GetRequiredService<ILogger<EventGroupConsumerHostService>>(),
                     s.GetRequiredService<IRetryPolicyFactory>(),
                     s.GetRequiredService<IWaitReadyFactory>(),
                     eventGroupInfo);
