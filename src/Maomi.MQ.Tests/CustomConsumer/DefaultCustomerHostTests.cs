@@ -241,35 +241,36 @@ public partial class DefaultCustomerHostTests
     {
         var consumer = await Retry<Exception_NoRequeue_Consumer<IdEvent>, IdEvent>();
 
+        // Run once and retry five times
         Assert.Equal(6, consumer.RetryCount);
         Assert.True(consumer.IsFallbacked);
     }
 
     // Retry faild,fallback false,requeue
     [Fact]
-    public async Task RetryFaild_And_Fallback_False_Requeue()
+    public async Task Retry_Faild_And_Fallback_False_Requeue()
     {
-        await Retry<Faild_Fallback_False_Requeue_Consumer<IdEvent>, IdEvent>();
+        await Retry<Retry_Faild_Fallback_False_Requeue_Consumer<IdEvent>, IdEvent>();
         // requeue: true
         _mockChannel.Verify(a => a.BasicNackAsync(It.IsAny<ulong>(), It.IsAny<bool>(), true, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // Retry faild,fallback false
     [Fact]
-    public async Task RetryFaild_And_Fallback_False_NoRequeue()
+    public async Task Retry_Faild_And_Fallback_False_NoRequeue()
     {
-        await Retry<Faild_Fallback_True_Consumer<IdEvent>, IdEvent>();
+        await Retry<Retry_Faild_Fallback_True_Consumer<IdEvent>, IdEvent>();
         _mockChannel.Verify(a => a.BasicNackAsync(It.IsAny<ulong>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
         _mockChannel.Verify(a => a.BasicAckAsync(It.IsAny<ulong>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task RetryFaild_And_Fallback_True()
+    public async Task Retry_Faild_And_Fallback_True()
     {
-        await Retry<Faild_Fallback_True_Consumer<IdEvent>, IdEvent>();
+        await Retry<Retry_Faild_Fallback_True_Consumer<IdEvent>, IdEvent>();
         // requeue: false
-        _mockChannel.Verify(a => a.BasicNackAsync(It.IsAny<ulong>(), It.IsAny<bool>(), false, It.IsAny<CancellationToken>()), Times.Once);
-        _mockChannel.Verify(a => a.BasicAckAsync(It.IsAny<ulong>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockChannel.Verify(a => a.BasicAckAsync(It.IsAny<ulong>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockChannel.Verify(a => a.BasicNackAsync(It.IsAny<ulong>(), It.IsAny<bool>(), false, It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

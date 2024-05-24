@@ -202,11 +202,13 @@ public abstract class ConsumerBaseHostSrvice<TConsumer, TEvent> : BackgroundServ
 
             // Each retry.
             // 每次失败时执行.
+            int retryCount = 0;
             var retryEachPolicy = Policy.Handle<Exception>().RetryAsync(async (ex, count) =>
             {
                 try
                 {
-                    await consumer.FaildAsync(ex, count, eventBody);
+                    retryCount++;
+                    await consumer.FaildAsync(ex, retryCount, eventBody);
                 }
                 catch (Exception faildEx)
                 {

@@ -81,7 +81,7 @@ public class ConsumerTypeFilterTests
         public Task<bool> FallbackAsync(EventBody<TestEvent1>? message) => Task.FromResult(true);
     }
 
-    [Consumer("tes", Qos = 1, RetryFaildRequeue = true, ExecptionRequeue = true)]
+    [Consumer("test", Qos = 1, RetryFaildRequeue = true, ExecptionRequeue = true)]
     public class Consumer2 : Consumer1, IConsumer<TestEvent1>
     {
     }

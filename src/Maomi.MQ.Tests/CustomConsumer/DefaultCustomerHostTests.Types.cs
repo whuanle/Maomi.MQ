@@ -25,7 +25,7 @@ public partial class DefaultCustomerHostTests
         public int Id { get; set; }
     }
 
-    [Consumer("tes")]
+    [Consumer("test")]
     public class EmptyConsumer<TEvent> : IConsumer<TEvent>, IRetry, IEventBody<TEvent>
         where TEvent : class
     {
@@ -41,7 +41,7 @@ public partial class DefaultCustomerHostTests
         }
         public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
         {
-            RetryCount++;
+            RetryCount = retryCount;
             return Task.CompletedTask;
         }
         public Task<bool> FallbackAsync(EventBody<TEvent>? message)
@@ -51,7 +51,7 @@ public partial class DefaultCustomerHostTests
         }
     }
 
-    [Consumer("tes", Qos = 1, RetryFaildRequeue = false, ExecptionRequeue = false)]
+    [Consumer("test", Qos = 1, RetryFaildRequeue = false, ExecptionRequeue = false)]
     public class Exception_NoRequeue_Consumer<TEvent> : IConsumer<TEvent>, IRetry, IEventBody<TEvent>
         where TEvent : class
     {
@@ -67,7 +67,7 @@ public partial class DefaultCustomerHostTests
         }
         public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
         {
-            RetryCount++;
+            RetryCount = retryCount;
             return Task.CompletedTask;
         }
         public Task<bool> FallbackAsync(EventBody<TEvent>? message)
@@ -77,7 +77,7 @@ public partial class DefaultCustomerHostTests
         }
     }
 
-    [Consumer("tes", Qos = 1, RetryFaildRequeue = true, ExecptionRequeue = true)]
+    [Consumer("test", Qos = 1, RetryFaildRequeue = true, ExecptionRequeue = true)]
     public class Exception_Requeue_Consumer<TEvent> : IConsumer<TEvent>, IRetry, IEventBody<TEvent>
     where TEvent : class
     {
@@ -93,7 +93,7 @@ public partial class DefaultCustomerHostTests
         }
         public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
         {
-            RetryCount++;
+            RetryCount = retryCount;
             return Task.CompletedTask;
         }
         public Task<bool> FallbackAsync(EventBody<TEvent>? message)
@@ -103,8 +103,8 @@ public partial class DefaultCustomerHostTests
         }
     }
 
-    [Consumer("tes", Qos = 1, RetryFaildRequeue = true, ExecptionRequeue = true)]
-    public class Faild_Fallback_False_Requeue_Consumer<TEvent> : IConsumer<TEvent>, IRetry, IEventBody<TEvent>
+    [Consumer("test", Qos = 1, RetryFaildRequeue = true, ExecptionRequeue = true)]
+    public class Retry_Faild_Fallback_False_Requeue_Consumer<TEvent> : IConsumer<TEvent>, IRetry, IEventBody<TEvent>
         where TEvent : class
     {
         public int RetryCount { get; private set; }
@@ -118,18 +118,18 @@ public partial class DefaultCustomerHostTests
         }
         public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
         {
-            RetryCount++;
+            RetryCount = retryCount;
             return Task.CompletedTask;
         }
         public Task<bool> FallbackAsync(EventBody<TEvent>? message)
         {
             IsFallbacked = true;
-            return Task.FromResult(true);
+            throw new OperationCanceledException();
         }
     }
 
-    [Consumer("tes", Qos = 1)]
-    public class Faild_Fallback_True_Consumer<TEvent> : IConsumer<TEvent>, IRetry, IEventBody<TEvent>
+    [Consumer("test", Qos = 1)]
+    public class Retry_Faild_Fallback_True_Consumer<TEvent> : IConsumer<TEvent>, IRetry, IEventBody<TEvent>
     where TEvent : class
     {
         public int RetryCount { get; private set; }
@@ -143,7 +143,7 @@ public partial class DefaultCustomerHostTests
         }
         public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
         {
-            RetryCount++;
+            RetryCount = retryCount;
             return Task.CompletedTask;
         }
         public Task<bool> FallbackAsync(EventBody<TEvent>? message)
