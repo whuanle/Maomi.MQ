@@ -17,7 +17,7 @@ namespace Web2.Events
 
     public class TestEventMiddleware : IEventMiddleware<TestEvent>
     {
-        public async Task HandleAsync(EventBody<TestEvent> @event, EventHandlerDelegate<TestEvent> next)
+        public async Task ExecuteAsync(EventBody<TestEvent> @event, EventHandlerDelegate<TestEvent> next)
         {
             await next(@event, CancellationToken.None);
         }
@@ -30,8 +30,9 @@ namespace Web2.Events
         {
         }
 
-        public async Task HandlerAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
+        public async Task ExecuteAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
         {
+            Console.WriteLine($"{@event.Id},事件 1 已被执行");
         }
     }
 
@@ -42,8 +43,9 @@ namespace Web2.Events
         {
         }
 
-        public async Task HandlerAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
+        public async Task ExecuteAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
         {
+            Console.WriteLine($"{@event.Id},事件 2 已被执行");
         }
     }
 }

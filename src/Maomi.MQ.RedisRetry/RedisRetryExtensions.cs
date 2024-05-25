@@ -15,7 +15,7 @@ namespace Maomi.MQ.RedisRetry
                 var logger = s.GetRequiredService<ILogger<DefaultRetryPolicyFactory>>();
                 var redis = func.Invoke(s);
                 var mqOptions = s.GetRequiredService<MqOptions>();
-                return new RedisRetryPolicyFactory(logger, redis, mqOptions);
+                return new RedisRetryPolicyFactory(logger, redis);
             });
             return services;
         }

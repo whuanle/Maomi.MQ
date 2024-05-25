@@ -11,3 +11,5 @@
 5，支持链路追踪、监控，日志带有 scope
 
 6，文档
+
+添加一个 BackgroudService ，等待所有 mq host 准备就绪

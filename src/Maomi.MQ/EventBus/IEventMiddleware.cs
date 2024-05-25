@@ -28,5 +28,23 @@ public interface IEventMiddleware<TEvent>
     /// <param name="eventBody">事件内容.</param>
     /// <param name="next">事件执行链委托.</param>
     /// <returns><see cref="Task"/>.</returns>
-    Task HandleAsync(EventBody<TEvent> eventBody, EventHandlerDelegate<TEvent> next);
+    Task ExecuteAsync(EventBody<TEvent> eventBody, EventHandlerDelegate<TEvent> next);
+
+    /// <summary>
+    /// Executed on each failure.If the exception is not caused by the ExecuteAsync method, such as a serialization error, then the retryCount = -1.<br />
+    /// 每次消费失败时执行.如果异常不是因为 ExecuteAsync 方法导致的，例如序列化错误等，则 retryCount = -1.
+    /// </summary>
+    /// <param name="ex">An anomaly occurs when consuming.<br />消费时出现的异常.</param>
+    /// <param name="retryCount">Current retry times.<br />当前重试次数.</param>
+    /// <param name="message"></param>
+    /// <returns><see cref="Task"/>.</returns>
+    public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message);
+
+    /// <summary>
+    /// Executed when the last retry fails.<br />
+    /// 最后一次重试失败时执行.
+    /// </summary>
+    /// <param name="message"></param>
+    /// <returns>Check whether the rollback is successful.</returns>
+    public Task<bool> FallbackAsync(EventBody<TEvent>? message);
 }

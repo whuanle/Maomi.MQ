@@ -1,4 +1,5 @@
 using Maomi.MQ;
+using RabbitMQ.Client;
 
 namespace Web1
 {
@@ -15,12 +16,13 @@ namespace Web1
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddLogging();
-            builder.Services.AddMaomiMQ(options =>
+            builder.Services.AddMaomiMQ((MqOptions options) =>
             {
                 options.WorkId = 1;
-            }, options =>
+            }, (ConnectionFactory options) =>
             {
                 options.HostName = "192.168.1.4";
+                options.ClientProvidedName = "Web1";
             }, new System.Reflection.Assembly[] { typeof(Program).Assembly });
 
             var app = builder.Build();

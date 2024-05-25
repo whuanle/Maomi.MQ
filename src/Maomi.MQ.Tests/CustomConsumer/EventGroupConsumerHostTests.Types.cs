@@ -58,7 +58,7 @@ public partial class EventGroupConsumerHostTests
             return Task.CompletedTask;
         }
 
-        public Task HandlerAsync(EventBody<TEvent> @event, CancellationToken cancellationToken)
+        public Task ExecuteAsync(EventBody<TEvent> @event, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }

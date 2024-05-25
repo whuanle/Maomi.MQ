@@ -4,6 +4,7 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
+using Maomi.MQ.Pool;
 using RabbitMQ.Client;
 
 namespace Maomi.MQ;
@@ -14,6 +15,11 @@ namespace Maomi.MQ;
 /// </summary>
 public interface IMessagePublisher
 {
+    /// <summary>
+    /// MQ connection pool.
+    /// </summary>
+    public ConnectionPool ConnectionPool { get; }
+
     /// <summary>
     /// Publish messagge.<br />
     /// 发布消息.

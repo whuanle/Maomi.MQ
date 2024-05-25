@@ -21,7 +21,7 @@ namespace Web2
             }, options =>
             {
                 options.HostName = "192.168.3.248";
-            }, typeof(Program).Assembly);
+            }, new System.Reflection.Assembly[] { typeof(Program).Assembly });
 
 
             var app = builder.Build();

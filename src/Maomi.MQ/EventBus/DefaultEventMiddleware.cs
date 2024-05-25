@@ -10,7 +10,19 @@ namespace Maomi.MQ.EventBus;
 public class DefaultEventMiddleware<TEvent> : IEventMiddleware<TEvent>
 {
     /// <inheritdoc />
-    public Task HandleAsync(EventBody<TEvent> eventBody, EventHandlerDelegate<TEvent> next)
+    public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
+    {
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public Task<bool> FallbackAsync(EventBody<TEvent>? message)
+    {
+        return Task.FromResult(false);
+    }
+
+    /// <inheritdoc />
+    public Task ExecuteAsync(EventBody<TEvent> eventBody, EventHandlerDelegate<TEvent> next)
     {
         return next(eventBody, CancellationToken.None);
     }

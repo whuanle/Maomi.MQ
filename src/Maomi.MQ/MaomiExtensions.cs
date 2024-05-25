@@ -112,6 +112,7 @@ public static partial class MaomiExtensions
             item.Build(services);
         }
 
+        services.AddHostedService<WaitReadyHostService>();
         return services;
     }
 }

@@ -1,5 +1,6 @@
 using Maomi.MQ;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 using Web1.Models;
 
 namespace Web1.Controllers
@@ -10,20 +11,17 @@ namespace Web1.Controllers
     {
         private readonly IMessagePublisher _messagePublisher;
 
-        private readonly ILogger<IndexController> _logger;
-
-        public IndexController(ILogger<IndexController> logger, IMessagePublisher messagePublisher)
+        public IndexController(IMessagePublisher messagePublisher)
         {
-            _logger = logger;
             _messagePublisher = messagePublisher;
         }
 
         [HttpGet("publish")]
         public async Task<string> Publisher()
         {
-            for(var i = 0; i < 100; i++)
+            for (var i = 0; i < 100; i++)
             {
-                await _messagePublisher.PublishAsync("web1",new TestEvent
+                await _messagePublisher.PublishAsync(queue: "web1", message: new TestEvent
                 {
                     Id = i
                 });

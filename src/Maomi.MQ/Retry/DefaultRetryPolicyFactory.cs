@@ -46,6 +46,12 @@ public class DefaultRetryPolicyFactory : IRetryPolicyFactory
         return Task.FromResult(retryPolicy);
     }
 
+    /// <inheritdoc/>
+    public Task<AsyncRetryPolicy> CreatePolicy(string queue, long id)
+    {
+        return CreatePolicy(queue);
+    }
+
     /// <summary>
     /// Executed when retry fails.
     /// </summary>

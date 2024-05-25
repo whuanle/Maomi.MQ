@@ -119,7 +119,7 @@ namespace ConsoleApp1
 
         public class MyEventMiddleware : IEventMiddleware<TestEvent>
         {
-            public async Task HandleAsync(EventBody<TestEvent> @event, EventHandlerDelegate<TestEvent> next)
+            public async Task ExecuteAsync(EventBody<TestEvent> @event, EventHandlerDelegate<TestEvent> next)
             {
                 await next(@event, CancellationToken.None);
             }
@@ -132,7 +132,7 @@ namespace ConsoleApp1
             {
             }
 
-            public async Task HandlerAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
+            public async Task ExecuteAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
             {
             }
         }

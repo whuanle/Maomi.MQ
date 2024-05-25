@@ -49,7 +49,7 @@ public class EventBusTypeFilter : ITypeFilter
                 eventInfo.Middleware = typeof(DefaultEventMiddleware<>).MakeGenericType(eventType);
             }
 
-            services.AddTransient(typeof(HandlerMediator<>).MakeGenericType(eventType));
+            services.AddTransient(typeof(IHandlerMediator<>).MakeGenericType(eventType), typeof(HandlerMediator<>).MakeGenericType(eventType));
 
             services.AddKeyedSingleton(serviceKey: item.Key, serviceType: typeof(EventInfo), implementationInstance: eventInfo);
             services.AddKeyedSingleton(serviceKey: eventInfo.EventType, serviceType: typeof(ConsumerOptions), implementationInstance: new ConsumerOptions

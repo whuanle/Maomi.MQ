@@ -4,6 +4,9 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
+#pragma warning disable SA1401
+#pragma warning disable SA1600
+
 using Maomi.MQ.Defaults;
 using Maomi.MQ.Retry;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,18 +26,15 @@ namespace Maomi.MQ.EventBus;
 /// </summary>
 public partial class EventGroupConsumerHostService : BackgroundService
 {
-    private static readonly MethodInfo ConsumerMethod = typeof(EventGroupConsumerHostService)
-        .GetMethod("ConsumerAsync", BindingFlags.Instance | BindingFlags.NonPublic)!;
-
-    private readonly IServiceProvider _serviceProvider;
-    private readonly DefaultMqOptions _connectionOptions;
-    private readonly IConnectionFactory _connectionFactory;
-    private readonly IJsonSerializer _jsonSerializer;
-    private readonly IRetryPolicyFactory _policyFactory;
-    private readonly ILogger<EventGroupConsumerHostService> _logger;
-    private readonly EventGroupInfo _eventGroupInfo;
-    private readonly IWaitReadyFactory _waitReadyFactory;
-    private readonly TaskCompletionSource _taskCompletionSource;
+    protected readonly IServiceProvider _serviceProvider;
+    protected readonly DefaultMqOptions _connectionOptions;
+    protected readonly IConnectionFactory _connectionFactory;
+    protected readonly IJsonSerializer _jsonSerializer;
+    protected readonly IRetryPolicyFactory _policyFactory;
+    protected readonly ILogger<EventGroupConsumerHostService> _logger;
+    protected readonly EventGroupInfo _eventGroupInfo;
+    protected readonly IWaitReadyFactory _waitReadyFactory;
+    protected readonly TaskCompletionSource _taskCompletionSource;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EventGroupConsumerHostService"/> class.
@@ -74,20 +74,23 @@ public partial class EventGroupConsumerHostService : BackgroundService
     {
         try
         {
-            using (IConnection connection = await _connectionFactory.CreateConnectionAsync())
+            if (_connectionOptions.AutoQueueDeclare)
             {
-                using (IChannel channel = await connection.CreateChannelAsync())
+                using (IConnection connection = await _connectionFactory.CreateConnectionAsync())
                 {
-                    foreach (var item in _eventGroupInfo.EventInfos)
+                    using (IChannel channel = await connection.CreateChannelAsync())
                     {
-                        await channel.QueueDeclareAsync(
-                            queue: item.Value.Queue,
-                            durable: true,
-                            exclusive: false,
-                            autoDelete: false,
-                            arguments: null);
+                        foreach (var item in _eventGroupInfo.EventInfos)
+                        {
+                            await channel.QueueDeclareAsync(
+                                queue: item.Value.Queue,
+                                durable: true,
+                                exclusive: false,
+                                autoDelete: false,
+                                arguments: null);
 
-                        _logger.LogDebug("Declared queue [{Queue}].", item.Value.Queue);
+                            _logger.LogDebug("Declared queue [{Queue}].", item.Value.Queue);
+                        }
                     }
                 }
             }
@@ -129,7 +132,7 @@ public partial class EventGroupConsumerHostService : BackgroundService
 
             consumer.Received += async (sender, eventArgs) =>
             {
-                await (Task)consumerHandler.DynamicInvoke(this, new object[] { item.Value, channel, eventArgs })!;
+                await consumerHandler(this, item.Value, channel, eventArgs)!;
             };
 
             await channel.BasicConsumeAsync(
@@ -186,28 +189,34 @@ public partial class EventGroupConsumerHostService : BackgroundService
             // Each retry.
             // 每次失败时执行.
             int retryCount = 0;
-            var retryEachPolicy = Policy.Handle<Exception>().RetryAsync(async (ex, count) =>
-            {
-                try
-                {
-                    retryCount++;
-                    await consumer.FaildAsync(ex, retryCount, eventBody);
-                }
-                catch (Exception faildEx)
-                {
-                    _logger.LogWarning(faildEx, "An error occurred while executing the FaildAsync method,queue [{Queue}],id [{Id}].", eventInfo.Queue, eventBody.Id);
-                }
-            });
 
             // Custom retry policy.
             // 自定义重试策略.
             var customRetryPolicy = await _policyFactory.CreatePolicy(eventInfo.Queue);
 
-            var policyWrap = fallbackPolicy.WrapAsync(customRetryPolicy).WrapAsync(retryEachPolicy);
+            var policyWrap = fallbackPolicy.WrapAsync(customRetryPolicy);
 
             var executeResult = await policyWrap.ExecuteAsync(async () =>
             {
-                await consumer.ExecuteAsync(eventBody);
+                try
+                {
+                    await consumer.ExecuteAsync(eventBody);
+                }
+                catch (Exception ex)
+                {
+                    try
+                    {
+                        Interlocked.Increment(ref retryCount);
+                        await consumer.FaildAsync(ex, retryCount, eventBody);
+                    }
+                    catch (Exception faildEx)
+                    {
+                        _logger.LogWarning(faildEx, "An error occurred while executing the FaildAsync method,queue [{Queue}],id [{Id}].", eventInfo.Queue, eventBody.Id);
+                    }
+
+                    throw;
+                }
+
                 return true;
             });
 
@@ -249,22 +258,39 @@ public partial class EventGroupConsumerHostService : BackgroundService
 public partial class EventGroupConsumerHostService
 {
     /// <summary>
+    /// Consumer method.
+    /// </summary>
+    protected static readonly MethodInfo ConsumerMethod = typeof(EventGroupConsumerHostService)
+        .GetMethod(nameof(ConsumerAsync), BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+    /// <summary>
+    /// ConsumerHandler.
+    /// </summary>
+    /// <param name="hostService"></param>
+    /// <param name="eventInfo"></param>
+    /// <param name="channel"></param>
+    /// <param name="eventArgs"></param>
+    /// <returns><see cref="Task"/>.</returns>
+    protected delegate Task ConsumerHandler(EventGroupConsumerHostService hostService, EventInfo eventInfo, IChannel channel, BasicDeliverEventArgs eventArgs);
+
+    /// <summary>
     /// Build delegate.
     /// </summary>
-    /// <param name="type"></param>
+    /// <param name="eventType"></param>
     /// <returns>Delegate.</returns>
-    protected static Delegate BuildConsumerHandler(Type type)
+    protected ConsumerHandler BuildConsumerHandler(Type eventType)
     {
-        ParameterExpression consumer = Expression.Variable(typeof(EventGroupConsumerHostService), "coosumer");
+        ParameterExpression consumer = Expression.Variable(typeof(EventGroupConsumerHostService), "consumer");
         ParameterExpression eventInfo = Expression.Parameter(typeof(EventInfo), "eventInfo");
         ParameterExpression channel = Expression.Parameter(typeof(IChannel), "channel");
         ParameterExpression eventArgs = Expression.Parameter(typeof(BasicDeliverEventArgs), "eventArgs");
-
         MethodCallExpression method = Expression.Call(
             consumer,
-            ConsumerMethod.MakeGenericMethod(type),
-            new Expression[] { eventInfo, channel, eventArgs });
+            ConsumerMethod.MakeGenericMethod(eventType),
+            eventInfo,
+            channel,
+            eventArgs);
 
-        return Expression.Lambda(method).Compile();
+        return Expression.Lambda<ConsumerHandler>(method, consumer, eventInfo, channel, eventArgs).Compile();
     }
 }

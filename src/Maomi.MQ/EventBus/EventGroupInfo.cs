@@ -23,5 +23,4 @@ public class EventGroupInfo
     /// 事件列表.
     /// </summary>
     public Dictionary<string, EventInfo> EventInfos { get; init; } = null!;
-
 }

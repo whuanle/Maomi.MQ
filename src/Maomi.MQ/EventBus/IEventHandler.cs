@@ -19,7 +19,7 @@ public interface IEventHandler<TEvent>
     /// <param name="eventBody">Event object.<br />事件对象.</param>
     /// <param name="cancellationToken"></param>
     /// <returns><see cref="Task"/>.</returns>
-    Task HandlerAsync(EventBody<TEvent> eventBody, CancellationToken cancellationToken);
+    Task ExecuteAsync(EventBody<TEvent> eventBody, CancellationToken cancellationToken);
 
     /// <summary>
     /// 补偿事件.

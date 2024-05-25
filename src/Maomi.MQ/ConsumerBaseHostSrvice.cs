@@ -4,6 +4,9 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
+#pragma warning disable SA1401
+#pragma warning disable SA1600
+
 using Maomi.MQ.Defaults;
 using Maomi.MQ.Retry;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +15,8 @@ using Microsoft.Extensions.Logging;
 using Polly;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Diagnostics;
+using System.Text;
 
 namespace Maomi.MQ;
 
@@ -57,19 +62,22 @@ public abstract class ConsumerBaseHostSrvice<TConsumer, TEvent> : BackgroundServ
     /// <summary>
     /// <see cref="IRetryPolicyFactory"/>.
     /// </summary>
-    private readonly IRetryPolicyFactory _policyFactory;
+    protected readonly IRetryPolicyFactory _policyFactory;
 
     /// <summary>
     /// <see cref="IWaitReadyFactory"/>.
     /// </summary>
-    private readonly IWaitReadyFactory _waitReadyFactory;
+    protected readonly IWaitReadyFactory _waitReadyFactory;
 
     /// <summary>
     /// logger.
     /// </summary>
     protected readonly ILogger<ConsumerBaseHostSrvice<TConsumer, TEvent>> _logger;
 
-    private readonly TaskCompletionSource _taskCompletionSource;
+    /// <summary>
+    /// Task.
+    /// </summary>
+    protected readonly TaskCompletionSource _taskCompletionSource;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConsumerBaseHostSrvice{TConsumer, TEvent}"/> class.
@@ -110,18 +118,21 @@ public abstract class ConsumerBaseHostSrvice<TConsumer, TEvent> : BackgroundServ
     {
         try
         {
-            using (IConnection connection = await _connectionFactory.CreateConnectionAsync())
+            if (_connectionOptions.AutoQueueDeclare)
             {
-                using (IChannel channel = await connection.CreateChannelAsync())
+                using (IConnection connection = await _connectionFactory.CreateConnectionAsync())
                 {
-                    // Create queues based on consumers.
-                    // 根据消费者创建队列.
-                    await channel.QueueDeclareAsync(
-                        queue: _consumerOptions.Queue,
-                        durable: true,
-                        exclusive: false,
-                        autoDelete: false,
-                        arguments: null);
+                    using (IChannel channel = await connection.CreateChannelAsync())
+                    {
+                        // Create queues based on consumers.
+                        // 根据消费者创建队列.
+                        await channel.QueueDeclareAsync(
+                            queue: _consumerOptions.Queue,
+                            durable: true,
+                            exclusive: false,
+                            autoDelete: false,
+                            arguments: null);
+                    }
                 }
             }
 
@@ -173,6 +184,9 @@ public abstract class ConsumerBaseHostSrvice<TConsumer, TEvent> : BackgroundServ
     /// <returns><see cref="Task"/>.</returns>
     protected virtual async Task ConsumerAsync(IChannel channel, BasicDeliverEventArgs eventArgs)
     {
+        _ = MaomiMQActivitySource.TryGetExistingContext(eventArgs.BasicProperties, out var activityContext);
+        using var activity = MaomiMQActivitySource.BuildActivity($"{_consumerOptions.Queue} receive", ActivityKind.Consumer, activityContext);
+
         var scope = _serviceProvider.CreateScope();
         var ioc = scope.ServiceProvider;
 
@@ -182,6 +196,7 @@ public abstract class ConsumerBaseHostSrvice<TConsumer, TEvent> : BackgroundServ
         try
         {
             eventBody = _jsonSerializer.Deserialize<EventBody<TEvent>>(eventArgs.Body.Span)!;
+            activity?.SetTag("message.id", eventBody.Id);
 
             // Executed on the last retry.
             // 最后一次重试失败时执行.
@@ -200,31 +215,37 @@ public abstract class ConsumerBaseHostSrvice<TConsumer, TEvent> : BackgroundServ
                     }
                 });
 
-            // Each retry.
-            // 每次失败时执行.
             int retryCount = 0;
-            var retryEachPolicy = Policy.Handle<Exception>().RetryAsync(async (ex, count) =>
-            {
-                try
-                {
-                    retryCount++;
-                    await consumer.FaildAsync(ex, retryCount, eventBody);
-                }
-                catch (Exception faildEx)
-                {
-                    _logger.LogWarning(faildEx, "An error occurred while executing the FaildAsync method,queue [{Queue}],id [{Id}].", _consumerOptions.Queue, eventBody.Id);
-                }
-            });
 
             // Custom retry policy.
             // 自定义重试策略.
             var customRetryPolicy = await _policyFactory.CreatePolicy(_consumerOptions.Queue);
 
-            var policyWrap = fallbackPolicy.WrapAsync(customRetryPolicy).WrapAsync(retryEachPolicy);
+            var policyWrap = fallbackPolicy.WrapAsync(customRetryPolicy);
 
             var executeResult = await policyWrap.ExecuteAsync(async () =>
             {
-                await consumer.ExecuteAsync(eventBody);
+                try
+                {
+                    await consumer.ExecuteAsync(eventBody);
+                }
+                catch (Exception ex)
+                {
+                    // Each retry.
+                    // 每次失败时执行.
+                    try
+                    {
+                        Interlocked.Increment(ref retryCount);
+                        await consumer.FaildAsync(ex, retryCount, eventBody);
+                    }
+                    catch (Exception faildEx)
+                    {
+                        _logger.LogWarning(faildEx, "An error occurred while executing the FaildAsync method,queue [{Queue}],id [{Id}].", _consumerOptions.Queue, eventBody.Id);
+                    }
+
+                    throw;
+                }
+
                 return true;
             });
 
@@ -256,5 +277,23 @@ public abstract class ConsumerBaseHostSrvice<TConsumer, TEvent> : BackgroundServ
 
             await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: _consumerOptions.ExecptionRequeue);
         }
+    }
+
+    private IEnumerable<string> ExtractTraceContextFromBasicProperties(ReadOnlyBasicProperties props, string key)
+    {
+        try
+        {
+            if (props.Headers?.TryGetValue(key, out var value) == true)
+            {
+                var bytes = value as byte[];
+                return new[] { Encoding.UTF8.GetString(bytes!) };
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to extract trace context.");
+        }
+
+        return Enumerable.Empty<string>();
     }
 }

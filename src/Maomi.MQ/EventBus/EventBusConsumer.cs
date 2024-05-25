@@ -20,7 +20,7 @@ public class EventBusConsumer<TEvent> : IConsumer<TEvent>
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IEventMiddleware<TEvent> _eventMiddleware;
-    private readonly HandlerMediator<TEvent> _handlerBroker;
+    private readonly IHandlerMediator<TEvent> _handlerBroker;
     private readonly ILogger<EventBusConsumer<TEvent>> _logger;
 
     /// <summary>
@@ -29,7 +29,7 @@ public class EventBusConsumer<TEvent> : IConsumer<TEvent>
     /// <param name="eventMiddleware"></param>
     /// <param name="handlerBroker"></param>
     /// <param name="logger"></param>
-    public EventBusConsumer(IEventMiddleware<TEvent> eventMiddleware, HandlerMediator<TEvent> handlerBroker, ILogger<EventBusConsumer<TEvent>> logger, IServiceProvider serviceProvider)
+    public EventBusConsumer(IEventMiddleware<TEvent> eventMiddleware, IHandlerMediator<TEvent> handlerBroker, ILogger<EventBusConsumer<TEvent>> logger, IServiceProvider serviceProvider)
     {
         _eventMiddleware = eventMiddleware;
         _handlerBroker = handlerBroker;
@@ -40,19 +40,18 @@ public class EventBusConsumer<TEvent> : IConsumer<TEvent>
     /// <inheritdoc />
     public virtual async Task ExecuteAsync(EventBody<TEvent> message)
     {
-        await _eventMiddleware.HandleAsync(message, _handlerBroker.Handler);
+        await _eventMiddleware.ExecuteAsync(message, _handlerBroker.ExecuteAsync);
     }
 
     /// <inheritdoc />
     public virtual Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
     {
-        return Task.CompletedTask;
+        return _eventMiddleware.FaildAsync(ex, retryCount, message);
     }
 
     /// <inheritdoc />
     public virtual Task<bool> FallbackAsync(EventBody<TEvent>? message)
     {
-        var eventInfo = _serviceProvider.GetRequiredKeyedService<EventInfo>(typeof(TEvent));
-        return Task.FromResult(!eventInfo.RetryFaildRequeue);
+        return _eventMiddleware.FallbackAsync(message);
     }
 }

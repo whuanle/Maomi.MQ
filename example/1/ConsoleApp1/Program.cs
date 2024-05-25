@@ -24,8 +24,9 @@ namespace ConsoleApp1
                         options.WorkId = 1;
                     }, options =>
                     {
-                        options.HostName = "192.168.3.248";
-                    }, typeof(Program).Assembly);
+                        options.HostName = "127.0.0.1";
+                        options.ClientProvidedName = "Web1";
+                    }, new System.Reflection.Assembly[] { typeof(Program).Assembly });
                     services.AddHostedService<MyPublishAsync>();
                 }).Build();
 

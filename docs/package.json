@@ -1,0 +1,14 @@
+{
+  "name": "maomi_doc",
+  "version": "1.0.0",
+  "description": "作者：痴者工良",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "graceful-fs": "^4.2.11"
+  }
+}

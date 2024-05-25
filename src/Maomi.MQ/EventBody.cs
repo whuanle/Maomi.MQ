@@ -19,6 +19,11 @@ public class EventBody<TEvent>
     public long Id { get; init; }
 
     /// <summary>
+    /// Queue.
+    /// </summary>
+    public string Queue { get; init; }
+
+    /// <summary>
     /// 事件创建时间.
     /// </summary>
     public DateTimeOffset CreateTime { get; init; }

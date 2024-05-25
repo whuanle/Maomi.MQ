@@ -106,7 +106,7 @@ public class EventbusTypeFilterTests
     public class Test1_0EventHandler : IEventHandler<Test1_0Event>
     {
         public Task CancelAsync(EventBody<Test1_0Event> eventBody, CancellationToken cancellationToken) => Task.CompletedTask;
-        public Task HandlerAsync(EventBody<Test1_0Event> eventBody, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task ExecuteAsync(EventBody<Test1_0Event> eventBody, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     [EventTopic("test")]
@@ -117,7 +117,7 @@ public class EventbusTypeFilterTests
     public class Test1_1EventHandler : IEventHandler<Test1_1Event>
     {
         public Task CancelAsync(EventBody<Test1_1Event> eventBody, CancellationToken cancellationToken) => Task.CompletedTask;
-        public Task HandlerAsync(EventBody<Test1_1Event> eventBody, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task ExecuteAsync(EventBody<Test1_1Event> eventBody, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     [EventTopic("test")]
@@ -130,7 +130,7 @@ public class EventbusTypeFilterTests
     public class Test2EventHandler : IEventHandler<Test2Event>
     {
         public Task CancelAsync(EventBody<Test2Event> eventBody, CancellationToken cancellationToken) => Task.CompletedTask;
-        public Task HandlerAsync(EventBody<Test2Event> eventBody, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task ExecuteAsync(EventBody<Test2Event> eventBody, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     [EventTopic("test", Group = "group", Qos = 10, RetryFaildRequeue = true, ExecptionRequeue = true)]
@@ -143,12 +143,12 @@ public class EventbusTypeFilterTests
     public class Test3EventHandler : IEventHandler<Test3Event>
     {
         public Task CancelAsync(EventBody<Test3Event> eventBody, CancellationToken cancellationToken) => Task.CompletedTask;
-        public Task HandlerAsync(EventBody<Test3Event> eventBody, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task ExecuteAsync(EventBody<Test3Event> eventBody, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     public class Test3EventMiddleware : IEventMiddleware<Test3Event>
     {
-        public Task HandleAsync(EventBody<Test3Event> eventBody, EventHandlerDelegate<Test3Event> next)
+        public Task ExecuteAsync(EventBody<Test3Event> eventBody, EventHandlerDelegate<Test3Event> next)
         {
             return next(eventBody, CancellationToken.None);
         }

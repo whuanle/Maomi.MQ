@@ -25,15 +25,6 @@ namespace Web3.Events
         }
     }
 
-
-    public class TestEventMiddleware : IEventMiddleware<Test1Event>
-    {
-        public async Task HandleAsync(EventBody<Test1Event> @event, EventHandlerDelegate<Test1Event> next)
-        {
-            await next(@event, CancellationToken.None);
-        }
-    }
-
     [EventOrder(0)]
     public class My1EventEventHandler : IEventHandler<Test1Event>
     {
@@ -41,7 +32,7 @@ namespace Web3.Events
         {
         }
 
-        public async Task HandlerAsync(EventBody<Test1Event> @event, CancellationToken cancellationToken)
+        public async Task ExecuteAsync(EventBody<Test1Event> @event, CancellationToken cancellationToken)
         {
         }
     }
@@ -53,7 +44,7 @@ namespace Web3.Events
         {
         }
 
-        public async Task HandlerAsync(EventBody<Test1Event> @event, CancellationToken cancellationToken)
+        public async Task ExecuteAsync(EventBody<Test1Event> @event, CancellationToken cancellationToken)
         {
         }
     }
@@ -61,7 +52,17 @@ namespace Web3.Events
 
     public class Test2EventMiddleware : IEventMiddleware<Test2Event>
     {
-        public async Task HandleAsync(EventBody<Test2Event> @event, EventHandlerDelegate<Test2Event> next)
+        public Task FaildAsync(Exception ex, int retryCount, EventBody<Test2Event>? message)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task<bool> FallbackAsync(EventBody<Test2Event>? message)
+        {
+            return Task.FromResult(true);
+        }
+
+        public async Task ExecuteAsync(EventBody<Test2Event> @event, EventHandlerDelegate<Test2Event> next)
         {
             await next(@event, CancellationToken.None);
         }
@@ -74,7 +75,7 @@ namespace Web3.Events
         {
         }
 
-        public async Task HandlerAsync(EventBody<Test2Event> @event, CancellationToken cancellationToken)
+        public async Task ExecuteAsync(EventBody<Test2Event> @event, CancellationToken cancellationToken)
         {
         }
     }
@@ -86,7 +87,7 @@ namespace Web3.Events
         {
         }
 
-        public async Task HandlerAsync(EventBody<Test2Event> @event, CancellationToken cancellationToken)
+        public async Task ExecuteAsync(EventBody<Test2Event> @event, CancellationToken cancellationToken)
         {
         }
     }

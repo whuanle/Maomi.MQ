@@ -14,7 +14,7 @@ namespace Maomi.MQ.EventBus;
 /// 事件中介者，用于生成有顺序的事件执行流程和补偿流程.
 /// </summary>
 /// <typeparam name="TEvent">Event mode.</typeparam>
-public class HandlerMediator<TEvent>
+public class HandlerMediator<TEvent> : IHandlerMediator<TEvent>
     where TEvent : class
 {
     private readonly IServiceProvider _serviceProvider;
@@ -30,14 +30,8 @@ public class HandlerMediator<TEvent>
         _eventInfo = _serviceProvider.GetRequiredKeyedService<EventInfo>(typeof(TEvent));
     }
 
-    /// <summary>
-    /// Execute the event, and the method will generate a <see cref="EventHandlerDelegate{TEvent}" /> delegate, passed to <see cref="IEventMiddleware{TEvent}"/>.<br />
-    /// 执行事件，该方法会被生成 <see cref="EventHandlerDelegate{TEvent}" /> 委托，传递到 <see cref="IEventMiddleware{TEvent}"/> 中.
-    /// </summary>
-    /// <param name="eventBody"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns><see cref="Task"/>.</returns>
-    public async Task Handler(EventBody<TEvent> eventBody, CancellationToken cancellationToken)
+    /// <inheritdoc/>
+    public async Task ExecuteAsync(EventBody<TEvent> eventBody, CancellationToken cancellationToken)
     {
         var logger = _serviceProvider.GetRequiredService<ILogger<TEvent>>();
         List<IEventHandler<TEvent>> eventHandlers = new List<IEventHandler<TEvent>>(_eventInfo.Handlers.Count);
@@ -55,7 +49,7 @@ public class HandlerMediator<TEvent>
                 ArgumentNullException.ThrowIfNull(eventHandler);
 
                 eventHandlers.Add(eventHandler);
-                await eventHandler.HandlerAsync(eventBody, cancellationToken);
+                await eventHandler.ExecuteAsync(eventBody, cancellationToken);
                 if (cancellationToken.IsCancellationRequested)
                 {
                     throw new OperationCanceledException(cancellationToken);
@@ -73,7 +67,7 @@ public class HandlerMediator<TEvent>
                     await eventHandler.CancelAsync(eventBody, cancellationToken);
                 }
 
-                return;
+                throw;
             }
         }
     }
