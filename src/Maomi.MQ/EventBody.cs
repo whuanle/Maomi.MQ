@@ -4,6 +4,9 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
+using Maomi.MQ.Diagnostics;
+using System.Diagnostics;
+
 namespace Maomi.MQ;
 
 /// <summary>
@@ -21,7 +24,7 @@ public class EventBody<TEvent>
     /// <summary>
     /// Queue.
     /// </summary>
-    public string Queue { get; init; }
+    public string Queue { get; init; } = null!;
 
     /// <summary>
     /// 事件创建时间.
@@ -32,4 +35,32 @@ public class EventBody<TEvent>
     /// 事件体.
     /// </summary>
     public TEvent Body { get; init; } = default!;
+
+    /// <summary>
+    /// Get tags.
+    /// </summary>
+    /// <returns><see cref="IReadOnlyDictionary{string, object?}"/>.</returns>
+    public virtual IReadOnlyDictionary<string, object?> GetHeaders()
+    {
+        return new Dictionary<string, object?>
+        {
+            { DiagnosticName.Event.Id, Id },
+            { DiagnosticName.Event.CreateTime, CreateTime },
+            { DiagnosticName.Event.Queue, Queue },
+        };
+    }
+
+    /// <summary>
+    /// Get tags.
+    /// </summary>
+    /// <returns><see cref="ActivityTagsCollection"/>.</returns>
+    public virtual ActivityTagsCollection GetTags()
+    {
+        return new ActivityTagsCollection
+        {
+            { DiagnosticName.Event.Id, Id },
+            { DiagnosticName.Event.CreateTime, CreateTime },
+            { DiagnosticName.Event.Queue, Queue },
+        };
+    }
 }

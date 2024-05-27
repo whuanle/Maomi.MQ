@@ -23,6 +23,12 @@ public class EventInfo
     public string Queue { get; internal set; } = null!;
 
     /// <summary>
+    /// Bind the death message queue.<br />
+    /// 绑定死信队列.
+    /// </summary>
+    public string? DeadQueue { get; set; }
+
+    /// <summary>
     /// Event type.
     /// </summary>
     public Type EventType { get; internal set; } = null!;

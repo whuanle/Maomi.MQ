@@ -10,7 +10,7 @@ namespace Maomi.MQ;
 /// Consumer.<br />
 /// 消费者配置.
 /// </summary>
-[AttributeUsage(AttributeTargets.Class,AllowMultiple = false,Inherited = true)]
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
 public class ConsumerAttribute : Attribute
 {
     /// <summary>
@@ -18,6 +18,12 @@ public class ConsumerAttribute : Attribute
     /// 队列名称.
     /// </summary>
     public string Queue { get; set; }
+
+    /// <summary>
+    /// Bind the death message queue.<br />
+    /// 绑定死信队列.
+    /// </summary>
+    public string? DeadQueue { get; set; }
 
     private ushort _qos = 10;
 

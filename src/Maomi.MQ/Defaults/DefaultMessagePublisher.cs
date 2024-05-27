@@ -7,6 +7,7 @@
 #pragma warning disable SA1204
 
 using IdGen;
+using Maomi.MQ.Diagnostics;
 using Maomi.MQ.Pool;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
@@ -24,6 +25,8 @@ public class DefaultMessagePublisher : IMessagePublisher
     private readonly ConnectionPool _connectionPool;
     private readonly IIdGenerator<long> _idGen;
     private readonly ILogger<DefaultMessagePublisher> _logger;
+
+    private readonly DiagnosticsWriter _diagnosticsWriter = new PublisherDiagnosticsWriter();
 
     /// <inheritdoc />
     public ConnectionPool ConnectionPool => _connectionPool;
@@ -56,7 +59,6 @@ public class DefaultMessagePublisher : IMessagePublisher
     {
         var basicProperties = new BasicProperties()
         {
-            //AppId = _connectionOptions.ApplicationName,
             DeliveryMode = DeliveryModes.Persistent
         };
 
@@ -85,16 +87,11 @@ public class DefaultMessagePublisher : IMessagePublisher
     /// <inheritdoc />
     public async Task PublishAsync<TEvent>(string queue, EventBody<TEvent> message, BasicProperties properties)
     {
-        var activityName = $"send {queue}";
+        var activityTags = message.GetTags();
+        using Activity? activity = _diagnosticsWriter.WriteStarted(DiagnosticName.Activity.Publisher, DateTimeOffset.Now, activityTags);
 
-        var activityContext = MaomiMQActivitySource.GetContext();
-        using Activity? activity = MaomiMQActivitySource.BuildActivity($"{message.Id} publish", ActivityKind.Producer, activityContext);
-
-        if (activity != null)
-        {
-            //Propagator.Inject(new PropagationContext(activity.Context, Baggage.Current), properties, InjectTraceContextIntoBasicProperties);
-            AddMessagingTags(activity, message);
-        }
+        properties.Headers = properties.Headers ?? new Dictionary<string, object?>();
+        properties.Headers?.TryAdd(DiagnosticName.Event.Id, message.Id);
 
         var connection = _connectionPool.Get();
         try
@@ -107,37 +104,19 @@ public class DefaultMessagePublisher : IMessagePublisher
                 mandatory: true);
 
             _logger.LogDebug("The message with id [{Id}] has been sent.", message.Id);
+            activity?.SetStatus(ActivityStatusCode.Ok);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "The message with id [{Id}] failed to send.", message.Id);
+            _diagnosticsWriter.WriteException(activity, ex);
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             throw;
         }
         finally
         {
             _connectionPool.Return(connection);
+            _diagnosticsWriter.WriteStopped(activity, DateTimeOffset.Now, activityTags);
         }
-    }
-
-    private void InjectTraceContextIntoBasicProperties(BasicProperties props, string key, string value)
-    {
-        try
-        {
-            if (props.Headers == null)
-            {
-                props.Headers = new Dictionary<string, object?>();
-            }
-
-            props.Headers[key] = value;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to inject trace context.");
-        }
-    }
-
-    private static void AddMessagingTags<TEvent>(Activity activity, EventBody<TEvent> message)
-    {
-        activity?.SetTag("event.id", message.Id);
     }
 }

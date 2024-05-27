@@ -19,6 +19,12 @@ public class EventTopicAttribute : Attribute
     public string Queue { get; set; } = null!;
 
     /// <summary>
+    /// Bind the death message queue.<br />
+    /// 绑定死信队列.
+    /// </summary>
+    public string? DeadQueue { get; set; }
+
+    /// <summary>
     /// Group.<br />
     /// 分组名称.
     /// </summary>

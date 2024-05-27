@@ -169,7 +169,7 @@ public partial class DefaultCustomerHostTests
         // Analog received data.
         public async Task PublishAsync(IChannel channel, BasicDeliverEventArgs eventArgs)
         {
-            await base.ConsumerAsync(channel, eventArgs);
+            await base.ConsumerAsync<TEvent>(channel, _consumerOptions, eventArgs);
         }
     }
 }

@@ -152,5 +152,15 @@ public class EventbusTypeFilterTests
         {
             return next(eventBody, CancellationToken.None);
         }
+
+        public Task FaildAsync(Exception ex, int retryCount, EventBody<Test3Event>? message)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task<bool> FallbackAsync(EventBody<Test3Event>? message)
+        {
+            return Task.FromResult(true);
+        }
     }
 }

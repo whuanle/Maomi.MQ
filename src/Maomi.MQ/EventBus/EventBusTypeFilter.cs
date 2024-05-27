@@ -167,6 +167,7 @@ public class EventBusTypeFilter : ITypeFilter
             {
                 EventType = eventType,
                 Queue = eventTopicAttribute.Queue,
+                DeadQueue = eventInfo.DeadQueue,
                 Qos = eventTopicAttribute.Qos,
                 Group = eventTopicAttribute.Group,
                 RetryFaildRequeue = eventTopicAttribute.RetryFaildRequeue,
