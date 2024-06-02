@@ -33,7 +33,7 @@ public class EventbusTypeFilterTests
         typeFilter.Build(services);
 
         var serviceDescriptors = services.ToArray();
-        var handlerMediator = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(HandlerMediator<Test2Event>));
+        var handlerMediator = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(IHandlerMediator<Test2Event>));
         Assert.NotNull(handlerMediator);
         Assert.Equal(ServiceLifetime.Transient, handlerMediator.Lifetime);
 
@@ -71,7 +71,7 @@ public class EventbusTypeFilterTests
         typeFilter.Build(services);
 
         var serviceDescriptors = services.ToArray();
-        var handlerMediator = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(HandlerMediator<Test3Event>)); ;
+        var handlerMediator = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(IHandlerMediator<Test3Event>)); ;
         Assert.NotNull(handlerMediator);
         Assert.Equal(ServiceLifetime.Transient, handlerMediator.Lifetime);
 

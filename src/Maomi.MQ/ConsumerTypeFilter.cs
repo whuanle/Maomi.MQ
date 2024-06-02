@@ -56,7 +56,7 @@ public class ConsumerTypeFilter : ITypeFilter
 
         // Each IConsumer<T> corresponds to one queue and one ConsumerHostSrvice<T>.
         // 每个 IConsumer<T> 对应一个队列、一个 ConsumerHostSrvice<T>.
-        services.Add(new ServiceDescriptor(consumerInterface, type, ServiceLifetime.Transient));
+        services.Add(new ServiceDescriptor(serviceKey: consumerAttribute.Queue, serviceType: consumerInterface, implementationType: type, lifetime: ServiceLifetime.Transient));
 
         var eventType = consumerInterface.GenericTypeArguments[0];
         var hostType = typeof(DefaultConsumerHostService<,>).MakeGenericType(type, eventType);

@@ -4,7 +4,8 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-#pragma warning disable SA1204
+#pragma warning disable SA1401
+#pragma warning disable SA1600
 
 using IdGen;
 using Maomi.MQ.Diagnostics;
@@ -20,13 +21,13 @@ namespace Maomi.MQ.Defaults;
 /// </summary>
 public class DefaultMessagePublisher : IMessagePublisher
 {
-    private readonly DefaultMqOptions _connectionOptions;
-    private readonly IJsonSerializer _jsonSerializer;
-    private readonly ConnectionPool _connectionPool;
-    private readonly IIdGenerator<long> _idGen;
-    private readonly ILogger<DefaultMessagePublisher> _logger;
+    protected readonly DefaultMqOptions _connectionOptions;
+    protected readonly IJsonSerializer _jsonSerializer;
+    protected readonly ConnectionPool _connectionPool;
+    protected readonly IIdGenerator<long> _idGen;
+    protected readonly ILogger<DefaultMessagePublisher> _logger;
 
-    private readonly DiagnosticsWriter _diagnosticsWriter = new PublisherDiagnosticsWriter();
+    protected readonly DiagnosticsWriter _diagnosticsWriter = new PublisherDiagnosticsWriter();
 
     /// <inheritdoc />
     public ConnectionPool ConnectionPool => _connectionPool;
@@ -54,7 +55,7 @@ public class DefaultMessagePublisher : IMessagePublisher
     }
 
     /// <inheritdoc />
-    public async Task PublishAsync<TEvent>(string queue, TEvent message, Action<IBasicProperties>? properties = null)
+    public virtual async Task PublishAsync<TEvent>(string queue, TEvent message, Action<IBasicProperties>? properties = null)
         where TEvent : class
     {
         var basicProperties = new BasicProperties()
@@ -71,7 +72,7 @@ public class DefaultMessagePublisher : IMessagePublisher
     }
 
     /// <inheritdoc />
-    public async Task PublishAsync<TEvent>(string queue, TEvent message, BasicProperties properties)
+    public virtual async Task PublishAsync<TEvent>(string queue, TEvent message, BasicProperties properties)
     {
         var eventBody = new EventBody<TEvent>
         {
@@ -85,7 +86,7 @@ public class DefaultMessagePublisher : IMessagePublisher
     }
 
     /// <inheritdoc />
-    public async Task PublishAsync<TEvent>(string queue, EventBody<TEvent> message, BasicProperties properties)
+    public virtual async Task PublishAsync<TEvent>(string queue, EventBody<TEvent> message, BasicProperties properties)
     {
         var activityTags = message.GetTags();
         using Activity? activity = _diagnosticsWriter.WriteStarted(DiagnosticName.Activity.Publisher, DateTimeOffset.Now, activityTags);

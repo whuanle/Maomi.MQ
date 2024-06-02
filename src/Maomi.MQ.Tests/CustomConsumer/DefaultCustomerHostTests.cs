@@ -1,12 +1,11 @@
 ﻿using Maomi.MQ.Defaults;
 using Maomi.MQ.Retry;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Moq;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Net.Sockets;
-using static Maomi.MQ.Tests.CustomConsumer.DefaultCustomerHostTests;
 
 namespace Maomi.MQ.Tests.CustomConsumer;
 
@@ -137,10 +136,10 @@ public partial class DefaultCustomerHostTests
 
         var typeFilter = new ConsumerTypeFilter();
         typeFilter.Filter(services, typeof(EmptyConsumer<IdEvent>));
-        services.AddSingleton<IConsumer<IdEvent>, EmptyConsumer<IdEvent>>();
+        services.Add(new ServiceDescriptor(serviceKey: "test", serviceType: typeof(IConsumer<IdEvent>), implementationType: typeof(EmptyConsumer<IdEvent>), lifetime: ServiceLifetime.Singleton));
         var ioc = services.BuildServiceProvider();
 
-        var consumer = ioc.GetRequiredService<IConsumer<IdEvent>>() as EmptyConsumer<IdEvent>;
+        var consumer = ioc.GetRequiredKeyedService<IConsumer<IdEvent>>("test") as EmptyConsumer<IdEvent>;
         Assert.NotNull(consumer);
         using var hostService = new TestDefaultConsumerHostService<EmptyConsumer<IdEvent>, IdEvent>(
             ioc,
@@ -193,14 +192,14 @@ public partial class DefaultCustomerHostTests
 
         var typeFilter = new ConsumerTypeFilter();
         typeFilter.Filter(services, typeof(TConsumer));
-        services.AddSingleton<IConsumer<TEvent>, TConsumer>();
+        services.Add(new ServiceDescriptor(serviceKey: "test", serviceType: typeof(IConsumer<TEvent>), implementationType: typeof(TConsumer), lifetime: ServiceLifetime.Singleton));
         if (action != null)
         {
             action.Invoke(services);
         }
         var ioc = services.BuildServiceProvider();
 
-        var consumer = ioc.GetRequiredService<IConsumer<IdEvent>>() as TConsumer;
+        var consumer = ioc.GetRequiredKeyedService<IConsumer<TEvent>>("test") as TConsumer;
         Assert.NotNull(consumer);
         using var hostService = new TestDefaultConsumerHostService<TConsumer, TEvent>(
             ioc,
@@ -220,6 +219,7 @@ public partial class DefaultCustomerHostTests
         var eventBody = new EventBody<IdEvent>()
         {
             Id = 1,
+            Queue = "test",
             CreateTime = DateTimeOffset.Now,
             Body = new IdEvent
             {
@@ -290,6 +290,7 @@ public partial class DefaultCustomerHostTests
         var eventBody = new EventBody<IdEvent>()
         {
             Id = 1,
+            Queue = "test",
             CreateTime = DateTimeOffset.Now,
             Body = new IdEvent
             {

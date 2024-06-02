@@ -26,6 +26,11 @@ public abstract class DiagnosticsWriter
         }
 
         var activity = new Activity(activityName);
+        if (activity == null)
+        {
+            return default;
+        }
+
         activity.SetStartTime(startTimeUtc.UtcDateTime);
 
         if (tags != null)

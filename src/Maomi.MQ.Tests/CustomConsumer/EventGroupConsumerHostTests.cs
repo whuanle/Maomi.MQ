@@ -2,6 +2,7 @@
 using Maomi.MQ.EventBus;
 using Maomi.MQ.Retry;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -144,13 +145,17 @@ public partial class EventGroupConsumerHostTests
         typeFilter.Filter(services, typeof(TEventEventHandler<Group_Test2Event>));
         typeFilter.Build(services);
 
-        services.AddSingleton<IConsumer<Group_Test1Event>, EmptyConsumer<Group_Test1Event>>();
+        services.Add(new ServiceDescriptor(serviceKey: "test1",
+            serviceType: typeof(IConsumer<Group_Test1Event>),
+            implementationType: typeof(EmptyConsumer<Group_Test1Event>),
+            lifetime: ServiceLifetime.Singleton));
+
         services.AddSingleton<ILoggerFactory, NullLoggerFactory>();
         services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
 
         var ioc = services.BuildServiceProvider();
 
-        var consumer = ioc.GetRequiredService<IConsumer<Group_Test1Event>>() as EmptyConsumer<Group_Test1Event>;
+        var consumer = ioc.GetRequiredKeyedService<IConsumer<Group_Test1Event>>("test1") as EmptyConsumer<Group_Test1Event>;
         Assert.NotNull(consumer);
 
         var evenGrouptInfo = ioc.GetKeyedService<EventGroupInfo>("group");
@@ -210,15 +215,23 @@ public partial class EventGroupConsumerHostTests
         typeFilter.Filter(services, typeof(TEventEventHandler<Group_Test2Event>));
         typeFilter.Build(services);
 
-        services.AddSingleton<IConsumer<Group_Test1Event>, EmptyConsumer<Group_Test1Event>>();
-        services.AddSingleton<IConsumer<Group_Test2Event>, EmptyConsumer<Group_Test2Event>>();
+        services.Add(new ServiceDescriptor(serviceKey: "test1",
+            serviceType: typeof(IConsumer<Group_Test1Event>),
+            implementationType: typeof(EmptyConsumer<Group_Test1Event>),
+            lifetime: ServiceLifetime.Singleton));
+
+        services.Add(new ServiceDescriptor(serviceKey: "test2",
+            serviceType: typeof(IConsumer<Group_Test2Event>),
+            implementationType: typeof(EmptyConsumer<Group_Test2Event>),
+            lifetime: ServiceLifetime.Singleton));
+
         services.AddSingleton<ILoggerFactory, NullLoggerFactory>();
         services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
 
         var ioc = services.BuildServiceProvider();
 
-        var consumer1 = ioc.GetRequiredService<IConsumer<Group_Test1Event>>() as EmptyConsumer<Group_Test1Event>;
-        var consumer2 = ioc.GetRequiredService<IConsumer<Group_Test2Event>>() as EmptyConsumer<Group_Test2Event>;
+        var consumer1 = ioc.GetRequiredKeyedService<IConsumer<Group_Test1Event>>("test1") as EmptyConsumer<Group_Test1Event>;
+        var consumer2 = ioc.GetRequiredKeyedService<IConsumer<Group_Test2Event>>("test2") as EmptyConsumer<Group_Test2Event>;
 
         Assert.NotNull(consumer1);
         Assert.NotNull(consumer2);
@@ -226,8 +239,11 @@ public partial class EventGroupConsumerHostTests
         var evenGrouptInfo = ioc.GetKeyedService<EventGroupInfo>("group");
         Assert.NotNull(evenGrouptInfo);
 
-        var eventInfo = evenGrouptInfo.EventInfos.FirstOrDefault(x => x.Key == "test1").Value;
-        Assert.NotNull(eventInfo);
+        var eventInfo1 = evenGrouptInfo.EventInfos.FirstOrDefault(x => x.Key == "test1").Value;
+        var eventInfo2 = evenGrouptInfo.EventInfos.FirstOrDefault(x => x.Key == "test2").Value;
+
+        Assert.NotNull(eventInfo1);
+        Assert.NotNull(eventInfo2);
 
         using var hostService = new TestDefaultConsumerHostService(
             ioc,
@@ -248,6 +264,7 @@ public partial class EventGroupConsumerHostTests
         var eventBody1 = new EventBody<Group_Test1Event>()
         {
             Id = 1,
+            Queue = "test1",
             CreateTime = DateTimeOffset.Now,
             Body = new Group_Test1Event
             {
@@ -257,6 +274,7 @@ public partial class EventGroupConsumerHostTests
         var eventBody2 = new EventBody<Group_Test2Event>()
         {
             Id = 1,
+            Queue = "test2",
             CreateTime = DateTimeOffset.Now,
             Body = new Group_Test2Event
             {
@@ -273,8 +291,8 @@ public partial class EventGroupConsumerHostTests
         _basicProperties.WriteTo(buffer1);
         _basicProperties.WriteTo(buffer2);
 
-        await hostService.PublishAsync<Group_Test1Event>(eventInfo, _mockChannel.Object, new BasicDeliverEventArgs("aa", 1, false, "test", "", new ReadOnlyBasicProperties(buffer1.AsSpan()), bytes1));
-        await hostService.PublishAsync<Group_Test2Event>(eventInfo, _mockChannel.Object, new BasicDeliverEventArgs("aa", 1, false, "test", "", new ReadOnlyBasicProperties(buffer2.AsSpan()), bytes2));
+        await hostService.PublishAsync<Group_Test1Event>(eventInfo1, _mockChannel.Object, new BasicDeliverEventArgs("aa", 1, false, "", "test1", new ReadOnlyBasicProperties(buffer1.AsSpan()), bytes1));
+        await hostService.PublishAsync<Group_Test2Event>(eventInfo2, _mockChannel.Object, new BasicDeliverEventArgs("aa", 1, false, "", "test2", new ReadOnlyBasicProperties(buffer2.AsSpan()), bytes2));
 
         Assert.Equal(eventBody1.Id, consumer1.EventBody.Id);
         Assert.Equal(eventBody1.CreateTime, consumer1.EventBody.CreateTime);
@@ -285,7 +303,7 @@ public partial class EventGroupConsumerHostTests
         Assert.Equal(eventBody2.Body.Id, consumer2.EventBody.Body.Id);
     }
 
-    public async Task<TConsumer> Retry<TEvent, TConsumer, TEventHandler>(Action<IServiceCollection>? action = null)
+    public async Task<TConsumer> Retry<TEvent, TConsumer, TEventHandler>(string queue, Action<IServiceCollection>? action = null)
     where TConsumer : class, IConsumer<TEvent>, IRetry
     where TEvent : class, new()
     {
@@ -310,7 +328,11 @@ public partial class EventGroupConsumerHostTests
         typeFilter.Filter(services, typeof(TEventHandler));
         typeFilter.Build(services);
 
-        services.AddSingleton<IConsumer<TEvent>, TConsumer>();
+        services.Add(new ServiceDescriptor(serviceKey: queue,
+            serviceType: typeof(IConsumer<TEvent>),
+            implementationType: typeof(TConsumer),
+            lifetime: ServiceLifetime.Singleton));
+
         services.AddSingleton<ILoggerFactory, NullLoggerFactory>();
         services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
         if (action != null)
@@ -338,7 +360,7 @@ public partial class EventGroupConsumerHostTests
         var eventInfo = evenGrouptInfo.EventInfos.FirstOrDefault(x => x.Key == eventTopicAttribute.Queue).Value;
         Assert.NotNull(eventInfo);
 
-        var consumer = ioc.GetRequiredService<IConsumer<TEvent>>() as TConsumer;
+        var consumer = ioc.GetRequiredKeyedService<IConsumer<TEvent>>(queue) as TConsumer;
         Assert.NotNull(consumer);
         using var hostService = ioc.GetRequiredService<TestDefaultConsumerHostService>();
 
@@ -363,7 +385,7 @@ public partial class EventGroupConsumerHostTests
     [Fact]
     public async Task Retry_Five_Times()
     {
-        var consumer = await Retry<Group_Test1Event, ConsumerException<Group_Test1Event>, TEventEventHandler<Group_Test1Event>>();
+        var consumer = await Retry<Group_Test1Event, ConsumerException<Group_Test1Event>, TEventEventHandler<Group_Test1Event>>("test1");
 
         // Run once and retry five times
         Assert.Equal(6, consumer.RetryCount);
@@ -373,7 +395,7 @@ public partial class EventGroupConsumerHostTests
     [Fact]
     public async Task Retry_Faild_And_Fallback_False_Requeue()
     {
-        await Retry<TrueRequeueEvent_Group, Retry_Faild_FallBack_False_Consumer<TrueRequeueEvent_Group>, TEventEventHandler<TrueRequeueEvent_Group>>();
+        await Retry<TrueRequeueEvent_Group, Retry_Faild_FallBack_False_Consumer<TrueRequeueEvent_Group>, TEventEventHandler<TrueRequeueEvent_Group>>("test4");
         // requeue: true
         _mockChannel.Verify(a => a.BasicNackAsync(It.IsAny<ulong>(), It.IsAny<bool>(), true, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -382,7 +404,7 @@ public partial class EventGroupConsumerHostTests
     [Fact]
     public async Task Retry_Faild_And_Fallback_True()
     {
-        await Retry<TrueRequeueEvent_Group, Retry_Faild_Fallback_True_Consumer<TrueRequeueEvent_Group>, TEventEventHandler<TrueRequeueEvent_Group>>();
+        await Retry<TrueRequeueEvent_Group, Retry_Faild_Fallback_True_Consumer<TrueRequeueEvent_Group>, TEventEventHandler<TrueRequeueEvent_Group>>("test4");
         _mockChannel.Verify(a => a.BasicNackAsync(It.IsAny<ulong>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
         _mockChannel.Verify(a => a.BasicAckAsync(It.IsAny<ulong>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -391,7 +413,7 @@ public partial class EventGroupConsumerHostTests
     [Fact]
     public async Task Exception_NoRequeue()
     {
-        var consumer = await Retry<FalseRequeueEvent_Group, ConsumerException<FalseRequeueEvent_Group>, TEventEventHandler<FalseRequeueEvent_Group>>((services) =>
+        var consumer = await Retry<FalseRequeueEvent_Group, ConsumerException<FalseRequeueEvent_Group>, TEventEventHandler<FalseRequeueEvent_Group>>("test3", (services) =>
         {
             services.AddSingleton<IJsonSerializer, ExceptionJsonSerializer>();
         });
@@ -402,7 +424,7 @@ public partial class EventGroupConsumerHostTests
     [Fact]
     public async Task Exception_Requeue()
     {
-        var consumer = await Retry<TrueRequeueEvent_Group, ConsumerException<TrueRequeueEvent_Group>, TEventEventHandler<TrueRequeueEvent_Group>>((services) =>
+        var consumer = await Retry<TrueRequeueEvent_Group, ConsumerException<TrueRequeueEvent_Group>, TEventEventHandler<TrueRequeueEvent_Group>>("test4", (services) =>
         {
             services.AddSingleton<IJsonSerializer, ExceptionJsonSerializer>();
         });

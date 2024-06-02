@@ -42,6 +42,7 @@ public partial class HandlerMediatorTests
             await handlerMediator.ExecuteAsync(new EventBody<Group_Test1Event>
             {
                 Id = 1,
+                Queue = "test1",
                 CreateTime = DateTimeOffset.Now,
                 Body = new Group_Test1Event
                 {
@@ -82,6 +83,7 @@ public partial class HandlerMediatorTests
             await eventMiddleware.ExecuteAsync(new EventBody<Group_Test1Event>
             {
                 Id = 1,
+                Queue = "test1",
                 CreateTime = DateTimeOffset.Now,
                 Body = new Group_Test1Event
                 {
@@ -102,9 +104,6 @@ public partial class HandlerMediatorTests
         Assert.True(h1.Cancel);
         Assert.True(h2.Cancel);
     }
-
-
-
 
     [EventTopic("test1", Group = "group")]
     public class Group_Test1Event

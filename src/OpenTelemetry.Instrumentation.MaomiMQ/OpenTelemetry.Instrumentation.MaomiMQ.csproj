@@ -6,12 +6,42 @@
 		<MinVerTagPrefix>Instrumentation.MaomiMQ-</MinVerTagPrefix>
 		<Nullable>enable</Nullable>
 		<TargetFrameworks>net8.0</TargetFrameworks>
+
+		<IsPackable>true</IsPackable>
+		<PackageVersion>1.0.0</PackageVersion>
+		<Title>nstrumentation.MaomiMQ</Title>
+		<Description>
+			RabbitMQ Publisher and consumer communication model framework.
+			RabbitMQ 发布者和消费者通讯模型框架。
+		</Description>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageIcon>opentelemetry-icon-color.png</PackageIcon>
+		<PackageProjectUrl>https://mmq.whuanle.cn</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/whuanle/Maomi.MQ</RepositoryUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryType>git</RepositoryType>
+		<PackageReleaseNotes>
+			RabbitMQ Publisher and consumer communication model framework.
+			RabbitMQ 发布者和消费者通讯模型框架。
+		</PackageReleaseNotes>
+		<IncludeSymbols>True</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 	</PropertyGroup>
 
 	<PropertyGroup>
 		<DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
 	</PropertyGroup>
 
+	<ItemGroup>
+		<None Include="..\..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+	
 	<ItemGroup>
 		<Compile Include="$(SolutionDir)\src\OpenTelemetry\Shared\AssemblyVersionExtensions.cs" Link="Includes\AssemblyVersionExtensions.cs" />
 		<Compile Include="$(SolutionDir)\src\OpenTelemetry\Shared\ActivityInstrumentationHelper.cs" Link="Includes\ActivityInstrumentationHelper.cs" />

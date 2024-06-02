@@ -12,7 +12,7 @@ public class TestRetryPolicyFactory : DefaultRetryPolicyFactory
     {
     }
 
-    public override Task<AsyncRetryPolicy> CreatePolicy(string queue)
+    public override Task<AsyncRetryPolicy> CreatePolicy(string queue, long id)
     {
         // Create a retry policy.
         // 创建重试策略.

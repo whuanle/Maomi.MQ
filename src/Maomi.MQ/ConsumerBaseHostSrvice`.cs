@@ -59,6 +59,8 @@ public abstract class ConsumerBaseHostSrvice<TConsumer, TEvent> : ConsumerBaseHo
     /// <inheritdoc />.
     protected override async Task WaitReadyAsync()
     {
+        Dictionary<string, object> arguments = new();
+
         var consumerAttribute = typeof(TConsumer).GetCustomAttribute<ConsumerAttribute>()!;
 
         if (_connectionOptions.AutoQueueDeclare)
@@ -67,10 +69,24 @@ public abstract class ConsumerBaseHostSrvice<TConsumer, TEvent> : ConsumerBaseHo
             {
                 using (IChannel channel = await connection.CreateChannelAsync())
                 {
-                    Dictionary<string, object> arguments = new();
+                    if (consumerAttribute.Expiration != null)
+                    {
+                        arguments.Add("x-expires", consumerAttribute.Expiration);
+                    }
+
                     if (!string.IsNullOrEmpty(consumerAttribute.DeadQueue))
                     {
-                        arguments.Add("x-dead-letter-exchange", consumerAttribute.DeadQueue);
+                        arguments.Add("x-dead-letter-exchange", string.Empty);
+                        arguments.Add("x-dead-letter-routing-key", consumerAttribute.DeadQueue);
+                    }
+
+                    if (consumerAttribute.RetryFaildRequeue && !string.IsNullOrEmpty(consumerAttribute.DeadQueue))
+                    {
+                        _logger.LogWarning(
+                            "Connsumer [{Consumer}] ,queue name [{Queue}],because (RetryFaildRequeue == true) is configured, queue [{DeadQueue}] does not take effect.",
+                            typeof(TConsumer).Name,
+                            consumerAttribute.Queue,
+                            consumerAttribute.DeadQueue);
                     }
 
                     // Create queues based on consumers.
@@ -89,6 +105,11 @@ public abstract class ConsumerBaseHostSrvice<TConsumer, TEvent> : ConsumerBaseHo
     /// <inheritdoc/>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if (typeof(TConsumer).IsAssignableTo(typeof(IEmptyConsumer<TEvent>)))
+        {
+            return;
+        }
+
         var scope = _serviceProvider.CreateScope();
         var ioc = scope.ServiceProvider;
 

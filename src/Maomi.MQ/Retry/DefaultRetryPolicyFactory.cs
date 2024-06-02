@@ -1,4 +1,4 @@
-﻿// <copyright file="DefaultPolicyFactory.cs" company="Maomi">
+﻿// <copyright file="DefaultRetryPolicyFactory.cs" company="Maomi">
 // Copyright (c) Maomi. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/Maomi.MQ
@@ -28,7 +28,7 @@ public class DefaultRetryPolicyFactory : IRetryPolicyFactory
     }
 
     /// <inheritdoc/>
-    public virtual Task<AsyncRetryPolicy> CreatePolicy(string queue)
+    public virtual Task<AsyncRetryPolicy> CreatePolicy(string queue, long id)
     {
         // Create a retry policy.
         // 创建重试策略.
@@ -44,12 +44,6 @@ public class DefaultRetryPolicyFactory : IRetryPolicyFactory
                 });
 
         return Task.FromResult(retryPolicy);
-    }
-
-    /// <inheritdoc/>
-    public Task<AsyncRetryPolicy> CreatePolicy(string queue, long id)
-    {
-        return CreatePolicy(queue);
     }
 
     /// <summary>

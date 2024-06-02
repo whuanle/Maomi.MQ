@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Polly;
+using Polly.Retry;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Diagnostics;
@@ -108,7 +109,7 @@ public abstract class ConsumerBaseHostSrvice : BackgroundService
         var scope = _serviceProvider.CreateScope();
         var ioc = scope.ServiceProvider;
 
-        var consumer = ioc.GetRequiredService<IConsumer<TEvent>>();
+        var consumer = ioc.GetRequiredKeyedService<IConsumer<TEvent>>(consumerOptions.Queue);
         EventBody<TEvent>? eventBody = null;
 
         try
@@ -132,14 +133,14 @@ public abstract class ConsumerBaseHostSrvice : BackgroundService
 
             // Custom retry policy.
             // 自定义重试策略.
-            var customRetryPolicy = await _policyFactory.CreatePolicy(consumerOptions.Queue);
+            AsyncRetryPolicy customRetryPolicy = await _policyFactory.CreatePolicy(consumerOptions.Queue, eventBody.Id);
 
             var policyWrap = fallbackPolicy.WrapAsync(customRetryPolicy);
 
             var executeResult = await policyWrap.ExecuteAsync(async () =>
             {
-                var result = await ExecuteAndRetryAsync(consumerOptions, tags, consumer, eventBody, retryCount);
                 Interlocked.Increment(ref retryCount);
+                var result = await ExecuteAndRetryAsync(consumerOptions, tags, consumer, eventBody, retryCount);
                 return result;
             });
 

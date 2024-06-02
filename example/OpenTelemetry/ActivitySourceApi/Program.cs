@@ -3,6 +3,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Maomi.MQ;
+using OpenTelemetry.Exporter;
 
 namespace ActivitySourceApi;
 
@@ -14,14 +15,6 @@ public class Program
 
         const string serviceName = "roll-dice";
 
-        builder.Logging.AddOpenTelemetry(options =>
-        {
-            options
-                .SetResourceBuilder(
-                    ResourceBuilder.CreateDefault()
-                        .AddService(serviceName))
-                .AddConsoleExporter();
-        });
         builder.Services.AddOpenTelemetry()
               .ConfigureResource(resource => resource.AddService(serviceName))
               .WithTracing(tracing =>
@@ -31,11 +24,12 @@ public class Program
                       options.RecordException = true;
                   })
                   .AddAspNetCoreInstrumentation()
-                  .AddConsoleExporter();
-              })
-              .WithMetrics(metrics => metrics
-                  .AddAspNetCoreInstrumentation()
-                  .AddConsoleExporter());
+                  .AddOtlpExporter(options =>
+                  {
+                      options.Endpoint = new Uri("http://20.189.120.90:32808/v1/traces");
+                      options.Protocol = OtlpExportProtocol.HttpProtobuf;
+                  });
+              });
 
         builder.Services.AddMaomiMQ(options =>
         {
@@ -43,6 +37,7 @@ public class Program
         }, options =>
         {
             options.HostName = "192.168.1.4";
+            options.ClientProvidedName = "aaa";
         }, new System.Reflection.Assembly[] { typeof(Program).Assembly });
 
 

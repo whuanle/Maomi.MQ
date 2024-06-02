@@ -67,7 +67,17 @@ public partial class EventGroupConsumerHostService : ConsumerBaseHostSrvice
                         Dictionary<string, object> arguments = new();
                         if (!string.IsNullOrEmpty(item.Value.DeadQueue))
                         {
-                            arguments.Add("x-dead-letter-exchange", item.Value.DeadQueue);
+                            arguments.Add("x-dead-letter-exchange", string.Empty);
+                            arguments.Add("x-dead-letter-routing-key", item.Value.DeadQueue);
+                        }
+
+                        if (item.Value.RetryFaildRequeue && !string.IsNullOrEmpty(item.Value.DeadQueue))
+                        {
+                            _logger.LogWarning(
+                                "Event class [{Event}],queue name [{Queue}],because (RetryFaildRequeue == true) is configured, queue [{DeadQueue}] does not take effect.",
+                                item.Value.EventType.Name,
+                                item.Value.Queue,
+                                item.Value.DeadQueue);
                         }
 
                         await channel.QueueDeclareAsync(

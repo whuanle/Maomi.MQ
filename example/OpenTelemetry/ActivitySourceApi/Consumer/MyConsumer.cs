@@ -6,13 +6,14 @@ namespace ActivitySourceApi.Consumer;
 [Consumer("ActivitySourceApi", Qos = 1, RetryFaildRequeue = true)]
 public class MyConsumer : IConsumer<TestEvent>
 {
-    private int _retryCount = 0;
+    private static int _retryCount = 0;
     // 消费
     public async Task ExecuteAsync(EventBody<TestEvent> message)
     {
-        throw new Exception();
+        //throw new Exception();
         Console.WriteLine($"执行 {message.Body.Id} 第几次：{_retryCount} {DateTime.Now}");
         _retryCount++;
+        //await Task.Delay(1000);
     }
 
     // 每次失败时被执行

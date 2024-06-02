@@ -70,7 +70,7 @@ public partial class EventGroupConsumerHostTests
         public EventBody<TEvent> EventBody { get; private set; } = null!;
         public EmptyConsumer(
             IEventMiddleware<TEvent> eventMiddleware, 
-            HandlerMediator<TEvent> handlerBroker, 
+            IHandlerMediator<TEvent> handlerBroker, 
             ILogger<EventBusConsumer<TEvent>> logger, 
             IServiceProvider serviceProvider) : base(eventMiddleware, handlerBroker, logger, serviceProvider)
         {
@@ -185,7 +185,13 @@ public partial class EventGroupConsumerHostTests
         public async Task PublishAsync<TEvent>(EventBus.EventInfo eventInfo, IChannel channel, BasicDeliverEventArgs eventArgs)
             where TEvent : class
         {
-            await ConsumerAsync<TEvent>(eventInfo, channel, eventArgs);
+            await ConsumerAsync<TEvent>(channel, new ConsumerOptions
+            {
+                ExecptionRequeue = eventInfo.ExecptionRequeue,
+                Qos = eventInfo.Qos,
+                Queue = eventInfo.Queue,
+                RetryFaildRequeue = eventInfo.RetryFaildRequeue
+            }, eventArgs);
         }
     }
 }

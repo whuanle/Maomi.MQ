@@ -41,8 +41,8 @@ public static class TraceProviderBuilderExtensions
 
         builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.MaomiMQ);
 
-        builder.AddLegacySource(RabbitMQActivitySource.PublisherSourceName);
-        builder.AddLegacySource(RabbitMQActivitySource.SubscriberSourceName);
+        builder.AddSource(RabbitMQActivitySource.PublisherSourceName);
+        builder.AddSource(RabbitMQActivitySource.SubscriberSourceName);
 
         return builder;
     }

@@ -40,7 +40,7 @@ public class EventTopicAttribute : Attribute
     /// Whether to put back to the queue when an exception occurs, such as a serialization error, rather than an exception occurred during consumption.<br />
     /// 出现异常时是否放回队列，例如序列化错误等原因导致的，而不是消费时发生异常导致的.
     /// </summary>
-    public bool ExecptionRequeue { get; set; }
+    public bool ExecptionRequeue { get; set; } = true;
 
     private ushort _qos = 10;
 
