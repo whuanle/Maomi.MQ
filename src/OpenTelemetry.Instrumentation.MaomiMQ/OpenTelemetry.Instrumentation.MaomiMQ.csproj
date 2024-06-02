@@ -7,6 +7,7 @@
 		<Nullable>enable</Nullable>
 		<TargetFrameworks>net8.0</TargetFrameworks>
 
+		<AssemblyName>Maomi.MQ.Instrumentation</AssemblyName>
 		<IsPackable>true</IsPackable>
 		<PackageVersion>1.0.0</PackageVersion>
 		<Title>nstrumentation.MaomiMQ</Title>
@@ -34,7 +35,11 @@
 	<PropertyGroup>
 		<DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
 	</PropertyGroup>
-
+	
+	<ItemGroup>
+		<None Include="opentelemetry-icon-color.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
+	
 	<ItemGroup>
 		<None Include="..\..\README.md">
 			<Pack>True</Pack>

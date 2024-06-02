@@ -13,7 +13,7 @@ RabbitMQ 发布者和消费者通讯模型框架。</Description>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageIcon>packageIcon.png</PackageIcon>
+		<PackageIcon>package.png</PackageIcon>
 		<PackageProjectUrl>https://mmq.whuanle.cn</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/whuanle/Maomi.MQ</RepositoryUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
@@ -27,6 +27,10 @@ RabbitMQ 发布者和消费者通讯模型框架。</PackageReleaseNotes>
 
 	<ItemGroup>
 		<AdditionalFiles Include="..\..\stylecop.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="package.png" Pack="true" PackagePath="\" />
 	</ItemGroup>
 
 	<ItemGroup>
