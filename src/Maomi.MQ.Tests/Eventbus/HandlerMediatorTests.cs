@@ -43,7 +43,7 @@ public partial class HandlerMediatorTests
             {
                 Id = 1,
                 Queue = "test1",
-                CreateTime = DateTimeOffset.Now,
+                CreationTime = DateTimeOffset.Now,
                 Body = new Group_Test1Event
                 {
                     Id = 1
@@ -84,7 +84,7 @@ public partial class HandlerMediatorTests
             {
                 Id = 1,
                 Queue = "test1",
-                CreateTime = DateTimeOffset.Now,
+                CreationTime = DateTimeOffset.Now,
                 Body = new Group_Test1Event
                 {
                     Id = 1

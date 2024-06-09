@@ -34,21 +34,11 @@ RabbitMQ 发布者和消费者通讯模型框架。</PackageReleaseNotes>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Include="..\..\README.md">
-	    <Pack>True</Pack>
-	    <PackagePath>\</PackagePath>
-	  </None>
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="IdGen" Version="3.0.5" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
-		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
-		<PackageReference Include="Microsoft.Extensions.ObjectPool" Version="8.0.4" />
-		<PackageReference Include="Polly" Version="8.4.0" />
-		<PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
-		<PackageReference Include="RabbitMQ.Client" Version="7.0.0-alpha.5" />
+		<None Include="..\..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -56,5 +46,10 @@ RabbitMQ 发布者和消费者通讯模型框架。</PackageReleaseNotes>
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Maomi.MQ.Core\Maomi.MQ.Core.csproj" />
+	  <ProjectReference Include="..\Maomi.MQ.RabbitMQ\Maomi.MQ.RabbitMQ.csproj" />
 	</ItemGroup>
 </Project>

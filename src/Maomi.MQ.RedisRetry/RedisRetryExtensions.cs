@@ -4,7 +4,7 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-using Maomi.MQ.Retry;
+using Maomi.MQ.Default;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
@@ -26,7 +26,7 @@ public static class RedisRetryExtensions
     /// <returns><see cref="IServiceCollection"/>.</returns>
     public static IServiceCollection AddMaomiMQRedisRetry(this IServiceCollection services, Func<IServiceProvider, IDatabase> func)
     {
-        services.AddTransient<IRetryPolicyFactory, RedisRetryPolicyFactory>(s =>
+        services.AddScoped<IRetryPolicyFactory, RedisRetryPolicyFactory>(s =>
         {
             var logger = s.GetRequiredService<ILogger<DefaultRetryPolicyFactory>>();
             var redis = func.Invoke(s);

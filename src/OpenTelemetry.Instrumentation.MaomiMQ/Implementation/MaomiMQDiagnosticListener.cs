@@ -28,7 +28,7 @@ internal sealed class MaomiMQDiagnosticListener : ListenerHandler
     internal static readonly AssemblyName AssemblyName = Assembly.GetName();
 
     /// <summary>
-    /// <see cref="DiagnosticName.DefaultListenerName"/>.
+    /// <see cref="DiagnosticName.MaomiMQ"/>.
     /// </summary>
     internal static readonly ActivitySource ActivitySource = new(DiagnosticName.MaomiMQ, Assembly.GetPackageVersion());
 
@@ -58,7 +58,7 @@ internal sealed class MaomiMQDiagnosticListener : ListenerHandler
             case DiagnosticName.Activity.Fallback + ".Start":
             case DiagnosticName.Activity.Execute + ".Start":
             case DiagnosticName.Activity.Retry + ".Start":
-            case DiagnosticName.Activity.Eventbus + ".Start":
+            case DiagnosticName.Activity.EventBus + ".Start":
                 this.OnStartActivity(activity, payload);
                 break;
             case DiagnosticName.Activity.Publisher + ".Stop":
@@ -66,7 +66,7 @@ internal sealed class MaomiMQDiagnosticListener : ListenerHandler
             case DiagnosticName.Activity.Fallback + ".Stop":
             case DiagnosticName.Activity.Execute + ".Stop":
             case DiagnosticName.Activity.Retry + ".Stop":
-            case DiagnosticName.Activity.Eventbus + ".Stop":
+            case DiagnosticName.Activity.EventBus + ".Stop":
                 this.OnStopActivity(activity, payload);
                 break;
             case DiagnosticName.Activity.Publisher + ".Execption":
@@ -74,7 +74,7 @@ internal sealed class MaomiMQDiagnosticListener : ListenerHandler
             case DiagnosticName.Activity.Fallback + ".Execption":
             case DiagnosticName.Activity.Execute + ".Execption":
             case DiagnosticName.Activity.Retry + ".Execption":
-            case DiagnosticName.Activity.Eventbus + ".Execption":
+            case DiagnosticName.Activity.EventBus + ".Execption":
                 this.OnException(activity, payload);
                 break;
         }
@@ -89,7 +89,7 @@ internal sealed class MaomiMQDiagnosticListener : ListenerHandler
             DiagnosticName.Activity.Fallback => ActivityKind.Consumer,
             DiagnosticName.Activity.Execute => ActivityKind.Consumer,
             DiagnosticName.Activity.Retry => ActivityKind.Consumer,
-            DiagnosticName.Activity.Eventbus => ActivityKind.Consumer,
+            DiagnosticName.Activity.EventBus => ActivityKind.Consumer,
             _ => activity.Kind,
         };
     }

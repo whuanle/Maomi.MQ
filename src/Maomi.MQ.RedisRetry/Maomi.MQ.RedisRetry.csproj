@@ -11,10 +11,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Maomi.MQ\Maomi.MQ.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -25,6 +21,9 @@
 	</ItemGroup>
 	<ItemGroup>
 		<None Include="package.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\Maomi.MQ.RabbitMQ\Maomi.MQ.RabbitMQ.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -1,10 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Maomi.MQ.Tests;
 public static class MaomiHostHelper
@@ -14,8 +9,7 @@ public static class MaomiHostHelper
         var services = new ServiceCollection();
         services.AddMaomiMQ(mq =>
         {
-        }, mq =>
-        {
+            mq.ConnectionFactory = (o) => o.HostName = "127.0.0.1";
         }, Array.Empty<Assembly>());
         return services;
     }

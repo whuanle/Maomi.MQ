@@ -1,5 +1,4 @@
 using Maomi.MQ;
-using Maomi.MQ.Retry;
 using Polly;
 using Polly.Retry;
 

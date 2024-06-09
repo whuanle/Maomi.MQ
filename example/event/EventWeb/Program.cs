@@ -18,11 +18,9 @@ public class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
-        builder.Services.AddMaomiMQ((MqOptions options) =>
+        builder.Services.AddMaomiMQ((MqOptionsBuilder options) =>
         {
             options.WorkId = 1;
-        }, (ConnectionFactory options) =>
-        {
             options.HostName = "192.168.1.4";
             options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
         }, [typeof(Program).Assembly]);

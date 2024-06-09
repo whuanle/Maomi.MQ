@@ -1,5 +1,4 @@
-﻿using Maomi.MQ.Defaults;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Reflection;
 
@@ -12,8 +11,24 @@ public class ConsumerTypeFilterTests
         var services = new ServiceCollection();
         var typeFilter = new ConsumerTypeFilter();
 
-        Assert.Throws<ArgumentNullException>(() => { typeFilter.Filter(services, typeof(Consumer1)); });
-        Assert.Throws<ArgumentNullException>(() => { DefaultConsumerHostService<Consumer1, TestEvent1>.GetConsumerOptions(); });
+        Assert.Throws<ArgumentNullException>(() => { typeFilter.Filter(services, typeof(NoneConsumer)); });
+        Assert.Throws<ArgumentNullException>(() => { ConsumerHostService<NoneConsumer, TestEvent>.GetConsumerType(); });
+    }
+
+    [Fact]
+    public void GetGetConsumerType()
+    {
+        var consumerAttribute = typeof(UseConsumer).GetCustomAttribute<ConsumerAttribute>();
+        Assert.NotNull(consumerAttribute);
+
+        var consumerTypes = ConsumerHostService<UseConsumer, TestEvent>.GetConsumerType();
+        Assert.Single(consumerTypes);
+
+        var consumerType = consumerTypes[0];
+
+        Assert.Equal(consumerAttribute.Queue, consumerType.Queue);
+        Assert.Equal(typeof(UseConsumer), consumerType.Consumer);
+        Assert.Equal(typeof(TestEvent), consumerType.Event);
     }
 
     [Fact]
@@ -21,68 +36,50 @@ public class ConsumerTypeFilterTests
     {
         var services = new ServiceCollection();
         var typeFilter = new ConsumerTypeFilter();
-        typeFilter.Filter(services, typeof(Consumer2));
+        typeFilter.Filter(services, typeof(UseConsumer));
 
         var serviceDescriptors = services.ToArray();
-        var consumerService = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(IConsumer<TestEvent1>));
+        var consumerService = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(IConsumer<TestEvent>));
         Assert.NotNull(consumerService);
-        Assert.Equal(ServiceLifetime.Transient, consumerService.Lifetime);
+        Assert.Equal(ServiceLifetime.Scoped, consumerService.Lifetime);
 
         var hostedServices = serviceDescriptors.Where(x => x.ServiceType == typeof(IHostedService)).ToArray();
         Assert.Single(hostedServices);
 
         var consumerHostService = hostedServices.FirstOrDefault();
         Assert.NotNull(consumerHostService);
-        Assert.Equal(typeof(DefaultConsumerHostService<Consumer2, TestEvent1>), consumerHostService.ImplementationType);
-    }
-
-    [Fact]
-    public void GetConsumerOptions()
-    {
-        var consumerAttribute = typeof(Consumer2).GetCustomAttribute<ConsumerAttribute>();
-        Assert.NotNull(consumerAttribute);
-        var consumerOptions = DefaultConsumerHostService<Consumer2, TestEvent1>.GetConsumerOptions();
-
-        Assert.Equal(consumerAttribute.Queue,consumerOptions.Queue);
-        Assert.Equal(consumerAttribute.Qos,consumerOptions.Qos);
-        Assert.Equal(consumerAttribute.RetryFaildRequeue,consumerOptions.RetryFaildRequeue);
-        Assert.Equal(consumerAttribute.ExecptionRequeue, consumerOptions.ExecptionRequeue);
+        Assert.Equal(typeof(ConsumerHostService<UseConsumer, TestEvent>), consumerHostService.ImplementationType);
     }
 
     [Fact]
     public void ConsumerAttributeInfo()
     {
+        var consumerAttribute = typeof(UseConsumer).GetCustomAttribute<ConsumerAttribute>();
+        Assert.NotNull(consumerAttribute);
+
         var services = new ServiceCollection();
         var typeFilter = new ConsumerTypeFilter();
-        typeFilter.Filter(services, typeof(Consumer2));
+        typeFilter.Filter(services, typeof(UseConsumer));
 
-        var serviceDescriptors = services.ToArray();
-        var consumerService = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(IConsumer<TestEvent1>));
-        Assert.NotNull(consumerService);
-        Assert.Equal(ServiceLifetime.Transient, consumerService.Lifetime);
-
-        var hostedServices = serviceDescriptors.Where(x => x.ServiceType == typeof(IHostedService)).ToArray();
-        Assert.Single(hostedServices);
-
-        var consumerHostService = hostedServices.FirstOrDefault();
-        Assert.NotNull(consumerHostService);
-        Assert.Equal(typeof(DefaultConsumerHostService<Consumer2, TestEvent1>), consumerHostService.ImplementationType);
+        var ioc = services.BuildServiceProvider();
+        var consumerOptions = ioc.GetRequiredKeyedService<IConsumerOptions>(serviceKey: "test");
+        Assert.Equal(consumerAttribute, consumerOptions);
     }
 
-    public class TestEvent1
+    private class TestEvent
     {
         public int Id { get; set; }
     }
 
-    public class Consumer1 : IConsumer<TestEvent1>
+    private class NoneConsumer : IConsumer<TestEvent>
     {
-        public Task ExecuteAsync(EventBody<TestEvent1> message) => Task.CompletedTask;
-        public Task FaildAsync(Exception ex, int retryCount, EventBody<TestEvent1>? message) => Task.CompletedTask;
-        public Task<bool> FallbackAsync(EventBody<TestEvent1>? message) => Task.FromResult(true);
+        public Task ExecuteAsync(EventBody<TestEvent> message) => Task.CompletedTask;
+        public Task FaildAsync(Exception ex, int retryCount, EventBody<TestEvent>? message) => Task.CompletedTask;
+        public Task<bool> FallbackAsync(EventBody<TestEvent>? message) => Task.FromResult(true);
     }
 
     [Consumer("test", Qos = 1, RetryFaildRequeue = true, ExecptionRequeue = true)]
-    public class Consumer2 : Consumer1, IConsumer<TestEvent1>
+    private class UseConsumer : NoneConsumer, IConsumer<TestEvent>
     {
     }
 }

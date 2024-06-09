@@ -1,4 +1,4 @@
-﻿using Maomi.MQ.Retry;
+﻿using Maomi.MQ.Default;
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
