@@ -93,8 +93,8 @@ public class DefaultMessagePublisher : IMessagePublisher
         using Activity? activity = _diagnosticsWriter.WriteStarted(DiagnosticName.Activity.Publisher, DateTimeOffset.Now, activityTags);
 
         properties.Headers = properties.Headers ?? new Dictionary<string, object?>();
-        properties.Headers?.TryAdd(DiagnosticName.Event.Id, message.Id);
-        properties.Headers?.TryAdd(DiagnosticName.Event.Publisher, _mqOptions.AppName);
+        properties.Headers.TryAdd(DiagnosticName.Event.Id, message.Id);
+        properties.Headers.TryAdd(DiagnosticName.Event.Publisher, _mqOptions.AppName);
 
         var connection = _connectionPool.Get();
         try

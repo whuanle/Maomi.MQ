@@ -2,6 +2,7 @@
 using Maomi.MQ.Hosts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.Reflection;
 
 namespace Maomi.MQ.Tests.TypeFilter;
 
@@ -68,7 +69,7 @@ public partial class EventbusTypeFilterTests
         Assert.Single(hostedServices);
         var consumerHostService = hostedServices.FirstOrDefault();
         Assert.NotNull(consumerHostService);
-        Assert.Equal(typeof(ConsumerHostService<EventBusConsumer<UsableEvent>, UsableEvent>), consumerHostService.ImplementationType);
+        Assert.Equal(typeof(ConsumerBaseHostService), consumerHostService.ImplementationFactory!.GetMethodInfo().ReturnType);
     }
 
     [Fact]

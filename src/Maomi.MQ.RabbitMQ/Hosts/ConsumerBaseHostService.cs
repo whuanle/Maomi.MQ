@@ -47,12 +47,12 @@ public partial class ConsumerBaseHostService : BackgroundService
     /// <param name="serviceProvider"></param>
     /// <param name="serviceFactory"></param>
     /// <param name="logger"></param>
-    /// <param name="queues"></param>
+    /// <param name="consumerTypes"></param>
     public ConsumerBaseHostService(
         IServiceProvider serviceProvider,
         ServiceFactory serviceFactory,
         ILogger<ConsumerBaseHostService> logger,
-        IReadOnlyList<ConsumerType> queues)
+        IReadOnlyList<ConsumerType> consumerTypes)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
@@ -65,7 +65,7 @@ public partial class ConsumerBaseHostService : BackgroundService
         _waitReadyFactory = serviceFactory.WaitReadyFactory;
         _taskCompletionSource = new();
         _waitReadyFactory.AddTask(_taskCompletionSource.Task);
-        _consumerTypes = queues;
+        _consumerTypes = consumerTypes;
     }
 
     /// <inheritdoc />.
@@ -98,7 +98,7 @@ public partial class ConsumerBaseHostService : BackgroundService
         foreach (var consumerType in _consumerTypes)
         {
             Dictionary<string, object> arguments = new();
-            var consumerOptions = _serviceProvider.GetRequiredKeyedService<IConsumerOptions>(serviceKey: consumerType);
+            var consumerOptions = _serviceProvider.GetRequiredKeyedService<IConsumerOptions>(serviceKey: consumerType.Queue);
 
             if (consumerOptions.Expiration != null)
             {
@@ -152,7 +152,7 @@ public partial class ConsumerBaseHostService : BackgroundService
             qos.Add(consumerOptions.Qos);
 
             var consumer = new EventingBasicConsumer(channel);
-
+            consumers.Add(consumerType.Queue, consumer);
             consumer.Received += async (sender, eventArgs) =>
             {
                 Dictionary<string, object> loggerState = new() { { DiagnosticName.Activity.Consumer, consumerOptions.Queue } };

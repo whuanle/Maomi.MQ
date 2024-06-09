@@ -1,12 +1,57 @@
 ﻿using Maomi.MQ.EventBus;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maomi.MQ.Tests.Eventbus;
+
 public partial class HandlerMediatorTests
 {
+    [Fact]
+    public async Task Handler()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<ILoggerFactory, NullLoggerFactory>();
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+
+        var typeFilter = new EventBusTypeFilter();
+        typeFilter.Filter(services, typeof(UsableEvent));
+        typeFilter.Filter(services, typeof(Usable_0_EventHandler<UsableEvent>));
+        typeFilter.Filter(services, typeof(Usable_1_EventHandler<UsableEvent>));
+        typeFilter.Filter(services, typeof(Usable_2_EventHandler<UsableEvent>));
+        typeFilter.Filter(services, typeof(Usable_3_EventHandler<UsableEvent>));
+        typeFilter.Filter(services, typeof(Usable_4_EventHandler<UsableEvent>));
+        typeFilter.Filter(services, typeof(Usable_5_EventHandler<UsableEvent>));
+
+        typeFilter.Build(services);
+
+        var ioc = services.BuildServiceProvider();
+        var h0 = ioc.GetRequiredService<Usable_0_EventHandler<UsableEvent>>();
+        var h1 = ioc.GetRequiredService<Usable_1_EventHandler<UsableEvent>>();
+        var h2 = ioc.GetRequiredService<Usable_2_EventHandler<UsableEvent>>();
+        var h3 = ioc.GetRequiredService<Usable_3_EventHandler<UsableEvent>>();
+        var h4 = ioc.GetRequiredService<Usable_4_EventHandler<UsableEvent>>();
+        var h5 = ioc.GetRequiredService<Usable_5_EventHandler<UsableEvent>>();
+
+        var handlerMediator = ioc.GetRequiredService<IHandlerMediator<UsableEvent>>();
+
+        await handlerMediator.ExecuteAsync(Heler.CreateEvent(1, "test", new UsableEvent { Id = 1 }), CancellationToken.None);
+
+        Assert.Equal(1, h0.HandlerCount);
+        Assert.Equal(1, h1.HandlerCount);
+        Assert.Equal(1, h2.HandlerCount);
+        Assert.Equal(1, h3.HandlerCount);
+        Assert.Equal(1, h4.HandlerCount);
+        Assert.Equal(1, h5.HandlerCount);
+
+        Assert.Equal(0, h0.CancelCount);
+        Assert.Equal(0, h1.CancelCount);
+        Assert.Equal(0, h2.CancelCount);
+        Assert.Equal(0, h3.CancelCount);
+        Assert.Equal(0, h4.CancelCount);
+        Assert.Equal(0, h5.CancelCount);
+    }
+
     [Fact]
     public async Task Handler_Exception()
     {
@@ -15,198 +60,60 @@ public partial class HandlerMediatorTests
         services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
 
         var typeFilter = new EventBusTypeFilter();
-        typeFilter.Filter(services, typeof(Group_Test1Event));
-        typeFilter.Filter(services, typeof(TEventEventHandler_0<Group_Test1Event>));
-        typeFilter.Filter(services, typeof(TEventEventHandler_1<Group_Test1Event>));
-        typeFilter.Filter(services, typeof(TEventEventHandler_2<Group_Test1Event>));
-        typeFilter.Filter(services, typeof(TEventEventHandler_3<Group_Test1Event>));
+        typeFilter.Filter(services, typeof(ExceptionEvent));
+        typeFilter.Filter(services, typeof(Exception_0_EventHandler<ExceptionEvent>));
+        typeFilter.Filter(services, typeof(Exception_1_EventHandler<ExceptionEvent>));
+        typeFilter.Filter(services, typeof(Exception_2_EventHandler<ExceptionEvent>));
+        typeFilter.Filter(services, typeof(Exception_3_EventHandler<ExceptionEvent>));
+        typeFilter.Filter(services, typeof(Exception_4_EventHandler<ExceptionEvent>));
+        typeFilter.Filter(services, typeof(Exception_5_EventHandler<ExceptionEvent>));
 
         typeFilter.Build(services);
 
-        // Change life cycle.
-        services.AddScoped<TEventEventHandler_0<Group_Test1Event>>();
-        services.AddScoped<TEventEventHandler_1<Group_Test1Event>>();
-        services.AddSingleton<TEventEventHandler_2<Group_Test1Event>>();
-        services.AddScoped<TEventEventHandler_3<Group_Test1Event>>();
-
         var ioc = services.BuildServiceProvider();
-        var h0 = ioc.GetRequiredService<TEventEventHandler_0<Group_Test1Event>>();
-        var h1 = ioc.GetRequiredService<TEventEventHandler_1<Group_Test1Event>>();
-        var h2 = ioc.GetRequiredService<TEventEventHandler_2<Group_Test1Event>>();
-        var h3 = ioc.GetRequiredService<TEventEventHandler_3<Group_Test1Event>>();
+        var h0 = ioc.GetRequiredService<Exception_0_EventHandler<ExceptionEvent>>();
+        var h1 = ioc.GetRequiredService<Exception_1_EventHandler<ExceptionEvent>>();
+        var h2 = ioc.GetRequiredService<Exception_2_EventHandler<ExceptionEvent>>();
+        var h3 = ioc.GetRequiredService<Exception_3_EventHandler<ExceptionEvent>>();
+        var h4 = ioc.GetRequiredService<Exception_4_EventHandler<ExceptionEvent>>();
+        var h5 = ioc.GetRequiredService<Exception_5_EventHandler<ExceptionEvent>>();
 
-        var handlerMediator = ioc.GetRequiredService<IHandlerMediator<Group_Test1Event>>();
+        var handlerMediator = ioc.GetRequiredService<IHandlerMediator<ExceptionEvent>>();
+
 
         try
         {
-            await handlerMediator.ExecuteAsync(new EventBody<Group_Test1Event>
-            {
-                Id = 1,
-                Queue = "test1",
-                CreationTime = DateTimeOffset.Now,
-                Body = new Group_Test1Event
-                {
-                    Id = 1
-                }
-            },
-            CancellationToken.None);
+            await handlerMediator.ExecuteAsync(Heler.CreateEvent(1, "test", new ExceptionEvent { Id = 1 }), CancellationToken.None);
         }
         catch (Exception ex)
         {
             Assert.True(ex is OperationCanceledException);
         }
 
-        Assert.True(h0.Handler);
-        Assert.True(h1.Handler);
-        Assert.True(h2.Handler);
-        Assert.True(h0.Cancel);
-        Assert.True(h1.Cancel);
-        Assert.True(h2.Cancel);
+        Assert.Equal(1, h0.HandlerCount);
+        Assert.Equal(1, h1.HandlerCount);
+        Assert.Equal(1, h2.HandlerCount);
+        Assert.Equal(1, h3.HandlerCount);
+        Assert.Equal(1, h4.HandlerCount);
+        Assert.Equal(0, h5.HandlerCount);
 
-        ioc = services.BuildServiceProvider();
-        handlerMediator = ioc.GetRequiredService<IHandlerMediator<Group_Test1Event>>();
-        var eventMiddleware = ioc.GetRequiredService<IEventMiddleware<Group_Test1Event>>();
-        h0 = ioc.GetRequiredService<TEventEventHandler_0<Group_Test1Event>>();
-        h1 = ioc.GetRequiredService<TEventEventHandler_1<Group_Test1Event>>();
-        h2 = ioc.GetRequiredService<TEventEventHandler_2<Group_Test1Event>>();
-        h3 = ioc.GetRequiredService<TEventEventHandler_3<Group_Test1Event>>();
+        Assert.Equal(1, h0.CancelCount);
+        Assert.Equal(1, h1.CancelCount);
+        Assert.Equal(1, h2.CancelCount);
+        Assert.Equal(1, h3.CancelCount);
+        Assert.Equal(1, h4.CancelCount);
+        Assert.Equal(1, h5.CancelCount);
 
-        Assert.False(h0.Handler);
-        Assert.False(h1.Handler);
-        Assert.False(h2.Handler);
-        Assert.False(h0.Cancel);
-        Assert.False(h1.Cancel);
-        Assert.False(h2.Cancel);
+        Assert.Null(h5.HandlerTime);
+        Assert.True(h4.HandlerTime > h3.HandlerTime);
+        Assert.True(h3.HandlerTime > h2.HandlerTime);
+        Assert.True(h2.HandlerTime > h1.HandlerTime);
+        Assert.True(h1.HandlerTime > h0.HandlerTime);
 
-        try
-        {
-            await eventMiddleware.ExecuteAsync(new EventBody<Group_Test1Event>
-            {
-                Id = 1,
-                Queue = "test1",
-                CreationTime = DateTimeOffset.Now,
-                Body = new Group_Test1Event
-                {
-                    Id = 1
-                }
-            },
-            handlerMediator.ExecuteAsync);
-        }
-        catch (Exception ex)
-        {
-            Assert.True(ex is OperationCanceledException);
-        }
-
-        Assert.True(h0.Handler);
-        Assert.True(h1.Handler);
-        Assert.True(h2.Handler);
-        Assert.True(h0.Cancel);
-        Assert.True(h1.Cancel);
-        Assert.True(h2.Cancel);
-    }
-
-    [EventTopic("test1", Group = "group")]
-    public class Group_Test1Event
-    {
-        public int Id { get; set; }
-    }
-
-    public interface IHandlerRecord
-    {
-        public bool Handler { get; }
-        public int HandlerCount { get; }
-        public bool Cancel { get; }
-        public int CancelCount { get; }
-    }
-
-    [EventOrder(0)]
-    public class TEventEventHandler_0<TEvent> : IEventHandler<TEvent>, IHandlerRecord
-    {
-        public bool Handler { get; private set; }
-        public bool Cancel { get; private set; }
-
-        public int HandlerCount { get; private set; }
-
-        public int CancelCount { get; private set; }
-
-        public Task CancelAsync(EventBody<TEvent> @event, CancellationToken cancellationToken)
-        {
-            Cancel = true;
-            CancelCount++;
-            return Task.CompletedTask;
-        }
-
-        public Task ExecuteAsync(EventBody<TEvent> @event, CancellationToken cancellationToken)
-        {
-            Handler = true;
-            HandlerCount++;
-            return Task.CompletedTask;
-        }
-    }
-
-    [EventOrder(1)]
-    public class TEventEventHandler_1<TEvent> : IEventHandler<TEvent>, IHandlerRecord
-    {
-        public bool Handler { get; private set; }
-        public bool Cancel { get; private set; }
-
-        public int HandlerCount { get; private set; }
-
-        public int CancelCount { get; private set; }
-
-        public Task CancelAsync(EventBody<TEvent> @event, CancellationToken cancellationToken)
-        {
-            Cancel = true;
-            CancelCount++;
-            return Task.CompletedTask;
-        }
-
-        public Task ExecuteAsync(EventBody<TEvent> @event, CancellationToken cancellationToken)
-        {
-            Handler = true;
-            HandlerCount++;
-            return Task.CompletedTask;
-        }
-    }
-
-
-    [EventOrder(2)]
-    public class TEventEventHandler_2<TEvent> : IEventHandler<TEvent>, IHandlerRecord
-    {
-        public bool Handler { get; private set; }
-        public bool Cancel { get; private set; }
-
-        public int HandlerCount { get; private set; }
-
-        public int CancelCount { get; private set; }
-
-        public Task CancelAsync(EventBody<TEvent> @event, CancellationToken cancellationToken)
-        {
-            Cancel = true;
-            CancelCount++;
-            return Task.CompletedTask;
-        }
-
-        public Task ExecuteAsync(EventBody<TEvent> @event, CancellationToken cancellationToken)
-        {
-            Handler = true;
-            HandlerCount++;
-            return Task.CompletedTask;
-        }
-    }
-
-
-    [EventOrder(3)]
-    public class TEventEventHandler_3<TEvent> : IEventHandler<TEvent>
-    {
-        public Task CancelAsync(EventBody<TEvent> @event, CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
-        }
-
-        public Task ExecuteAsync(EventBody<TEvent> @event, CancellationToken cancellationToken)
-        {
-            throw new OperationCanceledException();
-        }
+        Assert.True(h0.CancelTime > h1.CancelTime);
+        Assert.True(h1.CancelTime > h2.CancelTime);
+        Assert.True(h2.CancelTime > h3.CancelTime);
+        Assert.True(h3.CancelTime > h4.CancelTime);
+        Assert.True(h4.CancelTime > h5.CancelTime);
     }
 }

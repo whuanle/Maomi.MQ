@@ -22,5 +22,5 @@ public interface IWaitReadyFactory
     /// Wait for all tasks to complete.
     /// </summary>
     /// <returns><see cref="Task"/>.</returns>
-    Task WaitReady();
+    Task WaitReadyAsync();
 }

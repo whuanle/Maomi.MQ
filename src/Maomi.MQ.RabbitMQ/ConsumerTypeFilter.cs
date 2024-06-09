@@ -83,7 +83,7 @@ public class ConsumerTypeFilter : ITypeFilter
             if (!_consumerGroups.TryGetValue(consumerAttribute.Group, out var list))
             {
                 list = new();
-                _consumerGroups[consumerAttribute.Queue] = list;
+                _consumerGroups[consumerAttribute.Group] = list;
             }
 
             list.Add(consumerType);

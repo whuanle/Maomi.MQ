@@ -21,17 +21,17 @@ namespace Maomi.MQ;
 /// </summary>
 /// <typeparam name="TConsumer"><see cref="IConsumer{TEvent}"/>.</typeparam>
 /// <typeparam name="TEvent">Event model.</typeparam>
-public class ConsumerHostService<TConsumer, TEvent> : ConsumerBaseHostService
+public class EventBusHostService<TConsumer, TEvent> : ConsumerBaseHostService
     where TEvent : class
     where TConsumer : IConsumer<TEvent>
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="ConsumerHostService{TConsumer, TEvent}"/> class.
+    /// Initializes a new instance of the <see cref="EventBusHostService{TConsumer, TEvent}"/> class.
     /// </summary>
     /// <param name="serviceProvider"></param>
     /// <param name="serviceFactory"></param>
     /// <param name="logger"></param>
-    public ConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ILogger<ConsumerBaseHostService> logger)
+    public EventBusHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ILogger<ConsumerBaseHostService> logger)
         : base(serviceProvider, serviceFactory, logger, GetConsumerType())
     {
     }
@@ -42,17 +42,17 @@ public class ConsumerHostService<TConsumer, TEvent> : ConsumerBaseHostService
     /// <returns><see cref="ConsumerOptions"/>.</returns>
     public static IReadOnlyList<ConsumerType> GetConsumerType()
     {
-        var consumerAttribute = typeof(TConsumer).GetCustomAttribute<ConsumerAttribute>();
-        if (consumerAttribute == null)
+        var eventTopicAttribute = typeof(TEvent).GetCustomAttribute<EventTopicAttribute>();
+        if (eventTopicAttribute == null)
         {
-            ArgumentNullException.ThrowIfNull(consumerAttribute);
+            ArgumentNullException.ThrowIfNull(eventTopicAttribute);
         }
 
         return new List<ConsumerType>
         {
             new ConsumerType
             {
-                Queue = consumerAttribute.Queue,
+                Queue = eventTopicAttribute.Queue,
                 Consumer = typeof(TConsumer),
                 Event = typeof(TEvent)
             }

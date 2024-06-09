@@ -4,12 +4,6 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-using Maomi.MQ.Default;
-using Maomi.MQ.Hosts;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using System.Reflection;
-
 namespace Maomi.MQ;
 
 /// <summary>

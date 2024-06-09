@@ -18,18 +18,7 @@ namespace Maomi.MQ.EventBus;
 /// </summary>
 public class EventBusTypeFilter : ITypeFilter
 {
-    private static readonly MethodInfo AddHostedMethod = typeof(ServiceCollectionHostedServiceExtensions)
-        .GetMethod(nameof(ServiceCollectionHostedServiceExtensions.AddHostedService), BindingFlags.Static | BindingFlags.Public, [typeof(IServiceCollection)])!;
-
     private readonly Dictionary<Type, EventInfo> _eventInfos = new();
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="EventBusTypeFilter"/> class.
-    /// </summary>
-    public EventBusTypeFilter()
-    {
-        ArgumentNullException.ThrowIfNull(AddHostedMethod);
-    }
 
     /// <inheritdoc />
     public void Build(IServiceCollection services)
@@ -40,8 +29,6 @@ public class EventBusTypeFilter : ITypeFilter
         {
             var eventType = item.Key;
             var eventInfo = item.Value;
-
-            Type? hostType = null;
 
             // If there is no IEventMiddleware<T> interface implemented for an event, the default DefaultEventMiddleware<T> is used.
             if (eventInfo.Middleware == null)
@@ -60,8 +47,16 @@ public class EventBusTypeFilter : ITypeFilter
                 implementationType: eventInfo.Middleware,
                 lifetime: ServiceLifetime.Scoped));
 
-            // Group.
-            // Do not use EventBusConsumerHostSrvice<EventBusConsumer<T>,T>.
+            services.AddScoped(serviceType: typeof(IHandlerMediator<>).MakeGenericType(eventType), implementationType: typeof(HandlerMediator<>).MakeGenericType(eventType));
+
+            services.AddKeyedSingleton(serviceKey: eventInfo.Options.Queue, serviceType: typeof(IConsumerOptions), implementationInstance: eventInfo.Options);
+
+            services.Add(new ServiceDescriptor(
+                serviceKey: eventInfo.Options.Queue,
+                serviceType: typeof(IConsumer<>).MakeGenericType(eventType),
+                implementationType: typeof(EventBusConsumer<>).MakeGenericType(eventType),
+                lifetime: ServiceLifetime.Scoped));
+
             if (!string.IsNullOrEmpty(eventInfo.Options.Group))
             {
                 if (!eventGroups.TryGetValue(eventInfo.Options.Group, out var eventInfoList))
@@ -75,9 +70,20 @@ public class EventBusTypeFilter : ITypeFilter
                 continue;
             }
 
-            // Use ConsumerHostSrvice<EventBusConsumer<T>,T>.
-            hostType = typeof(ConsumerHostService<,>).MakeGenericType(typeof(EventBusConsumer<>).MakeGenericType(eventType), eventType);
-            AddHostedMethod.MakeGenericMethod(hostType).Invoke(null, new object[] { services });
+            services.AddHostedService<ConsumerBaseHostService>(s =>
+            {
+                var consumerType = new ConsumerType
+                {
+                    Queue = eventInfo.Options.Queue,
+                    Consumer = typeof(EventBusConsumer<>).MakeGenericType(eventInfo.EventType),
+                    Event = eventInfo.EventType
+                };
+                return new ConsumerBaseHostService(
+                    s,
+                    s.GetRequiredService<ServiceFactory>(),
+                    s.GetRequiredService<ILogger<ConsumerBaseHostService>>(),
+                    new List<ConsumerType> { consumerType });
+            });
         }
 
         // Use EventGroupConsumerHostSrvice processing group of consumers.
@@ -136,7 +142,14 @@ public class EventBusTypeFilter : ITypeFilter
         // IEventMiddleware<T> and IEventHandler<T> are not found.
         if (eventType == null)
         {
-            return;
+            if (type.GetCustomAttribute<EventTopicAttribute>() != null)
+            {
+                eventType = type;
+            }
+            else
+            {
+                return;
+            }
         }
 
         var eventTopicAttribute = eventType.GetCustomAttribute<EventTopicAttribute>();
@@ -144,14 +157,6 @@ public class EventBusTypeFilter : ITypeFilter
         {
             throw new ArgumentNullException($"{eventType.Name} type is not configured with the [EventTopic] attribute.");
         }
-
-        services.AddScoped(serviceType: typeof(IHandlerMediator<>).MakeGenericType(eventType), implementationType: typeof(HandlerMediator<>).MakeGenericType(eventType));
-        services.AddKeyedSingleton(serviceKey: eventTopicAttribute.Queue, serviceType: typeof(IConsumerOptions), implementationInstance: eventTopicAttribute);
-        services.Add(new ServiceDescriptor(
-            serviceKey: eventTopicAttribute.Queue,
-            serviceType: typeof(IConsumer<>).MakeGenericType(eventType),
-            implementationType: typeof(EventBusConsumer<>).MakeGenericType(eventType),
-            lifetime: ServiceLifetime.Scoped));
 
         EventInfo eventInfo;
 

@@ -7,6 +7,7 @@
 using Maomi.MQ.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Diagnostics;
 
 namespace Maomi.MQ.EventBus;
@@ -27,6 +28,7 @@ public class HandlerMediator<TEvent> : IHandlerMediator<TEvent>
     /// Initializes a new instance of the <see cref="HandlerMediator{TEvent}"/> class.
     /// </summary>
     /// <param name="serviceProvider"></param>
+    /// <param name="eventInfo"></param>
     public HandlerMediator(IServiceProvider serviceProvider, IEventHandlerFactory<TEvent> eventInfo)
     {
         _serviceProvider = serviceProvider;
@@ -81,7 +83,7 @@ public class HandlerMediator<TEvent> : IHandlerMediator<TEvent>
 
                 // Rollback.
                 // 回滚.
-                while (eventHandlers.TryPeek(out var eventHandler))
+                while (eventHandlers.TryPop(out var eventHandler))
                 {
                     try
                     {

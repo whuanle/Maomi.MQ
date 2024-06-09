@@ -15,7 +15,7 @@ namespace Maomi.MQ;
 public class MqOptions
 {
     /// <summary>
-    /// 0-1024.
+    /// 0-64.
     /// </summary>
     public int WorkId { get; init; }
 

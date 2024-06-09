@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 
 namespace Maomi.MQ.Tests.JsonSerializer;
 
@@ -27,9 +26,9 @@ public class JsonSerializerTests
         Assert.Equal(model.Message, newModel.Message);  
     }
 
-    public class TestEvent
+    private class TestEvent
     {
         public int Id { get; set; }
-        public string Message { get; set; }
+        public string Message { get; set; } = null!;
     }
 }
