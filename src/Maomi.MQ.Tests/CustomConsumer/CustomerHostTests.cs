@@ -155,7 +155,7 @@ public partial class DefaultCustomerHostTests : BaseHostTest
         // check arguments.
         _mockChannel.Verify(a => a.QueueDeclareAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<IDictionary<string, object>>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
 
-        Assert.Equal("1000", arguments["x-expires"]);
+        Assert.Equal(1000, arguments["x-expires"]);
         Assert.Equal(string.Empty, arguments["x-dead-letter-exchange"]);
         Assert.Equal("test_dead", arguments["x-dead-letter-routing-key"]);
     }

@@ -28,13 +28,13 @@ Maomi.MQ.RabbitMQ 是一个用于专为 RabbitMQ 设计的发布者和消费者�
 
 ### 目录
 
-* [快速入门](https://github.com/whuanle/Maomi.MQ/docs/1.start.md) 
-* [发布事件](https://github.com/whuanle/Maomi.MQ/docs/2.publisher.md)
-* [消费者](https://github.com/whuanle/Maomi.MQ/docs/2.0.consumer.md)
-  * [消费者模式](https://github.com/whuanle/Maomi.MQ/docs/2.1.consumer.md)
-  * [事件总线模式](https://github.com/whuanle/Maomi.MQ/docs/2.2.eventbus.md)
-* [配置](https://github.com/whuanle/Maomi.MQ/docs/3.configuration.md)
-* [Qos 并发和顺序](https://github.com/whuanle/Maomi.MQ/ocs/4.qos.md)
-* [重试](https://github.com/whuanle/Maomi.MQ/docs/5.retry.md)
-* [死信队列](https://github.com/whuanle/Maomi.MQ/docs/6.dead_queue.md)
-* [可观测性](https://github.com/whuanle/Maomi.MQ/docs/7.opentelemtry.md)
+* [快速入门](https://mmq.whuanle.cn/1.start.html)
+* [发布事件](https://mmq.whuanle.cn/2.publisher.html)
+* [消费者](https://mmq.whuanle.cn/2.0.consumer.html)
+  - [消费者模式](https://mmq.whuanle.cn/2.1.consumer.html)
+  - [事件总线模式](https://mmq.whuanle.cn/2.2.eventbus.html)
+* [配置](https://mmq.whuanle.cn/3.configuration.html)
+* [Qos 并发和顺序](https://mmq.whuanle.cn/4.qos.html)
+* [重试](https://mmq.whuanle.cn/5.retry.html)
+* [死信队列](https://mmq.whuanle.cn/6.dead_queue.html)
+* [可观测性](https://mmq.whuanle.cn/7.opentelemetry.html)

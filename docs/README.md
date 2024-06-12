@@ -37,4 +37,4 @@ Maomi.MQ.RabbitMQ 是一个用于专为 RabbitMQ 设计的发布者和消费者�
 * [Qos 并发和顺序](4.qos.md)
 * [重试](5.retry.md)
 * [死信队列](6.dead_queue.md)
-* [可观测性](7.opentelemtry.md)
+* [可观测性](7.opentelemtery.md)

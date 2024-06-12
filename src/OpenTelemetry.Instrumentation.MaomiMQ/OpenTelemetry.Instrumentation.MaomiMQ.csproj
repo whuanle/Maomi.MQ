@@ -9,7 +9,7 @@
 
 		<AssemblyName>Maomi.MQ.Instrumentation</AssemblyName>
 		<IsPackable>true</IsPackable>
-		<PackageVersion>1.1.0</PackageVersion>
+		<PackageVersion>1.1.1</PackageVersion>
 		<Title>nstrumentation.MaomiMQ</Title>
 		<Description>
 			RabbitMQ Publisher and consumer communication model framework.
