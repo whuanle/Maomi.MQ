@@ -1,6 +1,8 @@
 using Maomi.MQ;
 using Polly;
 using Polly.Retry;
+using RabbitMQ.Client;
+using System.Reflection;
 
 namespace ActivitySourceApi;
 
@@ -11,14 +13,20 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
         builder.Logging.AddConsole().AddDebug();
 
-        builder.Services.AddMaomiMQ(options =>
+        builder.Services.AddMaomiMQ((MqOptionsBuilder options) =>
         {
             options.WorkId = 1;
-        }, options =>
-        {
-            options.HostName = "192.168.1.4";
-            options.ClientProvidedName = "aaa";
-        }, new System.Reflection.Assembly[] { typeof(Program).Assembly });
+            options.AutoQueueDeclare = true;
+            options.AppName = "myapp";
+            options.Rabbit = (ConnectionFactory options) =>
+            {
+                options.HostName = "192.168.3.248";
+#if DEBUG
+                options.VirtualHost = "debug";
+#endif
+                options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
+            };
+        }, [typeof(Program).Assembly]);
 
         builder.Services.AddSingleton<IRetryPolicyFactory, MyDefaultRetryPolicyFactory>();
 
@@ -53,7 +61,7 @@ public class MyDefaultRetryPolicyFactory : IRetryPolicyFactory
         _logger = logger;
     }
 
-    public Task<AsyncRetryPolicy> CreatePolicy(string queue)
+    public Task<AsyncRetryPolicy> CreatePolicy(string queue, long id)
     {
         // Create a retry policy.
         // 创建重试策略.
@@ -68,10 +76,5 @@ public class MyDefaultRetryPolicyFactory : IRetryPolicyFactory
                 });
 
         return Task.FromResult(retryPolicy);
-    }
-
-    public Task<AsyncRetryPolicy> CreatePolicy(string queue, long id)
-    {
-        throw new NotImplementedException();
     }
 }

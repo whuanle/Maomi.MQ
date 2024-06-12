@@ -21,10 +21,13 @@ public class Program
         builder.Services.AddMaomiMQ((MqOptionsBuilder options) =>
         {
             options.WorkId = 1;
-            options.HostName = "192.168.1.4";
-            options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
+            options.AppName = "myapp";
+            options.Rabbit = (ConnectionFactory options) =>
+            {
+                options.HostName = "192.168.3.248";
+                options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
+            };
         }, [typeof(Program).Assembly]);
-
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.

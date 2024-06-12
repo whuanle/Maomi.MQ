@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+#pragma warning disable SA1600 // Elements should be documented
+
 using System;
 using System.Diagnostics.Tracing;
 using OpenTelemetry.Internal;
@@ -11,9 +13,9 @@ namespace OpenTelemetry.Instrumentation.MaomiMQ.Implementation;
 /// EventSource events emitted from the project.
 /// </summary>
 [EventSource(Name = "OpenTelemetry-Instrumentation-MaomiMQ")]
-internal class MaaomiMQInstrumentationEventSource : EventSource
+internal class MaomiMQInstrumentationEventSource : EventSource
 {
-    public static readonly MaaomiMQInstrumentationEventSource Log = new();
+    public static readonly MaomiMQInstrumentationEventSource Log = new();
 
     [Event(1, Message = "Payload is NULL in event '{1}' from handler '{0}', span will not be recorded.", Level = EventLevel.Warning)]
     public void NullPayload(string handlerName, string eventName)

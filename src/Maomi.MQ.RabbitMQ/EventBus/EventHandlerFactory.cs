@@ -18,6 +18,10 @@ internal class EventHandlerFactory<TEvent> : IEventHandlerFactory<TEvent>
     /// </summary>
     public IReadOnlyDictionary<int, Type> Handlers { get; init; } = null!;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EventHandlerFactory{TEvent}"/> class.
+    /// </summary>
+    /// <param name="handlers"></param>
     public EventHandlerFactory(IReadOnlyDictionary<int, Type> handlers)
     {
         Handlers = handlers;

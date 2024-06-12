@@ -10,6 +10,7 @@
 
 using Maomi.MQ.Default;
 using Maomi.MQ.Diagnostics;
+using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -20,6 +21,7 @@ using RabbitMQ.Client.Events;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading;
 
 namespace Maomi.MQ.Hosts;
 
@@ -88,19 +90,25 @@ public partial class ConsumerBaseHostService : BackgroundService
 
     protected virtual async Task WaitReadyAsync()
     {
-        if (!_mqOptions.AutoQueueDeclare)
-        {
-            return;
-        }
+        var pool = _serviceProvider.GetRequiredService<ConnectionPool>();
+        using var connectionObject = pool.CreateAutoReturn();
+        var channel = connectionObject.Channel;
 
-        using IConnection connection = await _connectionFactory.CreateConnectionAsync();
-        using IChannel channel = await connection.CreateChannelAsync();
         foreach (var consumerType in _consumerTypes)
         {
             Dictionary<string, object> arguments = new();
             var consumerOptions = _serviceProvider.GetRequiredKeyedService<IConsumerOptions>(serviceKey: consumerType.Queue);
 
-            if (consumerOptions.Expiration != null)
+            if (consumerOptions.AutoQueueDeclare == AutoQueueDeclare.Disable)
+            {
+                continue;
+            }
+            else if (!_mqOptions.AutoQueueDeclare && consumerOptions.AutoQueueDeclare == AutoQueueDeclare.None)
+            {
+                continue;
+            }
+
+            if (consumerOptions.Expiration != default)
             {
                 arguments.Add("x-expires", consumerOptions.Expiration);
             }
@@ -141,6 +149,8 @@ public partial class ConsumerBaseHostService : BackgroundService
 
         List<int> qos = new();
         Dictionary<string, EventingBasicConsumer> consumers = new();
+
+        int consumerCount = 0;
         foreach (var consumerType in _consumerTypes)
         {
             var consumerOptions = _serviceProvider.GetRequiredKeyedService<IConsumerOptions>(serviceKey: consumerType.Queue);
@@ -149,10 +159,13 @@ public partial class ConsumerBaseHostService : BackgroundService
                 continue;
             }
 
+            consumerCount++;
             qos.Add(consumerOptions.Qos);
 
             var consumer = new EventingBasicConsumer(channel);
             consumers.Add(consumerType.Queue, consumer);
+            var consumerHandler = BuildConsumerHandler(consumerType.Event);
+
             consumer.Received += async (sender, eventArgs) =>
             {
                 Dictionary<string, object> loggerState = new() { { DiagnosticName.Activity.Consumer, consumerOptions.Queue } };
@@ -161,13 +174,16 @@ public partial class ConsumerBaseHostService : BackgroundService
                     loggerState.Add(DiagnosticName.Event.Id, eventId!);
                 }
 
-                var consumerHandler = BuildConsumerHandler(consumerType.Event);
-
                 using (_logger.BeginScope(loggerState))
                 {
                     await consumerHandler(this, channel, consumerOptions, eventArgs);
                 }
             };
+        }
+
+        if (consumerCount == 0)
+        {
+            return;
         }
 
         await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: (ushort)qos.Average(), global: false);
@@ -384,7 +400,7 @@ public partial class ConsumerBaseHostService
     {
         ParameterExpression consumer = Expression.Variable(typeof(ConsumerBaseHostService), "consumer");
         ParameterExpression channel = Expression.Parameter(typeof(IChannel), "channel");
-        ParameterExpression consumerOptions = Expression.Parameter(typeof(ConsumerOptions), "consumerOptions");
+        ParameterExpression consumerOptions = Expression.Parameter(typeof(IConsumerOptions), "consumerOptions");
         ParameterExpression eventArgs = Expression.Parameter(typeof(BasicDeliverEventArgs), "eventArgs");
         MethodCallExpression method = Expression.Call(
             consumer,
@@ -393,6 +409,6 @@ public partial class ConsumerBaseHostService
             consumerOptions,
             eventArgs);
 
-        return Expression.Lambda<ConsumerHandler>(method, consumer, consumerOptions, channel, eventArgs).Compile();
+        return Expression.Lambda<ConsumerHandler>(method, consumer, channel, consumerOptions, eventArgs).Compile();
     }
 }

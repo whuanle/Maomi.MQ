@@ -1,14 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
 using Maomi.MQ.Diagnostics;
 using OpenTelemetry.Internal;
 using OpenTelemetry.Trace;
+using System;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace OpenTelemetry.Instrumentation.MaomiMQ.Implementation;
 
@@ -116,7 +114,7 @@ internal sealed class MaomiMQDiagnosticListener : ListenerHandler
             }
             catch (Exception ex)
             {
-                MaaomiMQInstrumentationEventSource.Log.EnrichmentException(ex);
+                MaomiMQInstrumentationEventSource.Log.EnrichmentException(ex);
             }
         }
     }
@@ -128,7 +126,7 @@ internal sealed class MaomiMQDiagnosticListener : ListenerHandler
             var exc = payload as Exception;
             if (exc == null)
             {
-                MaaomiMQInstrumentationEventSource.Log.NullPayload(nameof(MaomiMQDiagnosticListener), nameof(this.OnStopActivity));
+                MaomiMQInstrumentationEventSource.Log.NullPayload(nameof(MaomiMQDiagnosticListener), nameof(this.OnStopActivity));
                 return;
             }
 

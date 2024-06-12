@@ -4,6 +4,8 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Maomi.MQ;
 using OpenTelemetry.Exporter;
+using RabbitMQ.Client;
+using System.Reflection;
 
 namespace ActivitySourceApi;
 
@@ -13,7 +15,19 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        const string serviceName = "roll-dice";
+        const string serviceName = "myapp";
+
+        builder.Services.AddMaomiMQ((MqOptionsBuilder options) =>
+        {
+            options.WorkId = 1;
+            options.AutoQueueDeclare = true;
+            options.AppName = serviceName;
+            options.Rabbit = (ConnectionFactory options) =>
+            {
+                options.HostName = "192.168.3.248";
+                options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
+            };
+        }, [typeof(Program).Assembly]);
 
         builder.Services.AddOpenTelemetry()
               .ConfigureResource(resource => resource.AddService(serviceName))
@@ -21,26 +35,16 @@ public class Program
               {
                   tracing.AddMaomiMQInstrumentation(options =>
                   {
+                      options.Sources.AddRange(MaomiMQDiagnostic.Sources);
                       options.RecordException = true;
                   })
                   .AddAspNetCoreInstrumentation()
                   .AddOtlpExporter(options =>
                   {
-                      options.Endpoint = new Uri("http://20.189.120.90:32808/v1/traces");
+                      options.Endpoint = new Uri("http://127.0.0.1:4318/v1/traces");
                       options.Protocol = OtlpExportProtocol.HttpProtobuf;
                   });
               });
-
-        builder.Services.AddMaomiMQ(options =>
-        {
-            options.WorkId = 1;
-        }, options =>
-        {
-            options.HostName = "192.168.1.4";
-            options.ClientProvidedName = "aaa";
-        }, new System.Reflection.Assembly[] { typeof(Program).Assembly });
-
-
 
         builder.Services.AddControllers();
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

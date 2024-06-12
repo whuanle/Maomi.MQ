@@ -29,7 +29,7 @@ public interface IMessagePublisher
     /// <param name="message">Event object.<br />事件对象.</param>
     /// <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
     /// <returns><see cref="Task"/>.</returns>
-    Task PublishAsync<TEvent>(string queue, TEvent message, Action<IBasicProperties>? properties = null)
+    Task PublishAsync<TEvent>(string queue, TEvent message, Action<BasicProperties>? properties = null)
         where TEvent : class;
 
     /// <summary>
@@ -52,5 +52,5 @@ public interface IMessagePublisher
     /// <param name="message">Event object.<br />事件对象.</param>
     /// <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
     /// <returns><see cref="Task"/>.</returns>
-    Task PublishAsync<TEvent>(string queue, EventBody<TEvent> message, BasicProperties properties);
+    Task CustomPublishAsync<TEvent>(string queue, EventBody<TEvent> message, BasicProperties properties);
 }

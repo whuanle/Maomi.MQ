@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Maomi.MQ\Maomi.MQ.csproj" />
+    <ProjectReference Include="..\..\..\src\Maomi.MQ.RabbitMQ\Maomi.MQ.RabbitMQ.csproj" />
     <ProjectReference Include="..\..\..\src\OpenTelemetry.Instrumentation.MaomiMQ\OpenTelemetry.Instrumentation.MaomiMQ.csproj" />
   </ItemGroup>
 

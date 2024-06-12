@@ -1,4 +1,6 @@
 using Maomi.MQ;
+using RabbitMQ.Client;
+using System.Reflection;
 
 namespace EventGroup;
 
@@ -15,13 +17,17 @@ public class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
         builder.Services.AddLogging();
-        builder.Services.AddMaomiMQ(options =>
+
+        builder.Services.AddMaomiMQ((MqOptionsBuilder options) =>
         {
             options.WorkId = 1;
-        }, options =>
-        {
-            options.HostName = "192.168.3.248";
-        }, new System.Reflection.Assembly[] { typeof(Program).Assembly });
+            options.AppName = "myapp";
+            options.Rabbit = (ConnectionFactory options) =>
+            {
+                options.HostName = "192.168.3.248";
+                options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
+            };
+        }, [typeof(Program).Assembly]);
 
 
         var app = builder.Build();

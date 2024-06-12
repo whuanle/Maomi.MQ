@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System.Diagnostics;
 
-namespace Maomi.MQ.Defaults;
+namespace Maomi.MQ;
 
 /// <summary>
 /// <inheritdoc />
@@ -54,8 +54,23 @@ public class DefaultMessagePublisher : IMessagePublisher
         _logger = logger;
     }
 
+    // Copy.
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DefaultMessagePublisher"/> class.
+    /// </summary>
+    /// <param name="publisher"></param>
+    protected DefaultMessagePublisher(DefaultMessagePublisher publisher)
+    {
+        _mqOptions = publisher._mqOptions;
+        _jsonSerializer = publisher._jsonSerializer;
+        _connectionPool = publisher.ConnectionPool;
+        _idGen = publisher._idGen;
+        _logger = publisher._logger;
+    }
+
     /// <inheritdoc />
-    public virtual async Task PublishAsync<TEvent>(string queue, TEvent message, Action<IBasicProperties>? properties = null)
+    public virtual async Task PublishAsync<TEvent>(string queue, TEvent message, Action<BasicProperties>? properties = null)
         where TEvent : class
     {
         var basicProperties = new BasicProperties()
@@ -74,6 +89,8 @@ public class DefaultMessagePublisher : IMessagePublisher
     /// <inheritdoc />
     public virtual async Task PublishAsync<TEvent>(string queue, TEvent message, BasicProperties properties)
     {
+        properties.DeliveryMode = DeliveryModes.Persistent;
+
         var eventBody = new EventBody<TEvent>
         {
             Id = _idGen.NextId(),
@@ -83,11 +100,34 @@ public class DefaultMessagePublisher : IMessagePublisher
             Queue = queue
         };
 
-        await PublishAsync(queue, eventBody, properties);
+        await CustomPublishAsync(queue, eventBody, properties);
     }
 
     /// <inheritdoc />
-    public virtual async Task PublishAsync<TEvent>(string queue, EventBody<TEvent> message, BasicProperties properties)
+    public virtual async Task CustomPublishAsync<TEvent>(string queue, EventBody<TEvent> message, BasicProperties properties)
+    {
+        var connection = _connectionPool.Get();
+        try
+        {
+            await PublishAsync(connection.Channel, queue, message, properties);
+        }
+        finally
+        {
+            _connectionPool.Return(connection);
+        }
+    }
+
+    /// <summary>
+    /// Publish messagge.<br />
+    /// 发布消息.
+    /// </summary>
+    /// <typeparam name="TEvent">Event model.<br />事件模型类.</typeparam>
+    /// <param name="channel"></param>
+    /// <param name="queue">Queue name.<br />队列名称.</param>
+    /// <param name="message">Event object.<br />事件对象.</param>
+    /// <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
+    /// <returns><see cref="Task"/>.</returns>
+    protected virtual async Task PublishAsync<TEvent>(IChannel channel, string queue, EventBody<TEvent> message, BasicProperties properties)
     {
         var activityTags = message.GetTags();
         using Activity? activity = _diagnosticsWriter.WriteStarted(DiagnosticName.Activity.Publisher, DateTimeOffset.Now, activityTags);
@@ -96,10 +136,9 @@ public class DefaultMessagePublisher : IMessagePublisher
         properties.Headers.TryAdd(DiagnosticName.Event.Id, message.Id);
         properties.Headers.TryAdd(DiagnosticName.Event.Publisher, _mqOptions.AppName);
 
-        var connection = _connectionPool.Get();
         try
         {
-            await connection.Channel.BasicPublishAsync(
+            await channel.BasicPublishAsync(
                 exchange: string.Empty,
                 routingKey: queue,
                 basicProperties: properties,
@@ -107,18 +146,15 @@ public class DefaultMessagePublisher : IMessagePublisher
                 mandatory: true);
 
             _logger.LogDebug("The message with id [{Id}] has been sent.", message.Id);
+            _diagnosticsWriter.WriteStopped(activity, DateTimeOffset.Now, activityTags);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "The message with id [{Id}] failed to send.", message.Id);
             _diagnosticsWriter.WriteException(activity, ex);
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            throw;
-        }
-        finally
-        {
-            _connectionPool.Return(connection);
             _diagnosticsWriter.WriteStopped(activity, DateTimeOffset.Now, activityTags);
+            throw;
         }
     }
 }

@@ -34,7 +34,7 @@ public interface IConsumerOptions
     /// Queue message expiration time, in millimeters.<br />
     /// 队列消息过期时间，单位毫秒.
     /// </summary>
-    string? Expiration { get; }
+    int Expiration { get; }
 
     /// <summary>
     /// Qos.
@@ -52,4 +52,10 @@ public interface IConsumerOptions
     /// 分组名称.
     /// </summary>
     string? Group { get; }
+
+    /// <summary>
+    /// Create queues on startup,<see cref="RabbitMQ.Client.IChannel.QueueDeclareAsync"/>.<br />
+    /// 是否自动创建队列.
+    /// </summary>
+    AutoQueueDeclare AutoQueueDeclare { get; }
 }

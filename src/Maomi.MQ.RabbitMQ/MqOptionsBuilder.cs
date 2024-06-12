@@ -33,5 +33,5 @@ public class MqOptionsBuilder
     /// <summary>
     /// RabbitMQ connection factory.
     /// </summary>
-    public Action<ConnectionFactory> ConnectionFactory { get; set; } = null!;
+    public Action<ConnectionFactory> Rabbit { get; set; } = null!;
 }

@@ -26,7 +26,7 @@ public static class RedisRetryExtensions
     /// <returns><see cref="IServiceCollection"/>.</returns>
     public static IServiceCollection AddMaomiMQRedisRetry(this IServiceCollection services, Func<IServiceProvider, IDatabase> func)
     {
-        services.AddScoped<IRetryPolicyFactory, RedisRetryPolicyFactory>(s =>
+        services.AddSingleton<IRetryPolicyFactory, RedisRetryPolicyFactory>(s =>
         {
             var logger = s.GetRequiredService<ILogger<DefaultRetryPolicyFactory>>();
             var redis = func.Invoke(s);

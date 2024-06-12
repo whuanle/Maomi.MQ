@@ -13,6 +13,11 @@ namespace OpenTelemetry.Instrumentation.MaomiMQ;
 public class MaomiMQInstrumentationOptions
 {
     /// <summary>
+    /// Source names.
+    /// </summary>
+    public List<string> Sources { get; set; } = new List<string>();
+
+    /// <summary>
     /// Gets or sets an action to enrich an Activity.
     /// </summary>
     /// <remarks>

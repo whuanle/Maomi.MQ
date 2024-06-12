@@ -103,7 +103,7 @@ public partial class DefaultCustomerHostTests
     [Consumer("test",
         DeadQueue = "test_dead",
         ExecptionRequeue = true,
-        Expiration = "1000",
+        Expiration = 1000,
         Group = "group",
         Qos = 10,
         RetryFaildRequeue = true)]

@@ -44,10 +44,13 @@ public class EventTopicAttribute : Attribute, IConsumerOptions
     public bool ExecptionRequeue { get; set; } = true;
 
     /// <inheritdoc />
-    public string? Expiration { get; set; }
+    public int Expiration { get; set; }
 
     /// <inheritdoc />
     public string? Group { get; set; }
+
+    /// <inheritdoc />
+    public AutoQueueDeclare AutoQueueDeclare { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EventTopicAttribute"/> class.

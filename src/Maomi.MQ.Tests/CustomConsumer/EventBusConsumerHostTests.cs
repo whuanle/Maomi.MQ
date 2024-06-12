@@ -38,7 +38,7 @@ public partial class EventBusConsumerHostTests : BaseHostTest
                 services.AddMaomiMQ(options =>
                 {
                     options.WorkId = 1;
-                    options.ConnectionFactory = rabbit => { };
+                    options.Rabbit = rabbit => { };
                 }, Array.Empty<Assembly>());
 
                 services.AddSingleton<MqOptions>(new MqOptions
@@ -90,7 +90,7 @@ public partial class EventBusConsumerHostTests : BaseHostTest
                 services.AddMaomiMQ(options =>
                 {
                     options.WorkId = 1;
-                    options.ConnectionFactory = rabbit => { };
+                    options.Rabbit = rabbit => { };
                 }, Array.Empty<Assembly>());
 
                 services.AddSingleton<MqOptions>(new MqOptions

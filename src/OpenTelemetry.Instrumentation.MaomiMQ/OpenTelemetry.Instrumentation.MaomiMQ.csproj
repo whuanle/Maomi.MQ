@@ -9,7 +9,7 @@
 
 		<AssemblyName>Maomi.MQ.Instrumentation</AssemblyName>
 		<IsPackable>true</IsPackable>
-		<PackageVersion>1.0.0</PackageVersion>
+		<PackageVersion>1.1.0</PackageVersion>
 		<Title>nstrumentation.MaomiMQ</Title>
 		<Description>
 			RabbitMQ Publisher and consumer communication model framework.
@@ -63,10 +63,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Maomi.MQ\Maomi.MQ.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<AdditionalFiles Include="..\..\stylecop.json" />
 	</ItemGroup>
 
@@ -75,5 +71,9 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Maomi.MQ.Core\Maomi.MQ.Core.csproj" />
 	</ItemGroup>
 </Project>

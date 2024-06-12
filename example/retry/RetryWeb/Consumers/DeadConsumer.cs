@@ -14,7 +14,11 @@ public class DeadConsumer : IConsumer<TestEvent>
     }
 
     // 每次失败时被执行
-    public Task FaildAsync(Exception ex, int retryCount, EventBody<TestEvent>? message) => Task.CompletedTask;
+    public Task FaildAsync(Exception ex, int retryCount, EventBody<TestEvent>? message)
+    {
+        Console.WriteLine($"{message?.Id} 重试 {retryCount}");
+        return Task.CompletedTask;
+    }
 
     // 最后一次失败时执行
     public Task<bool> FallbackAsync(EventBody<TestEvent>? message) => Task.FromResult(false);

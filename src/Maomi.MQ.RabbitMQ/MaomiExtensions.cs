@@ -5,7 +5,6 @@
 // </copyright>
 
 using Maomi.MQ.Default;
-using Maomi.MQ.Defaults;
 using Maomi.MQ.EventBus;
 using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
@@ -62,8 +61,8 @@ public static partial class MaomiExtensions
         ConnectionFactory connectionFactory = new ConnectionFactory();
 
         builder.Invoke(optionsBuilder);
-        ArgumentNullException.ThrowIfNull(optionsBuilder.ConnectionFactory);
-        optionsBuilder.ConnectionFactory.Invoke(connectionFactory);
+        ArgumentNullException.ThrowIfNull(optionsBuilder.Rabbit);
+        optionsBuilder.Rabbit.Invoke(connectionFactory);
 
         services.AddSingleton<MqOptions>(new MqOptions
         {

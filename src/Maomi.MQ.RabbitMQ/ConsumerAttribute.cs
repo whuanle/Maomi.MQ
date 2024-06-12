@@ -10,7 +10,7 @@ namespace Maomi.MQ;
 /// Consumer.<br />
 /// 消费者配置.
 /// </summary>
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
 public class ConsumerAttribute : Attribute, IConsumerOptions
 {
     /// <inheritdoc />
@@ -45,10 +45,13 @@ public class ConsumerAttribute : Attribute, IConsumerOptions
     public bool ExecptionRequeue { get; set; } = true;
 
     /// <inheritdoc />
-    public string? Expiration { get; set; }
+    public int Expiration { get; set; }
 
     /// <inheritdoc />
     public string? Group { get; set; }
+
+    /// <inheritdoc />
+    public AutoQueueDeclare AutoQueueDeclare { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConsumerAttribute"/> class.

@@ -9,7 +9,7 @@ public static class MaomiHostHelper
         var services = new ServiceCollection();
         services.AddMaomiMQ(mq =>
         {
-            mq.ConnectionFactory = (o) => o.HostName = "127.0.0.1";
+            mq.Rabbit = (o) => o.HostName = "127.0.0.1";
         }, Array.Empty<Assembly>());
         return services;
     }

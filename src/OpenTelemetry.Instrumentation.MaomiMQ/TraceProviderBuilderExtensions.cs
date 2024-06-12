@@ -3,7 +3,6 @@
 
 using OpenTelemetry.Instrumentation.MaomiMQ;
 using OpenTelemetry.Internal;
-using RabbitMQ.Client;
 using System;
 
 // ReSharper disable once CheckNamespace
@@ -26,7 +25,7 @@ public static class TraceProviderBuilderExtensions
     /// Enables the Quartz.NET Job automatic data collection for Quartz.NET.
     /// </summary>
     /// <param name="builder"><see cref="TraceProviderBuilderExtensions"/> being configured.</param>
-    /// <param name="configure">Quartz configuration options.</param>
+    /// <param name="configure">Maomi.MQ configuration options.</param>
     /// <returns>The instance of <see cref="TraceProviderBuilderExtensions"/> to chain the calls.</returns>
     public static TracerProviderBuilder AddMaomiMQInstrumentation(
         this TracerProviderBuilder builder,
@@ -41,8 +40,10 @@ public static class TraceProviderBuilderExtensions
 
         builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.MaomiMQ);
 
-        builder.AddSource(RabbitMQActivitySource.PublisherSourceName);
-        builder.AddSource(RabbitMQActivitySource.SubscriberSourceName);
+        foreach (var item in options.Sources)
+        {
+            builder.AddSource(item);
+        }
 
         return builder;
     }

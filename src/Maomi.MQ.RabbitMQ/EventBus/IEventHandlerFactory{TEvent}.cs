@@ -13,5 +13,4 @@ namespace Maomi.MQ.EventBus;
 public interface IEventHandlerFactory<TEvent> : IEventHandlerFactory
     where TEvent : class
 {
-
 }

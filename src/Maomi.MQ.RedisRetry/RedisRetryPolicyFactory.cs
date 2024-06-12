@@ -1,4 +1,10 @@
-﻿using Maomi.MQ.Default;
+﻿// <copyright file="RedisRetryPolicyFactory.cs" company="Maomi">
+// Copyright (c) Maomi. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/Maomi.MQ
+// </copyright>
+
+using Maomi.MQ.Default;
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
@@ -30,7 +36,7 @@ public class RedisRetryPolicyFactory : IRetryPolicyFactory
     /// <inheritdoc />
     public virtual async Task<AsyncRetryPolicy> CreatePolicy(string queue, long id)
     {
-        var key = queue + "_m";
+        var key = queue + "_m_" + id;
 
         var existRetry = await _redis.HashGetAsync(key, id);
         var currentRetryCount = 0;
@@ -63,7 +69,6 @@ public class RedisRetryPolicyFactory : IRetryPolicyFactory
                 },
                 onRetry: async (Exception exception, TimeSpan timeSpan, int retryCount, Context context) =>
                 {
-                    _logger.LogDebug("重试");
                     await FaildAsync(key, id, exception, timeSpan, retryCount, context);
                 });
         return retryPolicy;
@@ -81,6 +86,6 @@ public class RedisRetryPolicyFactory : IRetryPolicyFactory
     /// <returns><see cref="Task"/>.</returns>
     protected virtual async Task FaildAsync(string key, long id, Exception ex, TimeSpan timeSpan, int retryCount, Context context)
     {
-        await _redis.HashSetAsync(key, id.ToString(), retryCount);
+        await _redis.StringSetAsync(key, retryCount, TimeSpan.FromSeconds(5 * 60));
     }
 }

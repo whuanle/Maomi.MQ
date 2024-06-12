@@ -65,7 +65,7 @@ public class MessagePublisherTests
         {
             Headers = headers
         };
-        await publisher.PublishAsync(queue, eventBody, basicProperties);
+        await publisher.CustomPublishAsync(queue, eventBody, basicProperties);
         _mockChannel.Verify(c => c.BasicPublishAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<BasicProperties>(), It.IsAny<ReadOnlyMemory<byte>>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
         Assert.Equal(queue, headers[DiagnosticName.Event.Publisher]!);
     }

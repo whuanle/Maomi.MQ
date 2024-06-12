@@ -28,8 +28,11 @@ public class ConsumerOptions : IConsumerOptions
     public bool ExecptionRequeue { get; set; }
 
     /// <inheritdoc />
-    public string? Expiration { get; set; }
+    public int Expiration { get; set; }
 
     /// <inheritdoc />
     public string? Group { get; set; }
+
+    /// <inheritdoc />
+    public AutoQueueDeclare AutoQueueDeclare { get; set; }
 }

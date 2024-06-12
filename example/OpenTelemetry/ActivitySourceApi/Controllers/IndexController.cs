@@ -18,7 +18,7 @@ public class IndexController : ControllerBase
     [HttpGet("publish")]
     public async Task<string> Publisher()
     {
-        for (var i = 0; i < 1; i++)
+        for (var i = 0; i < 2; i++)
         {
             await _messagePublisher.PublishAsync(queue: "ActivitySourceApi", message: new TestEvent
             {

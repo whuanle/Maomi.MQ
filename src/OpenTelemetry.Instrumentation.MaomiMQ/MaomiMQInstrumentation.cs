@@ -22,7 +22,7 @@ internal class MaomiMQInstrumentation : IDisposable
             name => new MaomiMQDiagnosticListener(name, options),
             listener => listener.Name == DiagnosticName.MaomiMQ,
             null,
-            MaaomiMQInstrumentationEventSource.Log.UnknownErrorProcessingEvent);
+            MaomiMQInstrumentationEventSource.Log.UnknownErrorProcessingEvent);
         this.diagnosticSourceSubscriber.Subscribe();
     }
 

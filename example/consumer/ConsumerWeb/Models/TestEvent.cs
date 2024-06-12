@@ -30,3 +30,14 @@ public class DeadQueueEvent
         return Id.ToString();
     }
 }
+
+public class GroupEvent
+{
+    public int Id { get; set; }
+
+    public override string ToString()
+    {
+        return Id.ToString();
+    }
+}
+

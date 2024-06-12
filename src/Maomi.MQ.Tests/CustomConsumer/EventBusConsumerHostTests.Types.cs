@@ -18,7 +18,7 @@ public partial class EventBusConsumerHostTests
     [EventTopic("test",
         DeadQueue = "test_dead",
         ExecptionRequeue = true,
-        Expiration = "1000",
+        Expiration = 1000,
         Group = "group",
         Qos = 10,
         RetryFaildRequeue = true)]
@@ -257,16 +257,16 @@ public partial class EventBusConsumerHostTests
         {
         }
 
-        public Task ExecuteAsync(EventBody<TEvent> message)
+        public override Task ExecuteAsync(EventBody<TEvent> message)
         {
             return base.ExecuteAsync(message);
         }
-        public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
+        public override Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
         {
             RetryCount = retryCount;
             return Task.CompletedTask;
         }
-        public Task<bool> FallbackAsync(EventBody<TEvent>? message)
+        public override Task<bool> FallbackAsync(EventBody<TEvent>? message)
         {
             IsFallbacked = false;
             return Task.FromResult(false);

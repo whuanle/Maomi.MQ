@@ -44,7 +44,6 @@ public class MyConsumer : IConsumer<TestEvent>
     }
 }
 
-
 [Consumer("ConsumerWeb_dead", Qos = 1, DeadQueue = "ConsumerWeb_dead_queue", RetryFaildRequeue = false)]
 public class DeadConsumer : IConsumer<DeadEvent>
 {
@@ -80,7 +79,7 @@ public class DeadQueueConsumer : IConsumer<DeadQueueEvent>
     public Task<bool> FallbackAsync(EventBody<DeadQueueEvent>? message) => Task.FromResult(false);
 }
 
-[Consumer("ConsumerWeb_dead_2", Expiration = "6000", DeadQueue = "ConsumerWeb_dead_queue_2")]
+[Consumer("ConsumerWeb_dead_2", Expiration = 6000, DeadQueue = "ConsumerWeb_dead_queue_2")]
 public class EmptyDeadConsumer : EmptyConsumer<DeadEvent>
 {
 }
@@ -102,3 +101,47 @@ public class Dead_2_QueueConsumer : IConsumer<DeadQueueEvent>
     // 最后一次失败时执行
     public Task<bool> FallbackAsync(EventBody<DeadQueueEvent>? message) => Task.FromResult(false);
 }
+
+[Consumer("ConsumerWeb_group_1", Qos = 1, Group = "group")]
+public class Group_1_Consumer : IConsumer<GroupEvent>
+{
+    public Task ExecuteAsync(EventBody<GroupEvent> message) => Task.CompletedTask;
+
+    public Task FaildAsync(Exception ex, int retryCount, EventBody<GroupEvent>? message) => Task.CompletedTask;
+
+    public Task<bool> FallbackAsync(EventBody<GroupEvent>? message) => Task.FromResult(true);
+}
+
+[Consumer("ConsumerWeb_group_2", Qos = 1, Group = "group")]
+public class Group_2_Consumer : IConsumer<GroupEvent>
+{
+    public Task ExecuteAsync(EventBody<GroupEvent> message) => Task.CompletedTask;
+
+    public Task FaildAsync(Exception ex, int retryCount, EventBody<GroupEvent>? message) => Task.CompletedTask;
+
+    public Task<bool> FallbackAsync(EventBody<GroupEvent>? message) => Task.FromResult(true);
+}
+
+[Consumer("ConsumerWeb_empty", Expiration = 6000, DeadQueue = "ConsumerWeb_empty_dead")]
+public class MyEmptyConsumer : EmptyConsumer<TestEvent> { }
+
+[Consumer("ConsumerWeb_empty_dead", Qos = 10)]
+public class MyDeadConsumer : IConsumer<TestEvent>
+{
+    public Task ExecuteAsync(EventBody<TestEvent> message) => Task.CompletedTask;
+
+    public Task FaildAsync(Exception ex, int retryCount, EventBody<TestEvent>? message) => Task.CompletedTask;
+
+    public Task<bool> FallbackAsync(EventBody<TestEvent>? message) => Task.FromResult(true);
+}
+
+[Consumer("ConsumerWeb_create", AutoQueueDeclare = AutoQueueDeclare.Enable)]
+public class CreateConsumer : IConsumer<TestEvent>
+{
+    public Task ExecuteAsync(EventBody<TestEvent> message) => Task.CompletedTask;
+
+    public Task FaildAsync(Exception ex, int retryCount, EventBody<TestEvent>? message) => Task.CompletedTask;
+
+    public Task<bool> FallbackAsync(EventBody<TestEvent>? message) => Task.FromResult(true);
+}
+

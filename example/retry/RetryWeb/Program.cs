@@ -19,13 +19,16 @@ public class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
-        builder.Services.AddMaomiMQ((MqOptions options) =>
+        builder.Services.AddMaomiMQ((MqOptionsBuilder options) =>
         {
             options.WorkId = 1;
-        }, (ConnectionFactory options) =>
-        {
-            options.HostName = "192.168.3.248";
-            options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
+            options.AutoQueueDeclare = true;
+            options.AppName = "myapp";
+            options.Rabbit = (ConnectionFactory options) =>
+            {
+                options.HostName = "192.168.3.248";
+                options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
+            };
         }, [typeof(Program).Assembly]);
 
         builder.Services.AddMaomiMQRedisRetry((s) =>
