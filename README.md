@@ -34,7 +34,7 @@ Maomi.MQ.RabbitMQ 是一个用于专为 RabbitMQ 设计的发布者和消费者�
   * [消费者模式](https://github.com/whuanle/Maomi.MQ/docs/2.1.consumer.md)
   * [事件总线模式](https://github.com/whuanle/Maomi.MQ/docs/2.2.eventbus.md)
 * [配置](https://github.com/whuanle/Maomi.MQ/docs/3.configuration.md)
-* [Qos 并发和顺序](dhttps://github.com/whuanle/Maomi.MQ/ocs/4.qos.md)
+* [Qos 并发和顺序](https://github.com/whuanle/Maomi.MQ/ocs/4.qos.md)
 * [重试](https://github.com/whuanle/Maomi.MQ/docs/5.retry.md)
 * [死信队列](https://github.com/whuanle/Maomi.MQ/docs/6.dead_queue.md)
 * [可观测性](https://github.com/whuanle/Maomi.MQ/docs/7.opentelemtry.md)
