@@ -19,7 +19,7 @@ public sealed class ConfirmPublisher : SinglePublisher, IMessagePublisher, IDisp
     /// </summary>
     /// <param name="connectionObject"></param>
     /// <param name="publisher"></param>
-    public ConfirmPublisher(ConnectionObject connectionObject, DefaultMessagePublisher publisher)
+    internal ConfirmPublisher(ConnectionObject connectionObject, DefaultMessagePublisher publisher)
         : base(connectionObject, publisher)
     {
     }

@@ -9,6 +9,7 @@
 #pragma warning disable SA1600
 
 using Maomi.MQ.Pool;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 
 namespace Maomi.MQ;
@@ -19,6 +20,7 @@ namespace Maomi.MQ;
 public class SinglePublisher : DefaultMessagePublisher, IMessagePublisher, IDisposable
 {
     protected readonly ConnectionObject _connectionObject;
+    protected readonly bool _isExchange;
     protected bool disposedValue;
 
     /// <summary>
@@ -26,16 +28,19 @@ public class SinglePublisher : DefaultMessagePublisher, IMessagePublisher, IDisp
     /// </summary>
     /// <param name="connectionObject"></param>
     /// <param name="publisher"></param>
-    public SinglePublisher(ConnectionObject connectionObject, DefaultMessagePublisher publisher)
+    /// <param name="isExchange"></param>
+    internal SinglePublisher(ConnectionObject connectionObject, DefaultMessagePublisher publisher, bool isExchange = false)
         : base(publisher)
     {
         _connectionObject = connectionObject;
+        _isExchange = isExchange;
+        _isExchange = isExchange;
     }
 
     /// <inheritdoc cref="IMessagePublisher.CustomPublishAsync{TEvent}(string, EventBody{TEvent}, BasicProperties)"/>
     public override Task CustomPublishAsync<TEvent>(string queue, EventBody<TEvent> message, BasicProperties properties)
     {
-        return PublishAsync(_connectionObject.Channel, queue, message, properties);
+        return PublishAsync(_connectionObject.Channel, queue, message, properties, _isExchange);
     }
 
     /// <inheritdoc />

@@ -35,4 +35,7 @@ public class ConsumerOptions : IConsumerOptions
 
     /// <inheritdoc />
     public AutoQueueDeclare AutoQueueDeclare { get; set; }
+
+    /// <inheritdoc />
+    public string? BindExchange { get; set; }
 }

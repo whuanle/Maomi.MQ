@@ -58,4 +58,10 @@ public interface IConsumerOptions
     /// 是否自动创建队列.
     /// </summary>
     AutoQueueDeclare AutoQueueDeclare { get; }
+
+    /// <summary>
+    /// Bind the exchange of type Fanout.<br />
+    /// 绑定类型为 Fanout 的交换器.
+    /// </summary>
+    string? BindExchange { get; }
 }

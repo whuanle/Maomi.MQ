@@ -52,6 +52,9 @@ public class EventTopicAttribute : Attribute, IConsumerOptions
     /// <inheritdoc />
     public AutoQueueDeclare AutoQueueDeclare { get; set; }
 
+    /// <inheritdoc />
+    public string? BindExchange { get; set; }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="EventTopicAttribute"/> class.
     /// </summary>

@@ -19,7 +19,7 @@ public sealed class TransactionPublisher : SinglePublisher, IMessagePublisher, I
     /// </summary>
     /// <param name="connectionObject"></param>
     /// <param name="messagePublisher"></param>
-    public TransactionPublisher(ConnectionObject connectionObject, DefaultMessagePublisher messagePublisher)
+    internal TransactionPublisher(ConnectionObject connectionObject, DefaultMessagePublisher messagePublisher)
         : base(connectionObject, messagePublisher)
     {
     }

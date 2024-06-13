@@ -33,6 +33,23 @@ public static class PublisherExtensions
     }
 
     /// <summary>
+    /// The publisher of an exchange connection. <br />
+    /// 创建用于发布到交换器的发布者.
+    /// </summary>
+    /// <param name="messagePublisher"></param>
+    /// <returns><see cref="TransactionPublisher"/>.</returns>
+    public static ExchangePublisher CreateExchange(this IMessagePublisher messagePublisher)
+    {
+        if (messagePublisher is DefaultMessagePublisher publisher)
+        {
+            var p = new ExchangePublisher(publisher);
+            return p;
+        }
+
+        throw new InvalidCastException($"Unable to cast object of type '{messagePublisher.GetType().Name}' to type '{nameof(DefaultMessagePublisher)}'.");
+    }
+
+    /// <summary>
     /// See <see cref="IChannel.TxSelectAsync(CancellationToken)"/>. <br />
     /// Asynchronously enable TX mode for this session.<br />
     /// 开启事务.

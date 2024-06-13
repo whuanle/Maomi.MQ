@@ -70,7 +70,7 @@ public class DefaultMessagePublisher : IMessagePublisher
     }
 
     /// <inheritdoc />
-    public virtual async Task PublishAsync<TEvent>(string queue, TEvent message, Action<BasicProperties>? properties = null)
+    public virtual Task PublishAsync<TEvent>(string queue, TEvent message, Action<BasicProperties>? properties = null)
         where TEvent : class
     {
         var basicProperties = new BasicProperties()
@@ -83,11 +83,11 @@ public class DefaultMessagePublisher : IMessagePublisher
             properties.Invoke(basicProperties);
         }
 
-        await PublishAsync(queue, message, basicProperties);
+        return PublishAsync(queue, message, basicProperties);
     }
 
     /// <inheritdoc />
-    public virtual async Task PublishAsync<TEvent>(string queue, TEvent message, BasicProperties properties)
+    public virtual Task PublishAsync<TEvent>(string queue, TEvent message, BasicProperties properties)
     {
         properties.DeliveryMode = DeliveryModes.Persistent;
 
@@ -100,7 +100,7 @@ public class DefaultMessagePublisher : IMessagePublisher
             Queue = queue
         };
 
-        await CustomPublishAsync(queue, eventBody, properties);
+        return CustomPublishAsync(queue, eventBody, properties);
     }
 
     /// <inheritdoc />
@@ -126,8 +126,9 @@ public class DefaultMessagePublisher : IMessagePublisher
     /// <param name="queue">Queue name.<br />队列名称.</param>
     /// <param name="message">Event object.<br />事件对象.</param>
     /// <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
+    /// <param name="exchange"></param>
     /// <returns><see cref="Task"/>.</returns>
-    protected virtual async Task PublishAsync<TEvent>(IChannel channel, string queue, EventBody<TEvent> message, BasicProperties properties)
+    protected virtual async Task PublishAsync<TEvent>(IChannel channel, string queue, EventBody<TEvent> message, BasicProperties properties, bool exchange = false)
     {
         var activityTags = message.GetTags();
         using Activity? activity = _diagnosticsWriter.WriteStarted(DiagnosticName.Activity.Publisher, DateTimeOffset.Now, activityTags);
@@ -138,12 +139,24 @@ public class DefaultMessagePublisher : IMessagePublisher
 
         try
         {
-            await channel.BasicPublishAsync(
-                exchange: string.Empty,
-                routingKey: queue,
-                basicProperties: properties,
-                body: _jsonSerializer.Serializer(message),
-                mandatory: true);
+            if (exchange)
+            {
+                await channel.BasicPublishAsync(
+                    exchange: queue,
+                    routingKey: string.Empty,
+                    basicProperties: properties,
+                    body: _jsonSerializer.Serializer(message),
+                    mandatory: true);
+            }
+            else
+            {
+                await channel.BasicPublishAsync(
+                    exchange: string.Empty,
+                    routingKey: queue,
+                    basicProperties: properties,
+                    body: _jsonSerializer.Serializer(message),
+                    mandatory: true);
+            }
 
             _logger.LogDebug("The message with id [{Id}] has been sent.", message.Id);
             _diagnosticsWriter.WriteStopped(activity, DateTimeOffset.Now, activityTags);

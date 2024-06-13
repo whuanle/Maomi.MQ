@@ -135,6 +135,12 @@ public partial class ConsumerBaseHostService : BackgroundService
                 exclusive: false,
                 autoDelete: false,
                 arguments: arguments);
+
+            if (!string.IsNullOrEmpty(consumerOptions.BindExchange))
+            {
+                await channel.ExchangeDeclareAsync(consumerOptions.BindExchange, ExchangeType.Fanout);
+                await channel.QueueBindAsync(exchange: consumerOptions.BindExchange, queue: consumerOptions.Queue, routingKey: string.Empty);
+            }
         }
     }
 
