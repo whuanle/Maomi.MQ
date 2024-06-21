@@ -145,3 +145,30 @@ public class CreateConsumer : IConsumer<TestEvent>
     public Task<bool> FallbackAsync(EventBody<TestEvent>? message) => Task.FromResult(true);
 }
 
+[Consumer("ConsumerWeb_exchange_1", BindExchange = "exchange")]
+public class Exchange_1_Consumer : IConsumer<TestEvent>
+{
+    public Task ExecuteAsync(EventBody<TestEvent> message)
+    {
+        Console.WriteLine($"[1]: {message.Id}");
+        return Task.CompletedTask;
+    }
+
+    public Task FaildAsync(Exception ex, int retryCount, EventBody<TestEvent>? message) => Task.CompletedTask;
+
+    public Task<bool> FallbackAsync(EventBody<TestEvent>? message) => Task.FromResult(true);
+}
+
+[Consumer("ConsumerWeb_exchange_2", BindExchange = "exchange")]
+public class Exchange_2_Consumer : IConsumer<TestEvent>
+{
+    public Task ExecuteAsync(EventBody<TestEvent> message)
+    {
+        Console.WriteLine($"[2]: {message.Id}");
+        return Task.CompletedTask;
+    }
+
+    public Task FaildAsync(Exception ex, int retryCount, EventBody<TestEvent>? message) => Task.CompletedTask;
+
+    public Task<bool> FallbackAsync(EventBody<TestEvent>? message) => Task.FromResult(true);
+}

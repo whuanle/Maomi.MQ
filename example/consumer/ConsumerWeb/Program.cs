@@ -20,10 +20,8 @@ public class Program
             options.AppName = "myapp";
             options.Rabbit = (ConnectionFactory options) =>
             {
-                options.HostName = "192.168.3.248";
-#if DEBUG
-                options.VirtualHost = "debug";
-#endif
+                options.HostName = "20.189.120.90";
+                options.Port = 25672;
                 options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
             };
         }, [typeof(Program).Assembly]);

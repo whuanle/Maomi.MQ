@@ -29,7 +29,7 @@ public class SinglePublisher : DefaultMessagePublisher, IMessagePublisher, IDisp
     /// <param name="connectionObject"></param>
     /// <param name="publisher"></param>
     /// <param name="isExchange"></param>
-    internal SinglePublisher(ConnectionObject connectionObject, DefaultMessagePublisher publisher, bool isExchange = false)
+    internal SinglePublisher(ConnectionObject connectionObject, DefaultMessagePublisher publisher, bool isExchange)
         : base(publisher)
     {
         _connectionObject = connectionObject;

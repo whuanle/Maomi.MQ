@@ -24,8 +24,10 @@ public static class PublisherExtensions
     {
         if (messagePublisher is DefaultMessagePublisher publisher)
         {
+            var isExchange = messagePublisher is ExchangePublisher;
+
             var connection = messagePublisher.ConnectionPool.Get();
-            var tran = new SinglePublisher(connection, publisher);
+            var tran = new SinglePublisher(connection, publisher, isExchange);
             return tran;
         }
 
@@ -42,6 +44,12 @@ public static class PublisherExtensions
     {
         if (messagePublisher is DefaultMessagePublisher publisher)
         {
+            var isExchange = messagePublisher is ExchangePublisher;
+            if (isExchange)
+            {
+                throw new InvalidCastException($"Unable to cast object of type '{messagePublisher.GetType().Name}' to type '{nameof(DefaultMessagePublisher)}'.");
+            }
+
             var p = new ExchangePublisher(publisher);
             return p;
         }
@@ -74,8 +82,10 @@ public static class PublisherExtensions
     {
         if (messagePublisher is DefaultMessagePublisher publisher)
         {
+            var isExchange = messagePublisher is ExchangePublisher;
+
             var connection = messagePublisher.ConnectionPool.Get();
-            var tran = new TransactionPublisher(connection, publisher);
+            var tran = new TransactionPublisher(connection, publisher, isExchange);
             return tran;
         }
 
@@ -103,8 +113,10 @@ public static class PublisherExtensions
     {
         if (messagePublisher is DefaultMessagePublisher publisher)
         {
+            var isExchange = messagePublisher is ExchangePublisher;
+
             var connection = messagePublisher.ConnectionPool.Get();
-            var confirm = new ConfirmPublisher(connection, publisher);
+            var confirm = new ConfirmPublisher(connection, publisher, isExchange);
             return confirm;
         }
 

@@ -19,8 +19,9 @@ public sealed class TransactionPublisher : SinglePublisher, IMessagePublisher, I
     /// </summary>
     /// <param name="connectionObject"></param>
     /// <param name="messagePublisher"></param>
-    internal TransactionPublisher(ConnectionObject connectionObject, DefaultMessagePublisher messagePublisher)
-        : base(connectionObject, messagePublisher)
+    /// <param name="isExchange"></param>
+    internal TransactionPublisher(ConnectionObject connectionObject, DefaultMessagePublisher messagePublisher, bool isExchange)
+        : base(connectionObject, messagePublisher, isExchange)
     {
     }
 
