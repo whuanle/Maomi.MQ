@@ -6,6 +6,7 @@
 
 using Maomi.MQ.Pool;
 using RabbitMQ.Client;
+using System.Threading.Channels;
 
 namespace Maomi.MQ;
 
@@ -14,6 +15,8 @@ namespace Maomi.MQ;
 /// </summary>
 public sealed class ConfirmPublisher : SinglePublisher, IMessagePublisher, IDisposable
 {
+    private readonly IChannel _channel;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="ConfirmPublisher"/> class.
     /// </summary>
@@ -23,29 +26,45 @@ public sealed class ConfirmPublisher : SinglePublisher, IMessagePublisher, IDisp
     internal ConfirmPublisher(ConnectionObject connectionObject, DefaultMessagePublisher publisher, bool isExchange)
         : base(connectionObject, publisher, isExchange)
     {
+        _channel = connectionObject.Connection.CreateChannelAsync().Result;
     }
 
     /// <inheritdoc cref="IChannel.ConfirmSelectAsync(CancellationToken)"/>
     public Task ConfirmSelectAsync(CancellationToken cancellationToken = default)
     {
-        return _connectionObject.Channel.ConfirmSelectAsync(cancellationToken);
+        return _channel.ConfirmSelectAsync(cancellationToken);
     }
 
     /// <inheritdoc cref="IChannel.WaitForConfirmsOrDieAsync(CancellationToken)"/>
     public Task WaitForConfirmsOrDieAsync(CancellationToken cancellationToken = default)
     {
-        return _connectionObject.Channel.WaitForConfirmsOrDieAsync(cancellationToken);
+        return _channel.WaitForConfirmsOrDieAsync(cancellationToken);
     }
 
     /// <inheritdoc cref="IChannel.WaitForConfirmsAsync(CancellationToken)"/>
     public Task<bool> WaitForConfirmsAsync(CancellationToken cancellationToken = default)
     {
-        return _connectionObject.Channel.WaitForConfirmsAsync(cancellationToken);
+        return _channel.WaitForConfirmsAsync(cancellationToken);
+    }
+
+    /// <inheritdoc cref="IMessagePublisher.CustomPublishAsync{TEvent}(string, EventBody{TEvent}, BasicProperties)"/>
+    public override Task CustomPublishAsync<TEvent>(string queue, EventBody<TEvent> message, BasicProperties properties)
+    {
+        return PublishAsync(_channel, queue, message, properties, _isExchange);
     }
 
     /// <inheritdoc />
-    public override void Dispose()
+    protected override void Dispose(bool disposing)
     {
-        _connectionObject.Dispose();
+        if (!disposedValue)
+        {
+            if (disposing)
+            {
+                _channel.Dispose();
+                _connectionPool.Return(_connectionObject);
+            }
+
+            disposedValue = true;
+        }
     }
 }

@@ -21,6 +21,7 @@ using RabbitMQ.Client.Events;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading.Channels;
 
 namespace Maomi.MQ.Hosts;
 
@@ -151,11 +152,8 @@ public partial class ConsumerBaseHostService : BackgroundService
         var scope = _serviceProvider.CreateScope();
         var ioc = scope.ServiceProvider;
 
-        List<int> qosList = new();
-        ushort qos = 0;
         int consumerCount = 0;
 
-        Dictionary<ConsumerType, IConsumerOptions> consumers = new();
         foreach (var consumerType in _consumerTypes)
         {
             var consumerOptions = _serviceProvider.GetRequiredKeyedService<IConsumerOptions>(serviceKey: consumerType.Queue);
@@ -164,32 +162,16 @@ public partial class ConsumerBaseHostService : BackgroundService
                 continue;
             }
 
-            consumers.Add(consumerType, consumerOptions);
             consumerCount++;
-            qosList.Add(consumerOptions.Qos);
-        }
 
-        if (consumerCount == 0)
-        {
-            return;
-        }
-
-        qos = (ushort)qosList.Average();
-        using (var channel = await connection.CreateChannelAsync())
-        {
-            await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: qos, global: true);
-        }
-
-        qos = (ushort)qosList.Average();
-        foreach (var item in consumers)
-        {
             var consummerChannel = await connection.CreateChannelAsync();
+            await consummerChannel.BasicQosAsync(prefetchSize: 0, prefetchCount: consumerOptions.Qos, global: false);
             var consumer = new EventingBasicConsumer(consummerChannel);
-            var consumerHandler = BuildConsumerHandler(item.Key.Event);
+            var consumerHandler = BuildConsumerHandler(consumerType.Event);
 
             consumer.Received += async (sender, eventArgs) =>
             {
-                Dictionary<string, object> loggerState = new() { { DiagnosticName.Activity.Consumer, item.Value.Queue } };
+                Dictionary<string, object> loggerState = new() { { DiagnosticName.Activity.Consumer, consumerType.Queue } };
                 if (eventArgs.BasicProperties.Headers?.TryGetValue(DiagnosticName.Event.Id, out var eventId) == true)
                 {
                     loggerState.Add(DiagnosticName.Event.Id, eventId!);
@@ -197,14 +179,19 @@ public partial class ConsumerBaseHostService : BackgroundService
 
                 using (_logger.BeginScope(loggerState))
                 {
-                    await consumerHandler(this, consummerChannel, item.Value, eventArgs);
+                    await consumerHandler(this, consummerChannel, consumerOptions, eventArgs);
                 }
             };
 
             await consummerChannel.BasicConsumeAsync(
-                queue: item.Value.Queue,
+                queue: consumerType.Queue,
                 autoAck: false,
                 consumer: consumer);
+        }
+
+        if (consumerCount == 0)
+        {
+            return;
         }
 
         while (!stoppingToken.IsCancellationRequested)

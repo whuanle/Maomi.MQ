@@ -9,8 +9,8 @@
 #pragma warning disable SA1600
 
 using Maomi.MQ.Pool;
-using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
+using System.Threading.Channels;
 
 namespace Maomi.MQ;
 
@@ -33,7 +33,6 @@ public class SinglePublisher : DefaultMessagePublisher, IMessagePublisher, IDisp
         : base(publisher)
     {
         _connectionObject = connectionObject;
-        _isExchange = isExchange;
         _isExchange = isExchange;
     }
 

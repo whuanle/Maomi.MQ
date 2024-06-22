@@ -24,6 +24,11 @@ public class ConnectionObject : IDisposable
     protected bool disposedValue;
 
     /// <summary>
+    /// IConnection.
+    /// </summary>
+    public IConnection Connection => _connection;
+
+    /// <summary>
     /// IChannel.
     /// </summary>
     public IChannel Channel => _channel;
