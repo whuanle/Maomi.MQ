@@ -19,24 +19,8 @@ public class ConsumerAttribute : Attribute, IConsumerOptions
     /// <inheritdoc />
     public string? DeadQueue { get; set; }
 
-    private ushort _qos = 10;
-
     /// <inheritdoc />
-    public ushort Qos
-    {
-        get => _qos;
-        set
-        {
-            if (value <= 0)
-            {
-                _qos = 1;
-            }
-            else
-            {
-                _qos = value;
-            }
-        }
-    }
+    public ushort Qos { get; set; } = 100;
 
     /// <inheritdoc />
     public bool RetryFaildRequeue { get; set; }

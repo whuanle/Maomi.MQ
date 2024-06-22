@@ -37,7 +37,7 @@ public interface IConsumerOptions
     int Expiration { get; }
 
     /// <summary>
-    /// Qos.
+    /// Qos,1-65535.
     /// </summary>
     ushort Qos { get; }
 

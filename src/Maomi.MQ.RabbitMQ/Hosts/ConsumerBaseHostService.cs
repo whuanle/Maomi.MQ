@@ -21,7 +21,6 @@ using RabbitMQ.Client.Events;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading;
 
 namespace Maomi.MQ.Hosts;
 
@@ -148,15 +147,15 @@ public partial class ConsumerBaseHostService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using IConnection connection = await _connectionFactory.CreateConnectionAsync();
-        using IChannel channel = await connection.CreateChannelAsync();
 
         var scope = _serviceProvider.CreateScope();
         var ioc = scope.ServiceProvider;
 
-        List<int> qos = new();
-        Dictionary<string, EventingBasicConsumer> consumers = new();
-
+        List<int> qosList = new();
+        ushort qos = 0;
         int consumerCount = 0;
+
+        Dictionary<ConsumerType, IConsumerOptions> consumers = new();
         foreach (var consumerType in _consumerTypes)
         {
             var consumerOptions = _serviceProvider.GetRequiredKeyedService<IConsumerOptions>(serviceKey: consumerType.Queue);
@@ -165,26 +164,9 @@ public partial class ConsumerBaseHostService : BackgroundService
                 continue;
             }
 
+            consumers.Add(consumerType, consumerOptions);
             consumerCount++;
-            qos.Add(consumerOptions.Qos);
-
-            var consumer = new EventingBasicConsumer(channel);
-            consumers.Add(consumerType.Queue, consumer);
-            var consumerHandler = BuildConsumerHandler(consumerType.Event);
-
-            consumer.Received += async (sender, eventArgs) =>
-            {
-                Dictionary<string, object> loggerState = new() { { DiagnosticName.Activity.Consumer, consumerOptions.Queue } };
-                if (eventArgs.BasicProperties.Headers?.TryGetValue(DiagnosticName.Event.Id, out var eventId) == true)
-                {
-                    loggerState.Add(DiagnosticName.Event.Id, eventId!);
-                }
-
-                using (_logger.BeginScope(loggerState))
-                {
-                    await consumerHandler(this, channel, consumerOptions, eventArgs);
-                }
-            };
+            qosList.Add(consumerOptions.Qos);
         }
 
         if (consumerCount == 0)
@@ -192,14 +174,37 @@ public partial class ConsumerBaseHostService : BackgroundService
             return;
         }
 
-        await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: (ushort)qos.Average(), global: false);
-
-        foreach (var consumer in consumers)
+        qos = (ushort)qosList.Average();
+        using (var channel = await connection.CreateChannelAsync())
         {
-            await channel.BasicConsumeAsync(
-                queue: consumer.Key,
+            await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: qos, global: true);
+        }
+
+        qos = (ushort)qosList.Average();
+        foreach (var item in consumers)
+        {
+            var consummerChannel = await connection.CreateChannelAsync();
+            var consumer = new EventingBasicConsumer(consummerChannel);
+            var consumerHandler = BuildConsumerHandler(item.Key.Event);
+
+            consumer.Received += async (sender, eventArgs) =>
+            {
+                Dictionary<string, object> loggerState = new() { { DiagnosticName.Activity.Consumer, item.Value.Queue } };
+                if (eventArgs.BasicProperties.Headers?.TryGetValue(DiagnosticName.Event.Id, out var eventId) == true)
+                {
+                    loggerState.Add(DiagnosticName.Event.Id, eventId!);
+                }
+
+                using (_logger.BeginScope(loggerState))
+                {
+                    await consumerHandler(this, consummerChannel, item.Value, eventArgs);
+                }
+            };
+
+            await consummerChannel.BasicConsumeAsync(
+                queue: item.Value.Queue,
                 autoAck: false,
-                consumer: consumer.Value);
+                consumer: consumer);
         }
 
         while (!stoppingToken.IsCancellationRequested)
