@@ -33,7 +33,7 @@ Maomi.MQ.RabbitMQ 是一个用于专为 RabbitMQ 设计的发布者和消费者�
 * [消费者](2.0.consumer.md)
   * [消费者模式](2.1.consumer.md)
   * [事件总线模式](2.2.eventbus.md)
-* [配置](3.configuration.md)
+* [配置和调试](3.configuration.md)
 * [Qos 并发和顺序](4.qos.md)
 * [重试](5.retry.md)
 * [死信队列](6.dead_queue.md)
