@@ -1,6 +1,7 @@
 using ActivitySourceApi.Models;
 using Maomi.MQ;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics.Metrics;
 
 namespace ActivitySourceApi.Controllers;
 
@@ -9,6 +10,8 @@ namespace ActivitySourceApi.Controllers;
 public class IndexController : ControllerBase
 {
     private readonly IMessagePublisher _messagePublisher;
+    static Meter s_meter = new("Microsoft.AspNetCore.Hosting1", "1.0.0");
+    static Counter<int> s_hatsSold = s_meter.CreateCounter<int>("hats-sold");
 
     public IndexController(IMessagePublisher messagePublisher)
     {
@@ -20,6 +23,8 @@ public class IndexController : ControllerBase
     {
         for (var i = 0; i < 2; i++)
         {
+            s_hatsSold.Add(1000);
+
             await _messagePublisher.PublishAsync(queue: "ActivitySourceApi", message: new TestEvent
             {
                 Id = i

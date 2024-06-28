@@ -4,6 +4,7 @@
 using System;
 using Maomi.MQ.Diagnostics;
 using OpenTelemetry.Instrumentation.MaomiMQ.Implementation;
+using OpenTelemetry.Metrics;
 
 namespace OpenTelemetry.Instrumentation.MaomiMQ;
 
