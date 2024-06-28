@@ -54,7 +54,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QosPublisher", "example\qos
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QosConsole", "example\qos\QosConsole\QosConsole.csproj", "{D799112D-0712-4BB2-A8DB-9EF78B06BE54}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQConsole", "example\qos\RabbitMQConsole\RabbitMQConsole.csproj", "{34D910A5-431C-4E1F-966B-4EF0B2FD0D6A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMQConsole", "example\qos\RabbitMQConsole\RabbitMQConsole.csproj", "{34D910A5-431C-4E1F-966B-4EF0B2FD0D6A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenTelemetryConsole", "example\OpenTelemetry\OpenTelemetryConsole\OpenTelemetryConsole.csproj", "{C3CBC692-F6C3-4EA6-B0AA-103844967944}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -126,6 +128,10 @@ Global
 		{34D910A5-431C-4E1F-966B-4EF0B2FD0D6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{34D910A5-431C-4E1F-966B-4EF0B2FD0D6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{34D910A5-431C-4E1F-966B-4EF0B2FD0D6A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C3CBC692-F6C3-4EA6-B0AA-103844967944}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3CBC692-F6C3-4EA6-B0AA-103844967944}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3CBC692-F6C3-4EA6-B0AA-103844967944}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3CBC692-F6C3-4EA6-B0AA-103844967944}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -153,6 +159,7 @@ Global
 		{FB98779B-A755-42C7-9180-643AECC5935B} = {3A5731A3-9BAC-454B-B76B-81C381404ABC}
 		{D799112D-0712-4BB2-A8DB-9EF78B06BE54} = {3A5731A3-9BAC-454B-B76B-81C381404ABC}
 		{34D910A5-431C-4E1F-966B-4EF0B2FD0D6A} = {3A5731A3-9BAC-454B-B76B-81C381404ABC}
+		{C3CBC692-F6C3-4EA6-B0AA-103844967944} = {8979DE46-2DFE-424E-8C3F-010D6913D44D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {57DBA87C-FF49-40F6-8727-BBB51395CFEC}

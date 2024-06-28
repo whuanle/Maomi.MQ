@@ -1,4 +1,4 @@
-using OpenTelemetry.Logs;
+﻿using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -8,7 +8,7 @@ using RabbitMQ.Client;
 using System.Reflection;
 using OpenTelemetry;
 
-namespace ActivitySourceApi;
+namespace OpenTelemetryConsole;
 
 public class Program
 {
@@ -18,12 +18,12 @@ public class Program
 
         const string serviceName = "myapp";
 
-        builder.Services.AddMaomiMQ((MqOptionsBuilder options) =>
+        builder.Services.AddMaomiMQ((options) =>
         {
             options.WorkId = 1;
             options.AutoQueueDeclare = true;
             options.AppName = serviceName;
-            options.Rabbit = (ConnectionFactory options) =>
+            options.Rabbit = (options) =>
             {
                 options.HostName = "10.1.0.6";
                 options.Port = 5672;
@@ -59,19 +59,10 @@ public class Program
                   .AddPrometheusExporter();
               });
 
+        builder.Services.AddHostedService<MyPublishAsync>();
         builder.Services.AddControllers();
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
-
         var app = builder.Build();
-
-        // Configure the HTTP request pipeline.
-        if (app.Environment.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseSwaggerUI();
-        }
 
         app.UseAuthorization();
 

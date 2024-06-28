@@ -66,6 +66,7 @@ public static partial class MaomiExtensions
 
         services.AddSingleton<MqOptions>(new MqOptions
         {
+            AppName = optionsBuilder.AppName,
             WorkId = optionsBuilder.WorkId,
             AutoQueueDeclare = optionsBuilder.AutoQueueDeclare,
             ConnectionFactory = connectionFactory

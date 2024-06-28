@@ -78,7 +78,7 @@ public class BaseHostTest
     public class UnSetConsumer<TEvent> : IConsumer<TEvent>, IRetry, IEventBody<TEvent>
     where TEvent : class
     {
-        public EventBody<TEvent> EventBody { get; private set; }
+        public EventBody<TEvent> EventBody { get; private set; } = default!;
 
         public int RetryCount { get; private set; }
         public bool IsFallbacked { get; private set; }

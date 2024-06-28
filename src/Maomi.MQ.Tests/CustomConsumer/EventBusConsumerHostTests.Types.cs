@@ -109,7 +109,8 @@ public partial class EventBusConsumerHostTests
         public async Task PublishAsync(IChannel channel, BasicDeliverEventArgs eventArgs)
         {
             var consumerOptions = _serviceProvider.GetRequiredKeyedService<IConsumerOptions>(serviceKey: GetConsumerType()[0].Queue);
-            await base.ConsumerAsync<TEvent>(channel, consumerOptions, eventArgs);
+            var consumer = new MessageConsumer(_serviceProvider, _serviceFactory, _serviceProvider.GetRequiredService<ILogger<MessageConsumer>>(), consumerOptions);
+            await consumer.ConsumerAsync<TEvent>(channel, eventArgs);
         }
     }
     #endregion

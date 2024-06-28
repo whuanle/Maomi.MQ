@@ -67,6 +67,8 @@ public static class TraceProviderBuilderExtensions
     /// <returns>The instance of <see cref="MeterProviderBuilder"/> to chain the calls.</returns>
     internal static MeterProviderBuilder ConfigureMeters(this MeterProviderBuilder builder)
     {
-        return builder.AddMeter("Microsoft.AspNetCore.Hosting1");
+        return builder
+            .AddMeter("MaomiMQ.Publisher")
+            .AddMeter("MaomiMQ.Consumer");
     }
 }

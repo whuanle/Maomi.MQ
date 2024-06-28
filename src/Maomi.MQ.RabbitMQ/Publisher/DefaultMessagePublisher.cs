@@ -13,6 +13,8 @@ using Maomi.MQ.Pool;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
+using System.Reflection;
 
 namespace Maomi.MQ;
 
@@ -21,7 +23,10 @@ namespace Maomi.MQ;
 /// </summary>
 public class DefaultMessagePublisher : IMessagePublisher
 {
-    protected readonly DiagnosticsWriter _diagnosticsWriter = new DiagnosticsWriter();
+    protected readonly DiagnosticsWriter DiagnosticsWriter = new DiagnosticsWriter();
+    protected readonly Meter _publisherMeter ;
+    protected readonly Counter<int> _publisherMessageCount;
+    protected readonly Counter<int> _publisherMessageFaildCount;
 
     protected readonly MqOptions _mqOptions;
     protected readonly IJsonSerializer _jsonSerializer;
@@ -52,6 +57,15 @@ public class DefaultMessagePublisher : IMessagePublisher
         _connectionPool = connectionPool;
         _idGen = idGen;
         _logger = logger;
+
+        var tags = new Dictionary<string, object?>()
+        {
+            { "AppName", _mqOptions.AppName }
+        };
+
+        _publisherMeter = new("MaomiMQ.Publisher", Assembly.GetAssembly(typeof(DefaultMessagePublisher))!.GetName()!.Version!.ToString());
+        _publisherMessageCount = _publisherMeter.CreateCounter<int>("maomimq.publisher.message.count", null, "Number of published messages", tags);
+        _publisherMessageFaildCount = _publisherMeter.CreateCounter<int>("maomimq.publisher.message.faild.count", null, "Number of failed messages to publish", tags);
     }
 
     // Copy.
@@ -67,6 +81,10 @@ public class DefaultMessagePublisher : IMessagePublisher
         _connectionPool = publisher.ConnectionPool;
         _idGen = publisher._idGen;
         _logger = publisher._logger;
+
+        _publisherMeter = publisher._publisherMeter;
+        _publisherMessageCount = publisher._publisherMessageCount;
+        _publisherMessageFaildCount = publisher._publisherMessageFaildCount;
     }
 
     /// <inheritdoc />
@@ -131,7 +149,7 @@ public class DefaultMessagePublisher : IMessagePublisher
     protected virtual async Task PublishAsync<TEvent>(IChannel channel, string queue, EventBody<TEvent> message, BasicProperties properties, bool exchange = false)
     {
         var activityTags = message.GetTags();
-        using Activity? activity = _diagnosticsWriter.WriteStarted(DiagnosticName.Activity.Publisher, DateTimeOffset.Now, activityTags);
+        using Activity? activity = DiagnosticsWriter.WriteStarted(DiagnosticName.Activity.Publisher, DateTimeOffset.Now, activityTags);
 
         properties.Headers = properties.Headers ?? new Dictionary<string, object?>();
         properties.Headers.TryAdd(DiagnosticName.Event.Id, message.Id);
@@ -139,6 +157,8 @@ public class DefaultMessagePublisher : IMessagePublisher
 
         try
         {
+            _publisherMessageCount.Add(1, new KeyValuePair<string, object?>("AppName", _mqOptions.AppName), new KeyValuePair<string, object?>("Queue", queue));
+
             if (exchange)
             {
                 await channel.BasicPublishAsync(
@@ -159,14 +179,18 @@ public class DefaultMessagePublisher : IMessagePublisher
             }
 
             _logger.LogDebug("The message with id [{Id}] has been sent.", message.Id);
-            _diagnosticsWriter.WriteStopped(activity, DateTimeOffset.Now, activityTags);
+
+            DiagnosticsWriter.WriteStopped(activity, DateTimeOffset.Now, activityTags);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "The message with id [{Id}] failed to send.", message.Id);
-            _diagnosticsWriter.WriteException(activity, ex);
+
+            _publisherMessageFaildCount.Add(1, new KeyValuePair<string, object?>("AppName", _mqOptions.AppName), new KeyValuePair<string, object?>("Queue", queue));
+            DiagnosticsWriter.WriteException(activity, ex);
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            _diagnosticsWriter.WriteStopped(activity, DateTimeOffset.Now, activityTags);
+            DiagnosticsWriter.WriteStopped(activity, DateTimeOffset.Now, activityTags);
+
             throw;
         }
     }
