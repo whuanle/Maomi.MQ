@@ -25,7 +25,10 @@ public class ConnectionPool : ObjectPool<ConnectionObject>
     public ConnectionPool(ConnectionPooledObjectPolicy connectionPooledObjectPolicy)
     {
         _connectionPooledObjectPolicy = connectionPooledObjectPolicy;
-        _defaultObjectPoolProvider = new DefaultObjectPoolProvider();
+        _defaultObjectPoolProvider = new DefaultObjectPoolProvider()
+        {
+            MaximumRetained = connectionPooledObjectPolicy.MaximumRetained
+        };
 
         _objectPool = _defaultObjectPoolProvider.Create<ConnectionObject>(_connectionPooledObjectPolicy);
     }

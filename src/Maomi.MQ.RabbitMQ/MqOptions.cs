@@ -31,6 +31,12 @@ public class MqOptions
     public bool AutoQueueDeclare { get; init; } = true;
 
     /// <summary>
+    /// The maximum number of objects to retain in the pool.<br />
+    /// 常驻连接池的最大数量.
+    /// </summary>
+    public int PoolMaximumRetained { get; init; }
+
+    /// <summary>
     /// RabbitMQ connection factory.
     /// </summary>
     public IConnectionFactory ConnectionFactory { get; init; } = null!;

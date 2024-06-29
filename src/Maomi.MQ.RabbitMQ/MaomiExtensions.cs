@@ -69,6 +69,7 @@ public static partial class MaomiExtensions
             AppName = optionsBuilder.AppName,
             WorkId = optionsBuilder.WorkId,
             AutoQueueDeclare = optionsBuilder.AutoQueueDeclare,
+            PoolMaximumRetained = optionsBuilder.PoolMaximumRetained,
             ConnectionFactory = connectionFactory
         });
 

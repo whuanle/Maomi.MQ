@@ -14,6 +14,11 @@ namespace Maomi.MQ.Pool;
 /// </summary>
 public class ConnectionPooledObjectPolicy : PooledObjectPolicy<ConnectionObject>
 {
+    /// <summary>
+    /// The maximum number of objects to retain in the pool.
+    /// </summary>
+    public int MaximumRetained { get; private set; } = Environment.ProcessorCount * 2;
+
     private readonly MqOptions _mqOptions;
 
     /// <summary>
@@ -23,6 +28,7 @@ public class ConnectionPooledObjectPolicy : PooledObjectPolicy<ConnectionObject>
     public ConnectionPooledObjectPolicy(MqOptions mqOptions)
     {
         _mqOptions = mqOptions;
+        MaximumRetained = mqOptions.PoolMaximumRetained;
     }
 
     /// <inheritdoc/>
