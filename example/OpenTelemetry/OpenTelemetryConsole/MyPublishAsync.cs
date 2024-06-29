@@ -28,7 +28,12 @@ public class MyPublishAsync : BackgroundService
                 Message = _message,
                 Data = _data
             });
-
+            await _messagePublisher.PublishAsync(queue: "opentelemetry_console2", message: new TestEvent
+            {
+                Id = index,
+                Message = _message,
+                Data = _data
+            });
         };
 
         while (true)
@@ -40,7 +45,7 @@ public class MyPublishAsync : BackgroundService
                 _ = func.Invoke(count);
             }
 
-            await Task.Delay(1000);
+            await Task.Delay(500);
         }
     }
 }

@@ -23,6 +23,7 @@ public static class MaomiCoreExtensions
     /// <returns><see cref="IServiceCollection"/>.</returns>
     public static IServiceCollection AddMaomiMQCore(this IServiceCollection services)
     {
+        services.AddHostedService<FirstHostService>();
         services.AddSingleton<IJsonSerializer, DefaultJsonSerializer>();
         services.AddSingleton<IWaitReadyFactory, DefaultWaitReadyFactory>();
         services.AddSingleton<IRetryPolicyFactory, DefaultRetryPolicyFactory>();

@@ -24,7 +24,7 @@ namespace Maomi.MQ;
 public class DefaultMessagePublisher : IMessagePublisher
 {
     protected readonly DiagnosticsWriter DiagnosticsWriter = new DiagnosticsWriter();
-    protected readonly Meter _publisherMeter ;
+    protected readonly Meter _publisherMeter;
     protected readonly Counter<int> _publisherMessageCount;
     protected readonly Counter<int> _publisherMessageFaildCount;
 
