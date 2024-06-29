@@ -79,7 +79,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 9,
         "w": 12,
         "x": 0,
         "y": 0
@@ -104,107 +104,14 @@
             "uid": "webstore-metrics"
           },
           "editorMode": "code",
-          "expr": "rate(maomimq_publisher_message_count_total[1m])",
+          "expr": "sum(rate(maomimq_publisher_message_count_total[1m]))",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Publish message",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "webstore-metrics"
-      },
-      "description": "Number of failed messages to publish",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "red",
-            "mode": "fixed"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
-      "id": 4,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "webstore-metrics"
-          },
-          "editorMode": "code",
-          "expr": "rate(maomimq_publisher_message_faild_count_total[1m])",
-          "instant": false,
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Publish message faild",
+      "title": "Publish message count",
       "type": "timeseries"
     },
     {
@@ -289,10 +196,10 @@
         ]
       },
       "gridPos": {
-        "h": 8,
+        "h": 9,
         "w": 12,
-        "x": 0,
-        "y": 8
+        "x": 12,
+        "y": 0
       },
       "id": 1,
       "options": {
@@ -318,7 +225,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "rate(maomimq_consumer_message_pull_count_total[1m])",
+          "expr": "sum(rate(maomimq_consumer_message_pull_count_total[1m]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -329,7 +236,100 @@
           "useBackend": false
         }
       ],
-      "title": "Pull message",
+      "title": "Consumer pull message count",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "webstore-metrics"
+      },
+      "description": "Number of failed messages to publish",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "red",
+            "mode": "fixed"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 9
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "webstore-metrics"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(maomimq_publisher_message_faild_count_total[1m]))",
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Publish message faild count",
       "type": "timeseries"
     },
     {
@@ -392,7 +392,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 9
       },
       "id": 2,
       "options": {
@@ -424,7 +424,7 @@
           "refId": "Faild Message"
         }
       ],
-      "title": "Faild Message",
+      "title": "Consumer message faild count",
       "type": "timeseries"
     },
     {
@@ -491,7 +491,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 17
       },
       "id": 8,
       "options": {
@@ -513,14 +513,14 @@
             "uid": "webstore-metrics"
           },
           "editorMode": "code",
-          "expr": "rate(maomimq_consumer_message_received_Byte_sum[1m])",
+          "expr": "sum(rate(maomimq_consumer_message_received_Byte_sum[1m]))",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
           "refId": "received"
         }
       ],
-      "title": "Received message size",
+      "title": "Consumer received message size",
       "type": "timeseries"
     },
     {
@@ -546,9 +546,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 6,
+        "w": 12,
         "x": 0,
-        "y": 25
+        "y": 26
       },
       "id": 7,
       "options": {
@@ -557,8 +557,8 @@
         ],
         "legend": {
           "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
+          "placement": "right",
+          "showLegend": true
         },
         "pieType": "pie",
         "reduceOptions": {
@@ -578,27 +578,87 @@
             "uid": "webstore-metrics"
           },
           "editorMode": "code",
-          "expr": "maomimq_publisher_message_count_total-maomimq_publisher_message_faild_count_total",
+          "expr": "topk(10,maomimq_publisher_message_count_total)",
           "instant": false,
-          "legendFormat": "publush success",
+          "legendFormat": "{{AppName}}-{{Queue}}",
           "range": true,
           "refId": "publish"
+        }
+      ],
+      "title": "Publish message count(top10)",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "webstore-metrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "fieldMinMax": false,
+          "mappings": []
         },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 26
+      },
+      "id": 9,
+      "options": {
+        "displayLabels": [
+          "value"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value"
+          ]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "webstore-metrics"
           },
           "editorMode": "code",
-          "expr": "maomimq_publisher_message_faild_count_total",
-          "hide": false,
+          "exemplar": false,
+          "expr": "topk(10,maomimq_consumer_message_pull_count_total)",
+          "format": "time_series",
           "instant": false,
-          "legendFormat": "publish faild",
+          "legendFormat": "{{AppName}}-{{Queue}}",
           "range": true,
-          "refId": "publish faild"
+          "refId": "Pull message count"
         }
       ],
-      "title": "Publish",
+      "title": "Pull message count(top10)",
       "type": "piechart"
     }
   ],
@@ -613,9 +673,13 @@
       {
         "allValue": "",
         "current": {
-          "selected": false,
-          "text": "All",
-          "value": "$__all"
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
         },
         "datasource": {
           "type": "prometheus",
@@ -713,6 +777,6 @@
   "timezone": "browser",
   "title": "MaomiMQ",
   "uid": "cdq6qfwn2ty4ga",
-  "version": 11,
+  "version": 14,
   "weekStart": ""
 }

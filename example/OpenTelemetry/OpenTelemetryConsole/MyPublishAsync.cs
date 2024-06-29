@@ -34,11 +34,17 @@ public class MyPublishAsync : BackgroundService
                 Message = _message,
                 Data = _data
             });
+            await _messagePublisher.PublishAsync(queue: "opentelemetry_console3", message: new TestEvent
+            {
+                Id = index,
+                Message = _message,
+                Data = _data
+            });
         };
 
         while (true)
         {
-            for(var i = 0; i < 20; i++)
+            for(var i = 0; i < 100; i++)
             {
                 var count = Interlocked.Increment(ref _count);
 
