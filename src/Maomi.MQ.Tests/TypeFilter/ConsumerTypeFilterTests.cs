@@ -1,10 +1,38 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
+using Moq;
+using RabbitMQ.Client;
 using System.Reflection;
 
 namespace Maomi.MQ.Tests.TypeFilter;
 public class ConsumerTypeFilterTests
 {
+    public readonly Mock<IConnectionFactory> _mockConnectionFactory = new();
+    public readonly Mock<IConnection> _mockConnection = new Mock<IConnection>();
+    public readonly Mock<IChannel> _mockChannel = new Mock<IChannel>();
+
+    public ConsumerTypeFilterTests()
+    {
+        _mockConnectionFactory
+            .Setup(c => c.CreateConnectionAsync(CancellationToken.None))
+            .Returns(Task.FromResult(_mockConnection.Object));
+        _mockConnection
+            .Setup(c => c.CreateChannelAsync(CancellationToken.None))
+            .Returns(Task.FromResult(_mockChannel.Object));
+
+        _mockChannel
+            .Setup(c => c.QueueDeclareAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<IDictionary<string, object>>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()));
+        _mockChannel
+            .Setup(c => c.BasicQosAsync(It.IsAny<uint>(), It.IsAny<ushort>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()));
+        _mockChannel
+            .Setup(c => c.BasicConsumeAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<IDictionary<string, object>>(), It.IsAny<IBasicConsumer>(), It.IsAny<CancellationToken>()));
+        _mockChannel
+            .Setup(c => c.BasicAckAsync(It.IsAny<ulong>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()));
+        _mockChannel
+            .Setup(c => c.BasicNackAsync(It.IsAny<ulong>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()));
+    }
     [Fact]
     public void No_ConsumerAttribute()
     {

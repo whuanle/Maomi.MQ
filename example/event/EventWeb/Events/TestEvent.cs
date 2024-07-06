@@ -50,3 +50,28 @@ public class My2EventEventHandler : IEventHandler<TestEvent>
         Console.WriteLine($"{@event.Id},事件 2 已被执行");
     }
 }
+
+
+[EventTopic("EventWeb_dynamic")]
+public class DynamicTestEvent
+{
+    public string Message { get; set; }
+
+    public override string ToString()
+    {
+        return Message;
+    }
+}
+
+[EventOrder(0)]
+public class DynamicEventEventHandler : IEventHandler<DynamicTestEvent>
+{
+    public async Task CancelAsync(EventBody<DynamicTestEvent> @event, CancellationToken cancellationToken)
+    {
+    }
+
+    public async Task ExecuteAsync(EventBody<DynamicTestEvent> @event, CancellationToken cancellationToken)
+    {
+        Console.WriteLine($"{@event.Id},事件 1 已被执行");
+    }
+}

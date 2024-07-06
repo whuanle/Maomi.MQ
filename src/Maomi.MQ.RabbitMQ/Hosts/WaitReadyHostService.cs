@@ -32,13 +32,13 @@ public class WaitReadyHostService : BackgroundService
     /// <inheritdoc/>
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("The Maomi.MQ service is ready!");
-        await _waitReadyFactory.WaitReadyAsync();
+        await base.StartAsync(cancellationToken);
     }
 
     /// <inheritdoc/>
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        return Task.CompletedTask;
+        await _waitReadyFactory.WaitReadyAsync();
+        _logger.LogWarning("The Maomi.MQ service is ready!");
     }
 }

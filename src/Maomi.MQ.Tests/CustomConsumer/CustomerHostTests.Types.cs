@@ -21,11 +21,6 @@ public partial class DefaultCustomerHostTests
         public AllOptionsConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ILogger<ConsumerBaseHostService> logger) : base(serviceProvider, serviceFactory, logger)
         {
         }
-
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            return Task.CompletedTask;
-        }
     }
 
     #region WaitReady
@@ -38,15 +33,12 @@ public partial class DefaultCustomerHostTests
         public WaitReadyConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ILogger<ConsumerBaseHostService> logger) : base(serviceProvider, serviceFactory, logger)
         {
         }
-        protected override async Task WaitReadyAsync()
+
+        protected override async Task WaitReadyInitQueueAsync(IConnection connection)
         {
             InitTime = DateTime.Now;
             await Task.Delay(1000);
-            await base.WaitReadyAsync();
-        }
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            return Task.CompletedTask;
+            await base.WaitReadyInitQueueAsync(connection);
         }
     }
 
@@ -84,10 +76,6 @@ public partial class DefaultCustomerHostTests
         {
         }
 
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            return Task.CompletedTask;
-        }
         // Analog received data.
         public async Task PublishAsync(IChannel channel, BasicDeliverEventArgs eventArgs)
         {

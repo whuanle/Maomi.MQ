@@ -172,3 +172,17 @@ public class Exchange_2_Consumer : IConsumer<TestEvent>
 
     public Task<bool> FallbackAsync(EventBody<TestEvent>? message) => Task.FromResult(true);
 }
+
+[Consumer("ConsumerWeb_dynamic")]
+public class DynamicConsumer : IConsumer<TestEvent>
+{
+    public Task ExecuteAsync(EventBody<TestEvent> message)
+    {
+        Console.WriteLine($"[2]: {message.Id}");
+        return Task.CompletedTask;
+    }
+
+    public Task FaildAsync(Exception ex, int retryCount, EventBody<TestEvent>? message) => Task.CompletedTask;
+
+    public Task<bool> FallbackAsync(EventBody<TestEvent>? message) => Task.FromResult(true);
+}

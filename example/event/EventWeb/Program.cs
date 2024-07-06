@@ -1,5 +1,7 @@
 
+using EventWeb.Events;
 using Maomi.MQ;
+using Maomi.MQ.EventBus;
 using RabbitMQ.Client;
 using System.Reflection;
 
@@ -24,10 +26,10 @@ public class Program
             options.AppName = "myapp";
             options.Rabbit = (ConnectionFactory options) =>
             {
-                options.HostName = "192.168.3.248";
+                options.HostName = "10.1.0.6";
                 options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
             };
-        }, [typeof(Program).Assembly]);
+        }, [typeof(Program).Assembly], [new ConsumerTypeFilter(), new EventBusTypeFilter(EventTopicFilter)]);
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
@@ -43,5 +45,16 @@ public class Program
         app.MapControllers();
 
         app.Run();
+    }
+
+
+    private static bool EventTopicFilter(EventTopicAttribute eventTopicAttribute, Type eventType)
+    {
+        if (eventType == typeof(DynamicTestEvent))
+        {
+            eventTopicAttribute.Queue = eventTopicAttribute.Queue + "_1";
+        }
+
+        return true;
     }
 }

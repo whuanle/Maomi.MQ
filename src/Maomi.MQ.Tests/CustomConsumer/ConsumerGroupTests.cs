@@ -30,7 +30,6 @@ public partial class ConsumerGroupTests : BaseHostTest
 
         using var host = (ioc.GetRequiredService<IHostedService>() as ConsumerBaseHostService)!;
         _ = host.StartAsync(CancellationToken.None);
-        await Task.Delay(1000);
         var waitReadyFactory = ioc.GetRequiredService<IWaitReadyFactory>();
         await waitReadyFactory.WaitReadyAsync();
         _mockChannel.Verify(a => a.BasicConsumeAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<IDictionary<string, object>>(), It.IsAny<IBasicConsumer>(), It.IsAny<CancellationToken>()), Times.Exactly(2));

@@ -69,7 +69,7 @@ public partial class EventbusTypeFilterTests
         Assert.Single(hostedServices);
         var consumerHostService = hostedServices.FirstOrDefault();
         Assert.NotNull(consumerHostService);
-        Assert.Equal(typeof(ConsumerBaseHostService), consumerHostService.ImplementationFactory!.GetMethodInfo().ReturnType);
+        Assert.Equal(typeof(EventBusHostService<EventBusConsumer<UsableEvent>, UsableEvent>), consumerHostService.ImplementationType);
     }
 
     [Fact]

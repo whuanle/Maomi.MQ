@@ -55,15 +55,15 @@ public partial class EventBusConsumerHostTests
         public WaitReadyConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ILogger<ConsumerBaseHostService> logger) : base(serviceProvider, serviceFactory, logger)
         {
         }
-        protected override async Task WaitReadyAsync()
+        protected override async Task WaitReadyInitQueueAsync(IConnection connection)
         {
             InitTime = DateTime.Now;
             await Task.Delay(1000);
-            await base.WaitReadyAsync();
+            await base.WaitReadyInitQueueAsync(connection);
         }
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            return Task.CompletedTask;
+            return base.ExecuteAsync(stoppingToken);
         }
     }
 
@@ -103,7 +103,7 @@ public partial class EventBusConsumerHostTests
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            return Task.CompletedTask;
+            return base.ExecuteAsync(stoppingToken);
         }
         // Analog received data.
         public async Task PublishAsync(IChannel channel, BasicDeliverEventArgs eventArgs)
@@ -146,11 +146,6 @@ public partial class EventBusConsumerHostTests
     {
         public AllOptionsConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ILogger<ConsumerBaseHostService> logger) : base(serviceProvider, serviceFactory, logger)
         {
-        }
-
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            return Task.CompletedTask;
         }
     }
 

@@ -13,12 +13,34 @@ using System.Reflection;
 namespace Maomi.MQ.EventBus;
 
 /// <summary>
+/// <see cref="EventTopicAttribute"/> filter.
+/// </summary>
+/// <remarks>You can modify related parameters.<br />可以修改相关参数.</remarks>
+/// <param name="eventTopicAttribute"></param>
+/// <param name="eventType"></param>
+/// <returns>Whether to register the event.<br />是否注册该事件.</returns>
+public delegate bool EventTopicInterceptor(EventTopicAttribute eventTopicAttribute, Type eventType);
+
+/// <summary>
 /// Eventbus type filter.<br />
 /// 事件总线类型过滤器.
 /// </summary>
 public class EventBusTypeFilter : ITypeFilter
 {
+    private static readonly MethodInfo AddHostedMethod = typeof(ServiceCollectionHostedServiceExtensions)
+        .GetMethod(nameof(ServiceCollectionHostedServiceExtensions.AddHostedService), BindingFlags.Static | BindingFlags.Public, [typeof(IServiceCollection)])!;
+
     private readonly Dictionary<Type, EventInfo> _eventInfos = new();
+    private readonly EventTopicInterceptor? _eventTopicInterceptor;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EventBusTypeFilter"/> class.
+    /// </summary>
+    /// <param name="consumerInterceptor"></param>
+    public EventBusTypeFilter(EventTopicInterceptor? consumerInterceptor = null)
+    {
+        _eventTopicInterceptor = consumerInterceptor;
+    }
 
     /// <inheritdoc />
     public void Build(IServiceCollection services)
@@ -49,7 +71,7 @@ public class EventBusTypeFilter : ITypeFilter
 
             services.AddScoped(serviceType: typeof(IHandlerMediator<>).MakeGenericType(eventType), implementationType: typeof(HandlerMediator<>).MakeGenericType(eventType));
 
-            services.AddKeyedSingleton(serviceKey: eventInfo.Options.Queue, serviceType: typeof(IConsumerOptions), implementationInstance: eventInfo.Options);
+            services.AddKeyedSingleton(serviceKey: eventInfo.Queue, serviceType: typeof(IConsumerOptions), implementationInstance: eventInfo.Options);
 
             services.Add(new ServiceDescriptor(
                 serviceKey: eventInfo.Options.Queue,
@@ -70,20 +92,8 @@ public class EventBusTypeFilter : ITypeFilter
                 continue;
             }
 
-            services.AddHostedService<ConsumerBaseHostService>(s =>
-            {
-                var consumerType = new ConsumerType
-                {
-                    Queue = eventInfo.Options.Queue,
-                    Consumer = typeof(EventBusConsumer<>).MakeGenericType(eventInfo.EventType),
-                    Event = eventInfo.EventType
-                };
-                return new ConsumerBaseHostService(
-                    s,
-                    s.GetRequiredService<ServiceFactory>(),
-                    s.GetRequiredService<ILogger<ConsumerBaseHostService>>(),
-                    new List<ConsumerType> { consumerType });
-            });
+            var hostType = typeof(EventBusHostService<,>).MakeGenericType(typeof(EventBusConsumer<>).MakeGenericType(eventInfo.EventType), eventType);
+            AddHostedMethod.MakeGenericMethod(hostType).Invoke(null, new object[] { services });
         }
 
         // Use EventGroupConsumerHostSrvice processing group of consumers.
@@ -158,12 +168,23 @@ public class EventBusTypeFilter : ITypeFilter
             throw new ArgumentNullException($"{eventType.Name} type is not configured with the [EventTopic] attribute.");
         }
 
+        var queueName = eventTopicAttribute.Queue;
+        if (_eventTopicInterceptor != null)
+        {
+            var isRegister = _eventTopicInterceptor.Invoke(eventTopicAttribute, type);
+            if (!isRegister)
+            {
+                return;
+            }
+        }
+
         EventInfo eventInfo;
 
         if (!_eventInfos.TryGetValue(eventType, out eventInfo!))
         {
             eventInfo = new EventInfo
             {
+                Queue = queueName,
                 Options = eventTopicAttribute,
                 EventType = eventType,
             };
@@ -196,6 +217,11 @@ public class EventBusTypeFilter : ITypeFilter
     /// </summary>
     private class EventInfo
     {
+        /// <summary>
+        /// Queue.
+        /// </summary>
+        public string Queue { get; set; } = null!;
+
         /// <summary>
         /// <see cref="IConsumerOptions"/>.
         /// </summary>

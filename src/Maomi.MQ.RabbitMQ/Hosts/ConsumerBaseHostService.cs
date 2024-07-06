@@ -10,23 +10,19 @@
 
 using Maomi.MQ.Default;
 using Maomi.MQ.Diagnostics;
-using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Polly;
-using Polly.Retry;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using System.Diagnostics;
-using System.Diagnostics.Metrics;
 using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Maomi.MQ.Hosts;
 
 /// <summary>
-/// Base consumer service.
+/// Base consumer service.Initialize the queue and build the consumer application.<br />
+/// 初始化队列和构建消费者程序.
 /// </summary>
 public partial class ConsumerBaseHostService : BackgroundService
 {
@@ -76,9 +72,17 @@ public partial class ConsumerBaseHostService : BackgroundService
     /// <inheritdoc />.
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
+        await base.StartAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        using IConnection connection = await _connectionFactory.CreateConnectionAsync();
+
         try
         {
-            await WaitReadyAsync();
+            await WaitReadyInitQueueAsync(connection);
             _taskCompletionSource.TrySetResult();
         }
         catch (Exception ex)
@@ -88,14 +92,22 @@ public partial class ConsumerBaseHostService : BackgroundService
             throw;
         }
 
-        await base.StartAsync(cancellationToken);
+        int consumerCount = await WaitReadyConsumerAsync(connection);
+
+        if (consumerCount == 0)
+        {
+            return;
+        }
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            await Task.Delay(10000, stoppingToken);
+        }
     }
 
-    protected virtual async Task WaitReadyAsync()
+    protected virtual async Task WaitReadyInitQueueAsync(IConnection connection)
     {
-        var pool = _serviceProvider.GetRequiredService<ConnectionPool>();
-        using var connectionObject = pool.CreateAutoReturn();
-        var channel = connectionObject.Channel;
+        using var channel = await connection.CreateChannelAsync();
 
         foreach (var consumerType in _consumerTypes)
         {
@@ -147,15 +159,12 @@ public partial class ConsumerBaseHostService : BackgroundService
         }
     }
 
-    /// <inheritdoc />
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected virtual async Task<int> WaitReadyConsumerAsync(IConnection connection)
     {
-        using IConnection connection = await _connectionFactory.CreateConnectionAsync();
+        int consumerCount = 0;
 
         var scope = _serviceProvider.CreateScope();
         var ioc = scope.ServiceProvider;
-
-        int consumerCount = 0;
 
         foreach (var consumerType in _consumerTypes)
         {
@@ -173,7 +182,7 @@ public partial class ConsumerBaseHostService : BackgroundService
 
             var consumerHandler = BuildConsumerHandler(consumerType.Event);
             MessageConsumer messageConsumer = new MessageConsumer(_serviceProvider, _serviceFactory, _serviceProvider.GetRequiredService<ILogger<MessageConsumer>>(), consumerOptions);
-            _consumers.Add(consumerType.Queue, messageConsumer);
+            _consumers.Add(consumerOptions.Queue, messageConsumer);
 
             consumer.Received += async (sender, eventArgs) =>
             {
@@ -190,20 +199,12 @@ public partial class ConsumerBaseHostService : BackgroundService
             };
 
             await consummerChannel.BasicConsumeAsync(
-                queue: consumerType.Queue,
+                queue: consumerOptions.Queue,
                 autoAck: false,
                 consumer: consumer);
         }
 
-        if (consumerCount == 0)
-        {
-            return;
-        }
-
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            await Task.Delay(10000, stoppingToken);
-        }
+        return consumerCount;
     }
 }
 

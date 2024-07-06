@@ -58,8 +58,6 @@ public partial class EventBusConsumerHostTests : BaseHostTest
 
         _ = host.RunAsync();
 
-        await Task.Delay(1000);
-
         var task = waitReadyFactory.WaitReadyAsync();
         await task;
         Assert.True(task.IsCompleted);
@@ -103,7 +101,6 @@ public partial class EventBusConsumerHostTests : BaseHostTest
 
         var waitReadyFactory = host.Services.GetRequiredService<IWaitReadyFactory>();
         _ = host.RunAsync();
-        await Task.Delay(1000);
 
         var task = waitReadyFactory.WaitReadyAsync();
         try
@@ -161,7 +158,10 @@ public partial class EventBusConsumerHostTests : BaseHostTest
 
         var ioc = services.BuildServiceProvider();
         using var host = ioc.GetRequiredService<AllOptionsConsumerHostService>();
-        await host.StartAsync(CancellationToken.None);
+        _ = host.StartAsync(CancellationToken.None);
+
+        var waitReady = ioc.GetRequiredService<IWaitReadyFactory>();
+        await waitReady.WaitReadyAsync();
 
         // check arguments.
         _mockChannel.Verify(a => a.QueueDeclareAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<IDictionary<string, object>>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -169,6 +169,35 @@ public partial class EventBusConsumerHostTests : BaseHostTest
         Assert.Equal(1000, arguments["x-expires"]);
         Assert.Equal(string.Empty, arguments["x-dead-letter-exchange"]);
         Assert.Equal("test_dead", arguments["x-dead-letter-routing-key"]);
+    }
+
+    [Fact]
+    public async Task DynamicEventBusOptions()
+    {
+        ServiceCollection services = Mock();
+
+        var typeFilter = new EventBusTypeFilter((options, type) =>
+        {
+            if (type == typeof(AllOptionsEvent))
+            {
+                options.Queue = options.Queue + "_1";
+            }
+            return true;
+        });
+
+        services.AddSingleton<AllOptionsConsumerHostService>();
+
+        typeFilter.Filter(services, typeof(AllOptionsEvent));
+        typeFilter.Build(services);
+
+        var ioc = services.BuildServiceProvider();
+        using var host = ioc.GetRequiredService<AllOptionsConsumerHostService>();
+        _ = host.StartAsync(CancellationToken.None);
+        var waitReady = ioc.GetRequiredService<IWaitReadyFactory>();
+        await waitReady.WaitReadyAsync();
+
+        var consumerOptions = ioc.GetRequiredKeyedService<IConsumerOptions>("test");
+        Assert.Equal("test_1", consumerOptions.Queue);
     }
 
     [Fact]
@@ -189,7 +218,10 @@ public partial class EventBusConsumerHostTests : BaseHostTest
         var consumer = ioc.GetRequiredKeyedService<IConsumer<IdEvent>>("test") as UnSetConsumer<IdEvent>;
         Assert.NotNull(consumer);
         using var hostService = ioc.GetRequiredService<TestDefaultConsumerHostService<UnSetConsumer<IdEvent>, IdEvent>>();
+
         await hostService.StartAsync(CancellationToken.None);
+        var waitReady = ioc.GetRequiredService<IWaitReadyFactory>();
+        await waitReady.WaitReadyAsync();
 
         var eventBody = new EventBody<IdEvent>()
         {

@@ -2,11 +2,14 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Net.Sockets;
 using System.Reflection;
+using static Maomi.MQ.Tests.CustomConsumer.BaseHostTest;
 
 namespace Maomi.MQ.Tests.CustomConsumer;
 
@@ -50,8 +53,6 @@ public partial class DefaultCustomerHostTests : BaseHostTest
 
         _ = host.RunAsync();
 
-        await Task.Delay(1000);
-
         var task = waitReadyFactory.WaitReadyAsync();
         await task;
         Assert.True(task.IsCompleted);
@@ -94,8 +95,6 @@ public partial class DefaultCustomerHostTests : BaseHostTest
 
         var waitReadyFactory = host.Services.GetRequiredService<IWaitReadyFactory>();
         _ = host.RunAsync();
-        await Task.Delay(1000);
-
         var task = waitReadyFactory.WaitReadyAsync();
         try
         {
@@ -150,7 +149,9 @@ public partial class DefaultCustomerHostTests : BaseHostTest
 
         var ioc = services.BuildServiceProvider();
         using var host = ioc.GetRequiredService<AllOptionsConsumerHostService>();
-        await host.StartAsync(CancellationToken.None);
+        _= host.StartAsync(CancellationToken.None);
+        var waitReady = ioc.GetRequiredService<IWaitReadyFactory>();
+        await waitReady.WaitReadyAsync();
 
         // check arguments.
         _mockChannel.Verify(a => a.QueueDeclareAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<IDictionary<string, object>>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -158,6 +159,34 @@ public partial class DefaultCustomerHostTests : BaseHostTest
         Assert.Equal(1000, arguments["x-expires"]);
         Assert.Equal(string.Empty, arguments["x-dead-letter-exchange"]);
         Assert.Equal("test_dead", arguments["x-dead-letter-routing-key"]);
+    }
+
+    [Fact]
+    public async Task DynamicConsumerOptions()
+    {
+        ServiceCollection services = Mock();
+
+        var typeFilter = new ConsumerTypeFilter((options, type) =>
+        {
+            if (type == typeof(AllOptionsConsumer))
+            {
+                options.Queue = options.Queue + "_1";
+            }
+            return true;
+        });
+        services.AddSingleton<AllOptionsConsumerHostService>();
+
+        typeFilter.Filter(services, typeof(AllOptionsConsumer));
+        typeFilter.Build(services);
+
+        var ioc = services.BuildServiceProvider();
+        using var host = ioc.GetRequiredService<AllOptionsConsumerHostService>();
+        _ = host.StartAsync(CancellationToken.None);
+        var waitReady = ioc.GetRequiredService<IWaitReadyFactory>();
+        await waitReady.WaitReadyAsync();
+
+        var consumerOptions = ioc.GetRequiredKeyedService<IConsumerOptions>("test");
+        Assert.Equal("test_1", consumerOptions.Queue);
     }
 
     [Fact]
@@ -177,7 +206,9 @@ public partial class DefaultCustomerHostTests : BaseHostTest
         var consumer = ioc.GetRequiredKeyedService<IConsumer<IdEvent>>("test") as UnSetConsumer<IdEvent>;
         Assert.NotNull(consumer);
         using var hostService = ioc.GetRequiredService<TestDefaultConsumerHostService<UnSetConsumer<IdEvent>, IdEvent>>();
-        await hostService.StartAsync(CancellationToken.None);
+        _ = hostService.StartAsync(CancellationToken.None);
+        var waitReady = ioc.GetRequiredService<IWaitReadyFactory>();
+        await waitReady.WaitReadyAsync();
 
         var eventBody = new EventBody<IdEvent>()
         {
@@ -298,7 +329,10 @@ public partial class DefaultCustomerHostTests : BaseHostTest
         Assert.NotNull(consumer);
         using var hostService = ioc.GetRequiredService<TestDefaultConsumerHostService<UnSetConsumer<TEvent>, TEvent>>();
 
-        await hostService.StartAsync(CancellationToken.None);
+        _ = hostService.StartAsync(CancellationToken.None);
+        var waitReady = ioc.GetRequiredService<IWaitReadyFactory>();
+        await waitReady.WaitReadyAsync();
+
         var eventBody = new EventBody<TEvent>()
         {
             Id = 1,

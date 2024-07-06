@@ -1,7 +1,12 @@
+using ConsumerWeb.Consumer;
+using ConsumerWeb.Models;
 using Maomi.MQ;
+using Maomi.MQ.EventBus;
+using Microsoft.AspNetCore.Mvc;
 using Polly;
 using Polly.Retry;
 using RabbitMQ.Client;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace ActivitySourceApi;
@@ -20,11 +25,10 @@ public class Program
             options.AppName = "myapp";
             options.Rabbit = (ConnectionFactory options) =>
             {
-                options.HostName = "20.189.120.90";
-                options.Port = 25672;
+                options.HostName = "10.1.0.6";
                 options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
             };
-        }, [typeof(Program).Assembly]);
+        }, [typeof(Program).Assembly], [new ConsumerTypeFilter(ConsumerInterceptor), new EventBusTypeFilter(EventInterceptor)]);
 
         builder.Services.AddSingleton<IRetryPolicyFactory, MyDefaultRetryPolicyFactory>();
 
@@ -49,7 +53,27 @@ public class Program
 
         app.Run();
     }
+
+    private static bool ConsumerInterceptor(ConsumerAttribute consumerAttribute, Type consumerType)
+    {
+        if (consumerType == typeof(DynamicConsumer))
+        {
+            consumerAttribute.Queue = consumerAttribute.Queue + "_1";
+        }
+
+        return true;
+    }
+
+    private static bool EventInterceptor(EventTopicAttribute eventTopicAttribute,Type eventType)
+    {
+        if (eventType == typeof(TestEvent))
+        {
+            eventTopicAttribute.Queue = eventTopicAttribute.Queue + "_1";
+        }
+        return true;
+    }
 }
+
 public class MyDefaultRetryPolicyFactory : IRetryPolicyFactory
 {
     private readonly ILogger<MyDefaultRetryPolicyFactory> _logger;

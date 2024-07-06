@@ -9,7 +9,6 @@
 #pragma warning disable SA1600
 
 using Maomi.MQ.Default;
-using Maomi.MQ.EventBus;
 using Maomi.MQ.Hosts;
 using Microsoft.Extensions.Logging;
 using System.Reflection;

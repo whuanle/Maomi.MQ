@@ -13,6 +13,15 @@ using System.Reflection;
 namespace Maomi.MQ;
 
 /// <summary>
+/// <see cref="ConsumerInterceptor"/> filter.
+/// </summary>
+/// <remarks>You can modify related parameters.<br />可以修改相关参数.</remarks>
+/// <param name="consumerAttribute"></param>
+/// <param name="consumerType"></param>
+/// <returns>Whether to register the event.<br />是否注册该事件.</returns>
+public delegate bool ConsumerInterceptor(ConsumerAttribute consumerAttribute, Type consumerType);
+
+/// <summary>
 /// Consumer type filter.<br />
 /// 消费者类型过滤器.
 /// </summary>
@@ -23,12 +32,16 @@ public class ConsumerTypeFilter : ITypeFilter
 
     private readonly Dictionary<string, List<ConsumerType>> _consumerGroups = new();
 
+    private readonly ConsumerInterceptor? _consumerInterceptor;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="ConsumerTypeFilter"/> class.
     /// </summary>
-    public ConsumerTypeFilter()
+    /// <param name="consumerInterceptor">Filter.</param>
+    public ConsumerTypeFilter(ConsumerInterceptor? consumerInterceptor = null)
     {
         ArgumentNullException.ThrowIfNull(AddHostedMethod);
+        _consumerInterceptor = consumerInterceptor;
     }
 
     /// <inheritdoc/>
@@ -60,20 +73,31 @@ public class ConsumerTypeFilter : ITypeFilter
         }
 
         var consumerAttribute = type.GetCustomAttribute<ConsumerAttribute>();
+
         if (consumerAttribute == null || string.IsNullOrEmpty(consumerAttribute.Queue))
         {
             throw new ArgumentNullException($"{type.Name} type is not configured with the [Consumer] attribute.");
         }
 
+        var queueName = consumerAttribute.Queue;
+        if (_consumerInterceptor != null)
+        {
+            var isRegister = _consumerInterceptor.Invoke(consumerAttribute, type);
+            if (!isRegister)
+            {
+                return;
+            }
+        }
+
         // Each IConsumer<T> corresponds to one queue and one ConsumerHostSrvice<T>.
         // 每个 IConsumer<T> 对应一个队列、一个 ConsumerHostSrvice<T>.
-        services.AddKeyedSingleton(serviceKey: consumerAttribute.Queue, serviceType: typeof(IConsumerOptions), implementationInstance: consumerAttribute);
+        services.AddKeyedSingleton(serviceKey: queueName, serviceType: typeof(IConsumerOptions), implementationInstance: consumerAttribute);
         services.Add(new ServiceDescriptor(serviceKey: consumerAttribute.Queue, serviceType: consumerInterface, implementationType: type, lifetime: ServiceLifetime.Scoped));
 
         var eventType = consumerInterface.GenericTypeArguments[0];
         var consumerType = new ConsumerType
         {
-            Queue = consumerAttribute.Queue,
+            Queue = queueName,
             Consumer = type,
             Event = eventType
         };
