@@ -59,7 +59,7 @@ public class ConsumerTypeFilter : ITypeFilter
     /// <inheritdoc/>
     public void Filter(IServiceCollection services, Type type)
     {
-        if (!type.IsClass)
+        if (!type.IsClass || type.IsAbstract)
         {
             return;
         }

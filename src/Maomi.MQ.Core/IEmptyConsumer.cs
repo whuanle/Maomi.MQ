@@ -21,7 +21,7 @@ public interface IEmptyConsumer<TEvent> : IConsumer<TEvent>
 /// 空消费者，只创建定义，不执行消费.
 /// </summary>
 /// <typeparam name="TEvent">Event model.</typeparam>
-public class EmptyConsumer<TEvent> : IEmptyConsumer<TEvent>
+public abstract class EmptyConsumer<TEvent> : IEmptyConsumer<TEvent>
     where TEvent : class
 {
     /// <inheritdoc />
