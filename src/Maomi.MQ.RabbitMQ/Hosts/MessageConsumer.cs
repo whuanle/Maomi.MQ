@@ -10,9 +10,7 @@
 
 using Maomi.MQ.Default;
 using Maomi.MQ.Diagnostics;
-using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
@@ -20,7 +18,6 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Maomi.MQ.Hosts;
@@ -84,7 +81,6 @@ public class MessageConsumer
     public virtual async Task ConsumerAsync<TEvent>(IChannel channel, BasicDeliverEventArgs eventArgs)
         where TEvent : class
     {
-
         _pullMessageCount.Add(1, _tags);
         _messageSize.Record(eventArgs.Body.Length, _tags);
 
@@ -109,7 +105,12 @@ public class MessageConsumer
         var scope = _serviceProvider.CreateScope();
         var ioc = scope.ServiceProvider;
 
-        var consumer = ioc.GetRequiredKeyedService<IConsumer<TEvent>>(_consumerOptions.Queue);
+        var consumer = ioc.GetKeyedService<IConsumer<TEvent>>(_consumerOptions.Queue);
+        if (consumer == null)
+        {
+            consumer = ioc.GetRequiredService<IConsumer<TEvent>>();
+        }
+
         EventBody<TEvent>? eventBody = null;
 
         try

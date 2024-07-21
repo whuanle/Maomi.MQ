@@ -6,7 +6,10 @@
 
 using Maomi.MQ.Default;
 using Maomi.MQ.Hosts;
+using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
 
@@ -30,7 +33,7 @@ public class ConsumerTypeFilter : ITypeFilter
     private static readonly MethodInfo AddHostedMethod = typeof(ServiceCollectionHostedServiceExtensions)
         .GetMethod(nameof(ServiceCollectionHostedServiceExtensions.AddHostedService), BindingFlags.Static | BindingFlags.Public, [typeof(IServiceCollection)])!;
 
-    private readonly Dictionary<string, List<ConsumerType>> _consumerGroups = new();
+    private readonly HashSet<ConsumerType> _consumers = new();
 
     private readonly ConsumerInterceptor? _consumerInterceptor;
 
@@ -47,13 +50,17 @@ public class ConsumerTypeFilter : ITypeFilter
     /// <inheritdoc/>
     public void Build(IServiceCollection services)
     {
-        foreach (var item in _consumerGroups)
+        Func<IServiceProvider, ConsumerHostService> funcFactory = (serviceProvider) =>
         {
-            services.AddHostedService(s =>
-            {
-                return new ConsumerBaseHostService(s, s.GetRequiredService<ServiceFactory>(), s.GetRequiredService<ILogger<ConsumerBaseHostService>>(), item.Value);
-            });
-        }
+            return new ConsumerHostService(
+                serviceProvider,
+                serviceProvider.GetRequiredService<ServiceFactory>(),
+                serviceProvider.GetRequiredService<ConnectionPool>(),
+                serviceProvider.GetRequiredService<ILogger<ConsumerBaseHostService>>(),
+                _consumers.ToList());
+        };
+
+        services.TryAddEnumerable(new ServiceDescriptor(serviceType: typeof(IHostedService), factory: funcFactory, lifetime: ServiceLifetime.Singleton));
     }
 
     /// <inheritdoc/>
@@ -76,10 +83,9 @@ public class ConsumerTypeFilter : ITypeFilter
 
         if (consumerAttribute == null || string.IsNullOrEmpty(consumerAttribute.Queue))
         {
-            throw new ArgumentNullException($"{type.Name} type is not configured with the [Consumer] attribute.");
+            return;
         }
 
-        var queueName = consumerAttribute.Queue;
         if (_consumerInterceptor != null)
         {
             var isRegister = _consumerInterceptor.Invoke(consumerAttribute, type);
@@ -89,33 +95,24 @@ public class ConsumerTypeFilter : ITypeFilter
             }
         }
 
+        if (_consumers.Contains(new ConsumerType { Queue = consumerAttribute.Queue }))
+        {
+            return;
+        }
+
         // Each IConsumer<T> corresponds to one queue and one ConsumerHostSrvice<T>.
         // 每个 IConsumer<T> 对应一个队列、一个 ConsumerHostSrvice<T>.
-        services.AddKeyedSingleton(serviceKey: queueName, serviceType: typeof(IConsumerOptions), implementationInstance: consumerAttribute);
+        services.AddKeyedSingleton(serviceKey: consumerAttribute.Queue, serviceType: typeof(IConsumerOptions), implementationInstance: consumerAttribute);
         services.Add(new ServiceDescriptor(serviceKey: consumerAttribute.Queue, serviceType: consumerInterface, implementationType: type, lifetime: ServiceLifetime.Scoped));
 
         var eventType = consumerInterface.GenericTypeArguments[0];
         var consumerType = new ConsumerType
         {
-            Queue = queueName,
+            Queue = consumerAttribute.Queue,
             Consumer = type,
             Event = eventType
         };
 
-        if (!string.IsNullOrEmpty(consumerAttribute.Group))
-        {
-            if (!_consumerGroups.TryGetValue(consumerAttribute.Group, out var list))
-            {
-                list = new();
-                _consumerGroups[consumerAttribute.Group] = list;
-            }
-
-            list.Add(consumerType);
-
-            return;
-        }
-
-        var hostType = typeof(ConsumerHostService<,>).MakeGenericType(type, eventType);
-        AddHostedMethod.MakeGenericMethod(hostType).Invoke(null, new object[] { services });
+        _consumers.Add(consumerType);
     }
 }

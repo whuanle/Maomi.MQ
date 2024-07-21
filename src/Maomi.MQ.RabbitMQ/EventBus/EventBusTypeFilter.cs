@@ -6,7 +6,10 @@
 
 using Maomi.MQ.Default;
 using Maomi.MQ.Hosts;
+using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
 
@@ -27,9 +30,6 @@ public delegate bool EventTopicInterceptor(EventTopicAttribute eventTopicAttribu
 /// </summary>
 public class EventBusTypeFilter : ITypeFilter
 {
-    private static readonly MethodInfo AddHostedMethod = typeof(ServiceCollectionHostedServiceExtensions)
-        .GetMethod(nameof(ServiceCollectionHostedServiceExtensions.AddHostedService), BindingFlags.Static | BindingFlags.Public, [typeof(IServiceCollection)])!;
-
     private readonly Dictionary<Type, EventInfo> _eventInfos = new();
     private readonly EventTopicInterceptor? _eventTopicInterceptor;
 
@@ -45,8 +45,6 @@ public class EventBusTypeFilter : ITypeFilter
     /// <inheritdoc />
     public void Build(IServiceCollection services)
     {
-        Dictionary<string, List<EventInfo>> eventGroups = new();
-
         foreach (var item in _eventInfos)
         {
             var eventType = item.Key;
@@ -78,42 +76,31 @@ public class EventBusTypeFilter : ITypeFilter
                 serviceType: typeof(IConsumer<>).MakeGenericType(eventType),
                 implementationType: typeof(EventBusConsumer<>).MakeGenericType(eventType),
                 lifetime: ServiceLifetime.Scoped));
-
-            if (!string.IsNullOrEmpty(eventInfo.Options.Group))
-            {
-                if (!eventGroups.TryGetValue(eventInfo.Options.Group, out var eventInfoList))
-                {
-                    eventInfoList = new List<EventInfo>();
-                    eventGroups.Add(eventInfo.Options.Group, eventInfoList);
-                }
-
-                eventInfoList.Add(eventInfo);
-
-                continue;
-            }
-
-            var hostType = typeof(EventBusHostService<,>).MakeGenericType(typeof(EventBusConsumer<>).MakeGenericType(eventInfo.EventType), eventType);
-            AddHostedMethod.MakeGenericMethod(hostType).Invoke(null, new object[] { services });
         }
 
-        // Use EventGroupConsumerHostSrvice processing group of consumers.
-        foreach (var group in eventGroups)
+        if (_eventInfos.Count == 0)
         {
-            var consumerTypes = group.Value.Select(x => new ConsumerType
-            {
-                Queue = x.Options.Queue,
-                Consumer = typeof(EventBusConsumer<>).MakeGenericType(x.EventType),
-                Event = x.EventType
-            }).ToList();
-            services.AddHostedService<ConsumerBaseHostService>(s =>
-            {
-                return new ConsumerBaseHostService(
-                    s,
-                    s.GetRequiredService<ServiceFactory>(),
-                    s.GetRequiredService<ILogger<ConsumerBaseHostService>>(),
-                    consumerTypes);
-            });
+            return;
         }
+
+        var consumerTypes = _eventInfos.Select(x => new ConsumerType
+        {
+            Queue = x.Value.Options.Queue,
+            Consumer = typeof(EventBusConsumer<>).MakeGenericType(x.Value.EventType),
+            Event = x.Value.EventType
+        }).ToList();
+
+        Func<IServiceProvider, EventBusHostService> funcFactory = (serviceProvider) =>
+        {
+            return new EventBusHostService(
+                serviceProvider,
+                serviceProvider.GetRequiredService<ServiceFactory>(),
+                serviceProvider.GetRequiredService<ConnectionPool>(),
+                serviceProvider.GetRequiredService<ILogger<ConsumerBaseHostService>>(),
+                consumerTypes);
+        };
+
+        services.TryAddEnumerable(new ServiceDescriptor(serviceType: typeof(IHostedService), factory: funcFactory, lifetime: ServiceLifetime.Singleton));
     }
 
     /// <inheritdoc />
@@ -126,6 +113,11 @@ public class EventBusTypeFilter : ITypeFilter
          */
 
         if (!type.IsClass)
+        {
+            return;
+        }
+
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(DefaultEventMiddleware<>))
         {
             return;
         }
@@ -145,7 +137,6 @@ public class EventBusTypeFilter : ITypeFilter
 
         if (handlerInterface != null)
         {
-            services.AddScoped(type);
             eventType = handlerInterface.GenericTypeArguments[0];
         }
 
@@ -165,10 +156,15 @@ public class EventBusTypeFilter : ITypeFilter
         var eventTopicAttribute = eventType.GetCustomAttribute<EventTopicAttribute>();
         if (eventTopicAttribute == null)
         {
-            throw new ArgumentNullException($"{eventType.Name} type is not configured with the [EventTopic] attribute.");
+            return;
         }
 
-        var queueName = eventTopicAttribute.Queue;
+        if (handlerInterface != null)
+        {
+            // type: IEventHandler`1
+            services.AddScoped(type);
+        }
+
         if (_eventTopicInterceptor != null)
         {
             var isRegister = _eventTopicInterceptor.Invoke(eventTopicAttribute, type);
@@ -184,7 +180,7 @@ public class EventBusTypeFilter : ITypeFilter
         {
             eventInfo = new EventInfo
             {
-                Queue = queueName,
+                Queue = eventTopicAttribute.Queue,
                 Options = eventTopicAttribute,
                 EventType = eventType,
             };

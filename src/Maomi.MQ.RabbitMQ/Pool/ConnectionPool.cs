@@ -4,44 +4,42 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-using Microsoft.Extensions.ObjectPool;
-
 namespace Maomi.MQ.Pool;
 
 /// <summary>
 /// Object pool.<br />
 /// 连接对象池.
 /// </summary>
-public class ConnectionPool : ObjectPool<ConnectionObject>
+public class ConnectionPool
 {
-    private readonly DefaultObjectPoolProvider _defaultObjectPoolProvider;
-    private readonly ConnectionPooledObjectPolicy _connectionPooledObjectPolicy;
-    private readonly ObjectPool<ConnectionObject> _objectPool;
+    private readonly MqOptions _mqOptions;
+    private readonly ConnectionObject _connection;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConnectionPool"/> class.
     /// </summary>
-    /// <param name="connectionPooledObjectPolicy"></param>
-    public ConnectionPool(ConnectionPooledObjectPolicy connectionPooledObjectPolicy)
+    /// <param name="mqOptions"></param>
+    public ConnectionPool(MqOptions mqOptions)
     {
-        _connectionPooledObjectPolicy = connectionPooledObjectPolicy;
-        _defaultObjectPoolProvider = new DefaultObjectPoolProvider()
-        {
-            MaximumRetained = connectionPooledObjectPolicy.MaximumRetained
-        };
-
-        _objectPool = _defaultObjectPoolProvider.Create<ConnectionObject>(_connectionPooledObjectPolicy);
+        _mqOptions = mqOptions;
+        _connection = Create();
     }
 
-    /// <inheritdoc/>
-    public override ConnectionObject Get()
+    /// <summary>
+    /// Gets an object from the pool if one is available, otherwise creates one.
+    /// </summary>
+    /// <returns><see cref="ConnectionObject"/>.</returns>
+    public ConnectionObject Get()
     {
-        return _objectPool.Get();
+        return _connection;
     }
 
-    /// <inheritdoc/>
-    public override void Return(ConnectionObject obj)
+    /// <summary>
+    /// Create <see cref="ConnectionObject"/>.
+    /// </summary>
+    /// <returns><see cref="ConnectionObject"/>.</returns>
+    public ConnectionObject Create()
     {
-        _objectPool.Return(obj);
+        return new ConnectionObject(_mqOptions);
     }
 }

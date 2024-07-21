@@ -1,12 +1,14 @@
 ﻿using Maomi.MQ.Default;
 using Maomi.MQ.EventBus;
 using Maomi.MQ.Hosts;
+using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
 namespace Maomi.MQ.Tests.CustomConsumer;
+
 public partial class EventBusConsumerHostTests
 {
     [EventTopic("test")]
@@ -19,7 +21,6 @@ public partial class EventBusConsumerHostTests
         DeadQueue = "test_dead",
         ExecptionRequeue = true,
         Expiration = 1000,
-        Group = "group",
         Qos = 10,
         RetryFaildRequeue = true)]
     private class AllOptionsEvent
@@ -47,14 +48,15 @@ public partial class EventBusConsumerHostTests
 
     #region WaitReady
 
-    public abstract class WaitReadyConsumerHostService<TConsumer, TEvent> : EventBusHostService<TConsumer, TEvent>
-    where TEvent : class
-    where TConsumer : IConsumer<TEvent>
+    private abstract class WaitReadyConsumerHostService: EventBusHostService
     {
-        public DateTime InitTime { get; protected set; }
-        public WaitReadyConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ILogger<ConsumerBaseHostService> logger) : base(serviceProvider, serviceFactory, logger)
+        protected WaitReadyConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ConnectionPool connectionPool, ILogger<ConsumerBaseHostService> logger, IReadOnlyList<ConsumerType> consumerTypes) : base(serviceProvider, serviceFactory, connectionPool, logger, consumerTypes)
         {
         }
+
+        public DateTime InitTime { get; protected set; }
+
+
         protected override async Task WaitReadyInitQueueAsync(IConnection connection)
         {
             InitTime = DateTime.Now;
@@ -67,48 +69,42 @@ public partial class EventBusConsumerHostTests
         }
     }
 
-    public class WaitReady_0_ConsumerHostService<TConsumer, TEvent> : WaitReadyConsumerHostService<TConsumer, TEvent>
-    where TEvent : class
-    where TConsumer : IConsumer<TEvent>
+    private class WaitReady_0_ConsumerHostService : WaitReadyConsumerHostService
     {
-        public WaitReady_0_ConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ILogger<ConsumerBaseHostService> logger) : base(serviceProvider, serviceFactory, logger)
+        public WaitReady_0_ConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ConnectionPool connectionPool, ILogger<ConsumerBaseHostService> logger, IReadOnlyList<ConsumerType> consumerTypes) : base(serviceProvider, serviceFactory, connectionPool, logger, consumerTypes)
         {
         }
     }
 
-    public class WaitReady_1_ConsumerHostService<TConsumer, TEvent> : WaitReadyConsumerHostService<TConsumer, TEvent>
-    where TEvent : class
-    where TConsumer : IConsumer<TEvent>
+    private class WaitReady_1_ConsumerHostService : WaitReadyConsumerHostService
     {
-        public WaitReady_1_ConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ILogger<ConsumerBaseHostService> logger) : base(serviceProvider, serviceFactory, logger)
-        {
-        }
-    }
-    public class WaitReady_2_ConsumerHostService<TConsumer, TEvent> : WaitReadyConsumerHostService<TConsumer, TEvent>
-    where TEvent : class
-    where TConsumer : IConsumer<TEvent>
-    {
-        public WaitReady_2_ConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ILogger<ConsumerBaseHostService> logger) : base(serviceProvider, serviceFactory, logger)
+        public WaitReady_1_ConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ConnectionPool connectionPool, ILogger<ConsumerBaseHostService> logger, IReadOnlyList<ConsumerType> consumerTypes) : base(serviceProvider, serviceFactory, connectionPool, logger, consumerTypes)
         {
         }
     }
 
-    private class TestDefaultConsumerHostService<TConsumer, TEvent> : EventBusHostService<TConsumer, TEvent>
-        where TEvent : class
-        where TConsumer : IConsumer<TEvent>
+    private class WaitReady_2_ConsumerHostService : WaitReadyConsumerHostService
     {
-        public TestDefaultConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ILogger<ConsumerBaseHostService> logger) : base(serviceProvider, serviceFactory, logger)
+        public WaitReady_2_ConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ConnectionPool connectionPool, ILogger<ConsumerBaseHostService> logger, IReadOnlyList<ConsumerType> consumerTypes) : base(serviceProvider, serviceFactory, connectionPool, logger, consumerTypes)
         {
         }
+    }
 
+    private class TestDefaultConsumerHostService : WaitReadyConsumerHostService
+    {
+        public TestDefaultConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ConnectionPool connectionPool, ILogger<ConsumerBaseHostService> logger, IReadOnlyList<ConsumerType> consumerTypes) : base(serviceProvider, serviceFactory, connectionPool, logger, consumerTypes)
+        {
+        }
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
             return base.ExecuteAsync(stoppingToken);
         }
+
         // Analog received data.
-        public async Task PublishAsync(IChannel channel, BasicDeliverEventArgs eventArgs)
+        public async Task PublishAsync<TEvent>(string queue,IChannel channel, BasicDeliverEventArgs eventArgs)
+            where TEvent:class
         {
-            var consumerOptions = _serviceProvider.GetRequiredKeyedService<IConsumerOptions>(serviceKey: GetConsumerType()[0].Queue);
+            var consumerOptions = _serviceProvider.GetRequiredKeyedService<IConsumerOptions>(serviceKey: queue);
             var consumer = new MessageConsumer(_serviceProvider, _serviceFactory, _serviceProvider.GetRequiredService<ILogger<MessageConsumer>>(), consumerOptions);
             await consumer.ConsumerAsync<TEvent>(channel, eventArgs);
         }
@@ -142,9 +138,10 @@ public partial class EventBusConsumerHostTests
     private class WaitReady_3_EventHandler : WaitReadyTEventEventHandler<WaitReady_3_Event>
     {
     }
-    private class AllOptionsConsumerHostService : EventBusHostService<EventBusConsumer<IdEvent>, IdEvent>
+
+    private class AllOptionsConsumerHostService : EventBusHostService
     {
-        public AllOptionsConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ILogger<ConsumerBaseHostService> logger) : base(serviceProvider, serviceFactory, logger)
+        public AllOptionsConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ConnectionPool connectionPool, ILogger<ConsumerBaseHostService> logger, IReadOnlyList<ConsumerType> consumerTypes) : base(serviceProvider, serviceFactory, connectionPool, logger, consumerTypes)
         {
         }
     }

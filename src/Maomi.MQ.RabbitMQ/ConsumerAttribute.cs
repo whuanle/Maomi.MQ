@@ -32,9 +32,6 @@ public class ConsumerAttribute : Attribute, IConsumerOptions
     public int Expiration { get; set; }
 
     /// <inheritdoc />
-    public string? Group { get; set; }
-
-    /// <inheritdoc />
     public AutoQueueDeclare AutoQueueDeclare { get; set; }
 
     /// <inheritdoc />

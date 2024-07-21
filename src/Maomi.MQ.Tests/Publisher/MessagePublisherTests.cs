@@ -8,22 +8,9 @@ using Moq;
 using RabbitMQ.Client;
 
 namespace Maomi.MQ.Tests.Publish;
-public class MessagePublisherTests
+
+public class MessagePublisherTests : BaseMock
 {
-    private readonly Mock<IConnectionFactory> _mockConnectionFactory = new();
-    private readonly Mock<IConnection> _mockConnection = new Mock<IConnection>();
-    private readonly Mock<IChannel> _mockChannel = new Mock<IChannel>();
-
-    public MessagePublisherTests()
-    {
-        _mockConnectionFactory
-            .Setup(c => c.CreateConnectionAsync(CancellationToken.None))
-            .Returns(Task.FromResult(_mockConnection.Object));
-        _mockConnection
-            .Setup(c => c.CreateChannelAsync(CancellationToken.None))
-            .Returns(Task.FromResult(_mockChannel.Object));
-    }
-
     [Fact]
     public async Task Publisher()
     {
@@ -38,7 +25,7 @@ public class MessagePublisherTests
             ConnectionFactory = _mockConnectionFactory.Object
         };
         var jsonSerializer = new DefaultJsonSerializer();
-        var pool = new ConnectionPool(new ConnectionPooledObjectPolicy(options));
+        var pool = new ConnectionPool(options);
 
         DefaultMessagePublisher publisher = new(options, jsonSerializer, pool, idgen, new NullLogger<DefaultMessagePublisher>());
 

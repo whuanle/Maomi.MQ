@@ -25,16 +25,10 @@ public class MqOptions
     public string AppName { get; init; } = null!;
 
     /// <summary>
-    /// Create queues on startup,<see cref="RabbitMQ.Client.IChannel.QueueDeclareAsync"/>.<br />
+    /// Create queues on startup,see <see cref="RabbitMQ.Client.IChannel.QueueDeclareAsync"/>.<br />
     /// 是否自动创建队列.
     /// </summary>
     public bool AutoQueueDeclare { get; init; } = true;
-
-    /// <summary>
-    /// The maximum number of objects to retain in the pool.<br />
-    /// 常驻连接池的最大数量.
-    /// </summary>
-    public int PoolMaximumRetained { get; init; }
 
     /// <summary>
     /// RabbitMQ connection factory.

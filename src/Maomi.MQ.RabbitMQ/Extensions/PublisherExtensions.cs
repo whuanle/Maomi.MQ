@@ -4,7 +4,6 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-using Maomi.MQ.Pool;
 using RabbitMQ.Client;
 
 namespace Maomi.MQ;
@@ -19,16 +18,14 @@ public static class PublisherExtensions
     /// 独占连接对象的发布者.
     /// </summary>
     /// <param name="messagePublisher"></param>
-    /// <returns><see cref="TransactionPublisher"/>.</returns>
+    /// <returns><see cref="SinglePublisher"/>.</returns>
     public static SinglePublisher CreateSingle(this IMessagePublisher messagePublisher)
     {
         if (messagePublisher is DefaultMessagePublisher publisher)
         {
             var isExchange = messagePublisher is ExchangePublisher;
-
-            var connection = messagePublisher.ConnectionPool.Get();
-            var tran = new SinglePublisher(connection, publisher, isExchange);
-            return tran;
+            var exchange = new SinglePublisher(publisher, isExchange);
+            return exchange;
         }
 
         throw new InvalidCastException($"Unable to cast object of type '{messagePublisher.GetType().Name}' to type '{nameof(DefaultMessagePublisher)}'.");
@@ -50,8 +47,8 @@ public static class PublisherExtensions
                 throw new InvalidCastException($"Unable to cast object of type '{messagePublisher.GetType().Name}' to type '{nameof(DefaultMessagePublisher)}'.");
             }
 
-            var p = new ExchangePublisher(publisher);
-            return p;
+            var exchange = new ExchangePublisher(publisher);
+            return exchange;
         }
 
         throw new InvalidCastException($"Unable to cast object of type '{messagePublisher.GetType().Name}' to type '{nameof(DefaultMessagePublisher)}'.");
@@ -83,9 +80,7 @@ public static class PublisherExtensions
         if (messagePublisher is DefaultMessagePublisher publisher)
         {
             var isExchange = messagePublisher is ExchangePublisher;
-
-            var connection = messagePublisher.ConnectionPool.Get();
-            var tran = new TransactionPublisher(connection, publisher, isExchange);
+            var tran = new TransactionPublisher(publisher, isExchange);
             return tran;
         }
 
@@ -114,9 +109,7 @@ public static class PublisherExtensions
         if (messagePublisher is DefaultMessagePublisher publisher)
         {
             var isExchange = messagePublisher is ExchangePublisher;
-
-            var connection = messagePublisher.ConnectionPool.Get();
-            var confirm = new ConfirmPublisher(connection, publisher, isExchange);
+            var confirm = new ConfirmPublisher(publisher, isExchange);
             return confirm;
         }
 

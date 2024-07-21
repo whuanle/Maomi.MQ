@@ -16,11 +16,6 @@ namespace Maomi.MQ;
 public interface IMessagePublisher
 {
     /// <summary>
-    /// MQ connection pool.
-    /// </summary>
-    public ConnectionPool ConnectionPool { get; }
-
-    /// <summary>
     /// Publish messagge.<br />
     /// 发布消息.
     /// </summary>

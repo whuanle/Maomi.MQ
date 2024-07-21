@@ -15,18 +15,14 @@ namespace Maomi.MQ;
 /// </summary>
 public sealed class ConfirmPublisher : SinglePublisher, IMessagePublisher, IDisposable
 {
-    private readonly IChannel _channel;
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ConfirmPublisher"/> class.
     /// </summary>
-    /// <param name="connectionObject"></param>
     /// <param name="publisher"></param>
     /// <param name="isExchange"></param>
-    internal ConfirmPublisher(ConnectionObject connectionObject, DefaultMessagePublisher publisher, bool isExchange)
-        : base(connectionObject, publisher, isExchange)
+    internal ConfirmPublisher(DefaultMessagePublisher publisher, bool isExchange)
+        : base(publisher, isExchange)
     {
-        _channel = connectionObject.Connection.CreateChannelAsync().Result;
     }
 
     /// <inheritdoc cref="IChannel.ConfirmSelectAsync(CancellationToken)"/>
@@ -51,20 +47,5 @@ public sealed class ConfirmPublisher : SinglePublisher, IMessagePublisher, IDisp
     public override Task CustomPublishAsync<TEvent>(string queue, EventBody<TEvent> message, BasicProperties properties)
     {
         return PublishAsync(_channel, queue, message, properties, _isExchange);
-    }
-
-    /// <inheritdoc />
-    protected override void Dispose(bool disposing)
-    {
-        if (!disposedValue)
-        {
-            if (disposing)
-            {
-                _channel.Dispose();
-                _connectionPool.Return(_connectionObject);
-            }
-
-            disposedValue = true;
-        }
     }
 }

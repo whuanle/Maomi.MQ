@@ -33,6 +33,7 @@ Maomi.MQ.RabbitMQ 是一个用于专为 RabbitMQ 设计的发布者和消费者�
 * [消费者](https://mmq.whuanle.cn/2.0.consumer.html)
   - [消费者模式](https://mmq.whuanle.cn/2.1.consumer.html)
   - [事件总线模式](https://mmq.whuanle.cn/2.2.eventbus.html)
+  - [自定义消费者和动态订阅](https://mmq.whuanle.cn/2.3.dynamic.md)
 * [配置和调试](https://mmq.whuanle.cn/3.configuration.html)
 * [Qos 并发和顺序](https://mmq.whuanle.cn/4.qos.html)
 * [重试](https://mmq.whuanle.cn/5.retry.html)

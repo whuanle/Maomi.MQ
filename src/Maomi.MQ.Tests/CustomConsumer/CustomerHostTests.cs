@@ -1,114 +1,18 @@
 ﻿using Maomi.MQ.Default;
+using Maomi.MQ.Hosts;
+using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using System.Net.Sockets;
-using System.Reflection;
-using static Maomi.MQ.Tests.CustomConsumer.BaseHostTest;
 
 namespace Maomi.MQ.Tests.CustomConsumer;
 
-public partial class DefaultCustomerHostTests : BaseHostTest
+public partial class DefaultCustomerHostTests : BaseHostTests
 {
-    [Fact]
-    public async Task WaitReady()
-    {
-        using var host = new HostBuilder()
-            .ConfigureServices(services =>
-            {
-                var typeFilter = new ConsumerTypeFilter();
-                typeFilter.Filter(services, typeof(UnSetConsumer<IdEvent>));
-
-                services.RemoveAll<IHostedService>();
-                services.AddHostedService<WaitReady_0_ConsumerHostService<UnSetConsumer<IdEvent>, IdEvent>>();
-                services.AddHostedService<WaitReady_1_ConsumerHostService<UnSetConsumer<IdEvent>, IdEvent>>();
-                services.AddHostedService<WaitReady_2_ConsumerHostService<UnSetConsumer<IdEvent>, IdEvent>>();
-
-                services.AddSingleton(_mockConnectionFactory.Object);
-
-                services.AddMaomiMQ(options =>
-                {
-                    options.WorkId = 1;
-                    options.Rabbit = rabbit => { };
-                }, Array.Empty<Assembly>());
-
-                services.AddSingleton<MqOptions>(new MqOptions
-                {
-                    AppName = "test",
-                    WorkId = 0,
-                    ConnectionFactory = _mockConnectionFactory.Object
-                });
-            }).Build();
-
-        var waitReadyFactory = host.Services.GetRequiredService<IWaitReadyFactory>();
-        var ss = host.Services.GetRequiredService<IEnumerable<IHostedService>>();
-        var s0 = ss.OfType<WaitReady_0_ConsumerHostService<UnSetConsumer<IdEvent>, IdEvent>>().First();
-        var s1 = ss.OfType<WaitReady_1_ConsumerHostService<UnSetConsumer<IdEvent>, IdEvent>>().First();
-        var s2 = ss.OfType<WaitReady_2_ConsumerHostService<UnSetConsumer<IdEvent>, IdEvent>>().First();
-
-        _ = host.RunAsync();
-
-        var task = waitReadyFactory.WaitReadyAsync();
-        await task;
-        Assert.True(task.IsCompleted);
-
-
-        Assert.True(s2.InitTime > s1.InitTime);
-        Assert.True(s1.InitTime > s0.InitTime);
-    }
-
-    [Fact]
-    public async Task WaitReady_Exception()
-    {
-        _mockChannel
-            .Setup(c => c.QueueDeclareAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<IDictionary<string, object>>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-            .Throws(new SocketException(400, "error"));
-
-        using var host = new HostBuilder()
-            .ConfigureServices(services =>
-            {
-                var typeFilter = new ConsumerTypeFilter();
-                typeFilter.Filter(services, typeof(UnSetConsumer<IdEvent>));
-
-                services.RemoveAll<IHostedService>();
-                services.AddHostedService<TestDefaultConsumerHostService<UnSetConsumer<IdEvent>, IdEvent>>();
-
-                // mock.
-                services.AddSingleton(_mockConnectionFactory.Object);
-                services.AddMaomiMQ(options =>
-                {
-                    options.WorkId = 1;
-                    options.Rabbit = rabbit => { };
-                }, Array.Empty<Assembly>());
-                services.AddSingleton<MqOptions>(new MqOptions
-                {
-                    AppName = "test",
-                    WorkId = 0,
-                    ConnectionFactory = _mockConnectionFactory.Object
-                });
-            }).Build();
-
-        var waitReadyFactory = host.Services.GetRequiredService<IWaitReadyFactory>();
-        _ = host.RunAsync();
-        var task = waitReadyFactory.WaitReadyAsync();
-        try
-        {
-            await task;
-        }
-        catch (Exception ex)
-        {
-            Assert.True(ex is SocketException);
-        }
-        Assert.Equal(TaskStatus.Faulted, task.Status);
-        Assert.IsType<SocketException>(task.Exception?.InnerExceptions?.FirstOrDefault());
-        await Assert.ThrowsAsync<SocketException>(async () => await task);
-    }
-
     [Fact]
     public async Task ExecuteAsync()
     {
@@ -129,67 +33,6 @@ public partial class DefaultCustomerHostTests : BaseHostTest
     }
 
     [Fact]
-    public async Task QueueDeclare()
-    {
-        // get queue declare arguments.
-        IDictionary<string, object> arguments = null!;
-        _mockChannel
-            .Setup(c => c.QueueDeclareAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<IDictionary<string, object>>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-            .Callback<string, bool, bool, bool, IDictionary<string, object>, bool, bool, CancellationToken>((a1, a2, a3, a4, a5, a6, a7, a8) =>
-            {
-                arguments = a5;
-            });
-
-        ServiceCollection services = Mock();
-
-        services.AddSingleton<AllOptionsConsumerHostService>();
-        var typeFilter = new ConsumerTypeFilter();
-        typeFilter.Filter(services, typeof(AllOptionsConsumer));
-        typeFilter.Build(services);
-
-        var ioc = services.BuildServiceProvider();
-        using var host = ioc.GetRequiredService<AllOptionsConsumerHostService>();
-        _= host.StartAsync(CancellationToken.None);
-        var waitReady = ioc.GetRequiredService<IWaitReadyFactory>();
-        await waitReady.WaitReadyAsync();
-
-        // check arguments.
-        _mockChannel.Verify(a => a.QueueDeclareAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<IDictionary<string, object>>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
-
-        Assert.Equal(1000, arguments["x-expires"]);
-        Assert.Equal(string.Empty, arguments["x-dead-letter-exchange"]);
-        Assert.Equal("test_dead", arguments["x-dead-letter-routing-key"]);
-    }
-
-    [Fact]
-    public async Task DynamicConsumerOptions()
-    {
-        ServiceCollection services = Mock();
-
-        var typeFilter = new ConsumerTypeFilter((options, type) =>
-        {
-            if (type == typeof(AllOptionsConsumer))
-            {
-                options.Queue = options.Queue + "_1";
-            }
-            return true;
-        });
-        services.AddSingleton<AllOptionsConsumerHostService>();
-
-        typeFilter.Filter(services, typeof(AllOptionsConsumer));
-        typeFilter.Build(services);
-
-        var ioc = services.BuildServiceProvider();
-        using var host = ioc.GetRequiredService<AllOptionsConsumerHostService>();
-        _ = host.StartAsync(CancellationToken.None);
-        var waitReady = ioc.GetRequiredService<IWaitReadyFactory>();
-        await waitReady.WaitReadyAsync();
-
-        var consumerOptions = ioc.GetRequiredKeyedService<IConsumerOptions>("test");
-        Assert.Equal("test_1", consumerOptions.Queue);
-    }
-
-    [Fact]
     public async Task ConsumerAsync()
     {
         ServiceCollection services = Mock();
@@ -197,18 +40,25 @@ public partial class DefaultCustomerHostTests : BaseHostTest
         var typeFilter = new ConsumerTypeFilter();
         typeFilter.Filter(services, typeof(UnSetConsumer<IdEvent>));
 
-        // replace default consumer.
+        // replace default consumer lifetime.
         services.Add(new ServiceDescriptor(serviceKey: "test", serviceType: typeof(IConsumer<IdEvent>), implementationType: typeof(UnSetConsumer<IdEvent>), lifetime: ServiceLifetime.Singleton));
-        services.AddSingleton<TestDefaultConsumerHostService<UnSetConsumer<IdEvent>, IdEvent>>();
+
+        RegisterHost(services, new ConsumerType
+        {
+            Consumer = typeof(UnSetConsumer<IdEvent>),
+            Event = typeof(IdEvent),
+            Queue = "test"
+        });
+
         var ioc = services.BuildServiceProvider();
 
         var jsonSerializer = ioc.GetRequiredService<IJsonSerializer>();
         var consumer = ioc.GetRequiredKeyedService<IConsumer<IdEvent>>("test") as UnSetConsumer<IdEvent>;
         Assert.NotNull(consumer);
-        using var hostService = ioc.GetRequiredService<TestDefaultConsumerHostService<UnSetConsumer<IdEvent>, IdEvent>>();
+
+        using var hostService = ioc.GetRequiredService<IEnumerable<IHostedService>>().OfType<TestDefaultConsumerHostService>().First();
+
         _ = hostService.StartAsync(CancellationToken.None);
-        var waitReady = ioc.GetRequiredService<IWaitReadyFactory>();
-        await waitReady.WaitReadyAsync();
 
         var eventBody = new EventBody<IdEvent>()
         {
@@ -224,12 +74,27 @@ public partial class DefaultCustomerHostTests : BaseHostTest
         var buffer = new byte[1000];
         IAmqpWriteable _basicProperties = new BasicProperties { Persistent = true, AppId = "AppId", ContentEncoding = "content" };
         int offset = _basicProperties.WriteTo(buffer);
-        await hostService.PublishAsync(_mockChannel.Object, new BasicDeliverEventArgs("aa", 1, false, "test", "", new ReadOnlyBasicProperties(buffer.AsSpan()), bytes));
+        await hostService.PublishAsync<IdEvent>("test", _mockChannel.Object, new BasicDeliverEventArgs("aa", 1, false, "test", "", new ReadOnlyBasicProperties(buffer.AsSpan()), bytes));
 
         Assert.Equal(eventBody.Id, consumer.EventBody.Id);
         Assert.Equal(eventBody.Queue, consumer.EventBody.Queue);
         Assert.Equal(eventBody.CreationTime, consumer.EventBody.CreationTime);
         Assert.Equal(eventBody.Body.Id, consumer.EventBody.Body.Id);
+
+        void RegisterHost(IServiceCollection services, params ConsumerType[] consumerTypes)
+        {
+            Func<IServiceProvider, TestDefaultConsumerHostService> funcFactory = (serviceProvider) =>
+            {
+                return new TestDefaultConsumerHostService(
+                    serviceProvider,
+                    serviceProvider.GetRequiredService<ServiceFactory>(),
+                    serviceProvider.GetRequiredService<ConnectionPool>(),
+                    serviceProvider.GetRequiredService<ILogger<ConsumerBaseHostService>>(),
+                    consumerTypes.ToList());
+            };
+
+            services.TryAddEnumerable(new ServiceDescriptor(serviceType: typeof(IHostedService), factory: funcFactory, lifetime: ServiceLifetime.Singleton));
+        }
     }
 
     [Fact]
@@ -309,14 +174,19 @@ public partial class DefaultCustomerHostTests : BaseHostTest
     {
         ServiceCollection services = Mock();
 
-        services.AddSingleton<TestDefaultConsumerHostService<UnSetConsumer<TEvent>, TEvent>>();
-
         var retryFactory = new TestRetryPolicyFactory(Heler.CreateLogger<DefaultRetryPolicyFactory>());
         services.AddSingleton<IRetryPolicyFactory>(retryFactory);
 
         var typeFilter = new ConsumerTypeFilter();
         typeFilter.Filter(services, typeof(TConsumer));
         services.Add(new ServiceDescriptor(serviceKey: "test", serviceType: typeof(IConsumer<TEvent>), implementationType: typeof(TConsumer), lifetime: ServiceLifetime.Singleton));
+
+        RegisterHost(services, new ConsumerType
+        {
+            Consumer = typeof(TConsumer),
+            Event = typeof(TEvent),
+            Queue = "test"
+        });
 
         if (action != null)
         {
@@ -327,11 +197,10 @@ public partial class DefaultCustomerHostTests : BaseHostTest
         var jsonSerializer = ioc.GetRequiredService<IJsonSerializer>();
         var consumer = ioc.GetRequiredKeyedService<IConsumer<TEvent>>("test") as TConsumer;
         Assert.NotNull(consumer);
-        using var hostService = ioc.GetRequiredService<TestDefaultConsumerHostService<UnSetConsumer<TEvent>, TEvent>>();
+
+        using var hostService = ioc.GetRequiredService<IEnumerable<IHostedService>>().OfType<TestDefaultConsumerHostService>().First();
 
         _ = hostService.StartAsync(CancellationToken.None);
-        var waitReady = ioc.GetRequiredService<IWaitReadyFactory>();
-        await waitReady.WaitReadyAsync();
 
         var eventBody = new EventBody<TEvent>()
         {
@@ -345,8 +214,24 @@ public partial class DefaultCustomerHostTests : BaseHostTest
         var buffer = new byte[1000];
         IAmqpWriteable _basicProperties = new BasicProperties { Persistent = true, AppId = "AppId", ContentEncoding = "content" };
         int offset = _basicProperties.WriteTo(buffer);
-        await hostService.PublishAsync(_mockChannel.Object, new BasicDeliverEventArgs("aa", 1, false, "test", "", new ReadOnlyBasicProperties(buffer.AsSpan()), bytes));
+
+        await hostService.PublishAsync<TEvent>("test", _mockChannel.Object, new BasicDeliverEventArgs("aa", 1, false, "test", "", new ReadOnlyBasicProperties(buffer.AsSpan()), bytes));
 
         return consumer;
+
+        void RegisterHost(IServiceCollection services, params ConsumerType[] consumerTypes)
+        {
+            Func<IServiceProvider, TestDefaultConsumerHostService> funcFactory = (serviceProvider) =>
+            {
+                return new TestDefaultConsumerHostService(
+                    serviceProvider,
+                    serviceProvider.GetRequiredService<ServiceFactory>(),
+                    serviceProvider.GetRequiredService<ConnectionPool>(),
+                    serviceProvider.GetRequiredService<ILogger<ConsumerBaseHostService>>(),
+                    consumerTypes.ToList());
+            };
+
+            services.TryAddEnumerable(new ServiceDescriptor(serviceType: typeof(IHostedService), factory: funcFactory, lifetime: ServiceLifetime.Singleton));
+        }
     }
 }

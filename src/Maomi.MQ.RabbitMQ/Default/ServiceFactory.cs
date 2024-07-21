@@ -4,6 +4,7 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
+using Maomi.MQ.Pool;
 using RabbitMQ.Client;
 
 namespace Maomi.MQ.Default;
@@ -23,7 +24,13 @@ public class ServiceFactory
     /// <param name="waitReadyFactory"></param>
     /// <param name="circuitBreakerFactory"></param>
     /// <param name="ids"></param>
-    public ServiceFactory(MqOptions options, IJsonSerializer serializer, IRetryPolicyFactory retryPolicyFactory, IWaitReadyFactory waitReadyFactory, ICircuitBreakerFactory circuitBreakerFactory, IIdFactory ids)
+    public ServiceFactory(
+        MqOptions options,
+        IJsonSerializer serializer,
+        IRetryPolicyFactory retryPolicyFactory,
+        IWaitReadyFactory waitReadyFactory,
+        ICircuitBreakerFactory circuitBreakerFactory,
+        IIdFactory ids)
     {
         Options = options;
         Serializer = serializer;
@@ -42,11 +49,6 @@ public class ServiceFactory
     /// <see cref="IIdFactory"/>.
     /// </summary>
     public IIdFactory Ids { get; private set; }
-
-    /// <summary>
-    /// <see cref="IConnectionFactory"/>.
-    /// </summary>
-    public IConnectionFactory ConnectionFactory => Options.ConnectionFactory;
 
     /// <summary>
     /// <see cref="IJsonSerializer"/>.

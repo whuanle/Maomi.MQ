@@ -6,6 +6,7 @@
 
 using Maomi.MQ.Default;
 using Maomi.MQ.EventBus;
+using Maomi.MQ.Hosts;
 using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
@@ -69,7 +70,6 @@ public static partial class MaomiExtensions
             AppName = optionsBuilder.AppName,
             WorkId = optionsBuilder.WorkId,
             AutoQueueDeclare = optionsBuilder.AutoQueueDeclare,
-            PoolMaximumRetained = optionsBuilder.PoolMaximumRetained,
             ConnectionFactory = connectionFactory
         });
 
@@ -78,9 +78,10 @@ public static partial class MaomiExtensions
         services.AddSingleton<ServiceFactory>();
 
         services.AddSingleton(connectionFactory);
-        services.AddSingleton<ConnectionPooledObjectPolicy>();
         services.AddSingleton<ConnectionPool>();
+
         services.AddSingleton<IMessagePublisher, DefaultMessagePublisher>();
+        services.AddSingleton<IDynamicConsumer, DynamicConsumer>();
 
         foreach (var assembly in assemblies)
         {

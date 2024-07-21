@@ -34,9 +34,6 @@ public class DefaultMessagePublisher : IMessagePublisher
     protected readonly IIdFactory _idGen;
     protected readonly ILogger<DefaultMessagePublisher> _logger;
 
-    /// <inheritdoc />
-    public ConnectionPool ConnectionPool => _connectionPool;
-
     /// <summary>
     /// Initializes a new instance of the <see cref="DefaultMessagePublisher"/> class.
     /// </summary>
@@ -78,7 +75,7 @@ public class DefaultMessagePublisher : IMessagePublisher
     {
         _mqOptions = publisher._mqOptions;
         _jsonSerializer = publisher._jsonSerializer;
-        _connectionPool = publisher.ConnectionPool;
+        _connectionPool = publisher._connectionPool;
         _idGen = publisher._idGen;
         _logger = publisher._logger;
 
@@ -125,14 +122,7 @@ public class DefaultMessagePublisher : IMessagePublisher
     public virtual async Task CustomPublishAsync<TEvent>(string queue, EventBody<TEvent> message, BasicProperties properties)
     {
         var connection = _connectionPool.Get();
-        try
-        {
-            await PublishAsync(connection.Channel, queue, message, properties);
-        }
-        finally
-        {
-            _connectionPool.Return(connection);
-        }
+        await PublishAsync(connection.DefaultChannel, queue, message, properties);
     }
 
     /// <summary>

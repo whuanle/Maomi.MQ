@@ -14,18 +14,14 @@ namespace Maomi.MQ;
 /// </summary>
 public sealed class TransactionPublisher : SinglePublisher, IMessagePublisher, IDisposable
 {
-    private readonly IChannel _channel;
-
     /// <summary>
     /// Initializes a new instance of the <see cref="TransactionPublisher"/> class.
     /// </summary>
-    /// <param name="connectionObject"></param>
     /// <param name="messagePublisher"></param>
     /// <param name="isExchange"></param>
-    internal TransactionPublisher(ConnectionObject connectionObject, DefaultMessagePublisher messagePublisher, bool isExchange)
-        : base(connectionObject, messagePublisher, isExchange)
+    internal TransactionPublisher(DefaultMessagePublisher messagePublisher, bool isExchange)
+        : base(messagePublisher, isExchange)
     {
-        _channel = connectionObject.Connection.CreateChannelAsync().Result;
     }
 
     /// <inheritdoc cref="IChannel.TxSelectAsync(CancellationToken)"/>
@@ -50,20 +46,5 @@ public sealed class TransactionPublisher : SinglePublisher, IMessagePublisher, I
     public override Task CustomPublishAsync<TEvent>(string queue, EventBody<TEvent> message, BasicProperties properties)
     {
         return PublishAsync(_channel, queue, message, properties, _isExchange);
-    }
-
-    /// <inheritdoc />
-    protected override void Dispose(bool disposing)
-    {
-        if (!disposedValue)
-        {
-            if (disposing)
-            {
-                _channel.Dispose();
-                _connectionPool.Return(_connectionObject);
-            }
-
-            disposedValue = true;
-        }
     }
 }

@@ -102,26 +102,6 @@ public class Dead_2_QueueConsumer : IConsumer<DeadQueueEvent>
     public Task<bool> FallbackAsync(EventBody<DeadQueueEvent>? message) => Task.FromResult(false);
 }
 
-[Consumer("ConsumerWeb_group_1", Qos = 1, Group = "group")]
-public class Group_1_Consumer : IConsumer<GroupEvent>
-{
-    public Task ExecuteAsync(EventBody<GroupEvent> message) => Task.CompletedTask;
-
-    public Task FaildAsync(Exception ex, int retryCount, EventBody<GroupEvent>? message) => Task.CompletedTask;
-
-    public Task<bool> FallbackAsync(EventBody<GroupEvent>? message) => Task.FromResult(true);
-}
-
-[Consumer("ConsumerWeb_group_2", Qos = 1, Group = "group")]
-public class Group_2_Consumer : IConsumer<GroupEvent>
-{
-    public Task ExecuteAsync(EventBody<GroupEvent> message) => Task.CompletedTask;
-
-    public Task FaildAsync(Exception ex, int retryCount, EventBody<GroupEvent>? message) => Task.CompletedTask;
-
-    public Task<bool> FallbackAsync(EventBody<GroupEvent>? message) => Task.FromResult(true);
-}
-
 [Consumer("ConsumerWeb_empty", Expiration = 6000, DeadQueue = "ConsumerWeb_empty_dead")]
 public class MyEmptyConsumer : EmptyConsumer<TestEvent> { }
 

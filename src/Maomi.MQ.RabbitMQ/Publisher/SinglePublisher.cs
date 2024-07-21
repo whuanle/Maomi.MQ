@@ -10,36 +10,36 @@
 
 using Maomi.MQ.Pool;
 using RabbitMQ.Client;
-using System.Threading.Channels;
 
 namespace Maomi.MQ;
 
 /// <summary>
-/// <inheritdoc cref="IChannel.WaitForConfirmsAsync(CancellationToken)"/>
+/// <inheritdoc cref="DefaultMessagePublisher"/>
 /// </summary>
 public class SinglePublisher : DefaultMessagePublisher, IMessagePublisher, IDisposable
 {
     protected readonly ConnectionObject _connectionObject;
+    protected readonly IChannel _channel;
     protected readonly bool _isExchange;
     protected bool disposedValue;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SinglePublisher"/> class.
     /// </summary>
-    /// <param name="connectionObject"></param>
     /// <param name="publisher"></param>
     /// <param name="isExchange"></param>
-    internal SinglePublisher(ConnectionObject connectionObject, DefaultMessagePublisher publisher, bool isExchange)
+    internal SinglePublisher(DefaultMessagePublisher publisher, bool isExchange)
         : base(publisher)
     {
-        _connectionObject = connectionObject;
+        _connectionObject = _connectionPool.Get();
         _isExchange = isExchange;
+        _channel = _connectionObject.Connection.CreateChannelAsync().Result;
     }
 
     /// <inheritdoc cref="IMessagePublisher.CustomPublishAsync{TEvent}(string, EventBody{TEvent}, BasicProperties)"/>
     public override Task CustomPublishAsync<TEvent>(string queue, EventBody<TEvent> message, BasicProperties properties)
     {
-        return PublishAsync(_connectionObject.Channel, queue, message, properties, _isExchange);
+        return PublishAsync(_channel, queue, message, properties, _isExchange);
     }
 
     /// <inheritdoc />
@@ -56,7 +56,7 @@ public class SinglePublisher : DefaultMessagePublisher, IMessagePublisher, IDisp
         {
             if (disposing)
             {
-                _connectionPool.Return(_connectionObject);
+                _channel.Dispose();
             }
 
             disposedValue = true;

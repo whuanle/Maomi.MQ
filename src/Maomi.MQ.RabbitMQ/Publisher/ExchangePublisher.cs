@@ -30,14 +30,7 @@ public class ExchangePublisher : DefaultMessagePublisher, IMessagePublisher
     public override async Task CustomPublishAsync<TEvent>(string queue, EventBody<TEvent> message, BasicProperties properties)
     {
         var connection = _connectionPool.Get();
-        try
-        {
-            await PublishAsync(connection.Channel, queue, message, properties, true);
-        }
-        finally
-        {
-            _connectionPool.Return(connection);
-        }
+        await PublishAsync(connection.DefaultChannel, queue, message, properties, true);
     }
 
     /// <inheritdoc />

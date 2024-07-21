@@ -48,12 +48,6 @@ public interface IConsumerOptions
     bool RetryFaildRequeue { get; }
 
     /// <summary>
-    /// Group.<br />
-    /// 分组名称.
-    /// </summary>
-    string? Group { get; }
-
-    /// <summary>
     /// Create queues on startup,<see cref="RabbitMQ.Client.IChannel.QueueDeclareAsync"/>.<br />
     /// 是否自动创建队列.
     /// </summary>

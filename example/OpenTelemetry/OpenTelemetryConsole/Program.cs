@@ -1,12 +1,10 @@
-﻿using OpenTelemetry.Logs;
+﻿using Maomi.MQ;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using Maomi.MQ;
-using OpenTelemetry.Exporter;
-using RabbitMQ.Client;
 using System.Reflection;
-using OpenTelemetry;
 
 namespace OpenTelemetryConsole;
 

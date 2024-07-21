@@ -26,7 +26,7 @@ public class Program
             options.AppName = "myapp";
             options.Rabbit = (ConnectionFactory options) =>
             {
-                options.HostName = "10.1.0.6";
+                options.HostName = "192.168.3.248";
                 options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
             };
         }, [typeof(Program).Assembly], [new ConsumerTypeFilter(), new EventBusTypeFilter(EventTopicFilter)]);

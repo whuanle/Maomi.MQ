@@ -23,7 +23,7 @@ public class JsonSerializerTests
 
         Assert.NotNull(newModel);
         Assert.Equal(model.Id, newModel.Id);
-        Assert.Equal(model.Message, newModel.Message);  
+        Assert.Equal(model.Message, newModel.Message);
     }
 
     private class TestEvent

@@ -1,8 +1,6 @@
 ﻿using Maomi.MQ.EventBus;
-using Maomi.MQ.Hosts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.Reflection;
 
 namespace Maomi.MQ.Tests.TypeFilter;
 
@@ -13,7 +11,16 @@ public partial class EventbusTypeFilterTests
     {
         var services = new ServiceCollection();
         var typeFilter = new EventBusTypeFilter();
-        Assert.Throws<ArgumentNullException>(() => { typeFilter.Filter(services, typeof(NontTopicEventHandler)); });
+
+        typeFilter.Filter(services, typeof(NoneTopicEvent));
+        Assert.Empty(services);
+
+        // NontTopicEventHandler => NoneTopicEvent
+        typeFilter.Filter(services, typeof(NontTopicEventHandler));
+        Assert.Empty(services);
+
+        typeFilter.Build(services);
+        Assert.Empty(services);
     }
 
     [Fact]
@@ -35,42 +42,75 @@ public partial class EventbusTypeFilterTests
     }
 
     [Fact]
-    public void Usable_Attribute()
+    public void Filter()
     {
         var services = new ServiceCollection();
         var typeFilter = new EventBusTypeFilter();
         typeFilter.Filter(services, typeof(Usable_1_EventHandler));
-        typeFilter.Filter(services, typeof(Usable_2_EventHandler));
+        Assert.Single(services);
+
+        // service 1.
+        var serviceDescriptor = services.First();
+        Assert.Equal(typeof(Usable_1_EventHandler), serviceDescriptor.ImplementationType);
+
+        typeFilter.Build(services);
+        Assert.Equal(7, services.Count);
+
+        // service 2.
+        serviceDescriptor = services.FirstOrDefault(x => x.ServiceType == typeof(IEventHandlerFactory<UsableEvent>));
+        Assert.NotNull(serviceDescriptor);
+        Assert.Equal(ServiceLifetime.Singleton, serviceDescriptor.Lifetime);
+        Assert.Equal("EventHandlerFactory`1", serviceDescriptor.ImplementationInstance!.GetType().Name);
+
+        // service 3.
+        serviceDescriptor = services.FirstOrDefault(x => x.ServiceType == typeof(IEventMiddleware< UsableEvent>));
+        Assert.NotNull(serviceDescriptor);
+        Assert.Equal(ServiceLifetime.Scoped, serviceDescriptor.Lifetime);
+        Assert.Equal("DefaultEventMiddleware`1", serviceDescriptor.ImplementationType!.Name);
+
+        // service 4.
+        serviceDescriptor = services.FirstOrDefault(x => x.ServiceType == typeof(IHandlerMediator<UsableEvent>));
+        Assert.NotNull(serviceDescriptor);
+        Assert.Equal(ServiceLifetime.Scoped, serviceDescriptor.Lifetime);
+        Assert.Equal("HandlerMediator`1", serviceDescriptor.ImplementationType!.Name);
+
+        // service 5.
+        serviceDescriptor = services.FirstOrDefault(x => x.ServiceType == typeof(IConsumerOptions));
+        Assert.NotNull(serviceDescriptor);
+        Assert.Equal(ServiceLifetime.Singleton, serviceDescriptor.Lifetime);
+        Assert.Equal("test", serviceDescriptor.ServiceKey);
+        Assert.Equal(typeof(EventTopicAttribute), serviceDescriptor.KeyedImplementationInstance!.GetType());
+
+        // service 6.
+        serviceDescriptor = services.FirstOrDefault(x => x.ServiceType == typeof(IConsumer<UsableEvent>));
+        Assert.NotNull(serviceDescriptor);
+        Assert.Equal(ServiceLifetime.Scoped, serviceDescriptor.Lifetime);
+        Assert.Equal("test", serviceDescriptor.ServiceKey);
+        Assert.Equal(typeof(EventBusConsumer<UsableEvent>), serviceDescriptor.KeyedImplementationType);
+
+        // service 7.
+        serviceDescriptor = services.FirstOrDefault(x => x.ServiceType == typeof(IHostedService));
+        Assert.NotNull(serviceDescriptor);
+        Assert.Equal(ServiceLifetime.Singleton, serviceDescriptor.Lifetime);
+    }
+
+    [Fact]
+    public void Filter_Middleware()
+    {
+        var services = new ServiceCollection();
+        var typeFilter = new EventBusTypeFilter();
+        typeFilter.Filter(services, typeof(MiddlewareEventHandler));
+        Assert.Single(services);
+
+        typeFilter.Filter(services, typeof(TestEventMiddleware));
         typeFilter.Build(services);
 
-        var serviceDescriptors = services.ToArray();
-        var handlerMediator = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(IHandlerMediator<UsableEvent>));
-        Assert.NotNull(handlerMediator);
-        Assert.Equal(ServiceLifetime.Scoped, handlerMediator.Lifetime);
-
-        var eventMiddleware = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(IEventMiddleware<UsableEvent>));
-        Assert.NotNull(eventMiddleware);
-        Assert.Equal(ServiceLifetime.Scoped, eventMiddleware.Lifetime);
-        Assert.Equal(typeof(DefaultEventMiddleware<UsableEvent>), eventMiddleware.ImplementationType);
-
-        var eventBusConsumer = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(IConsumer<UsableEvent>) && object.Equals(x.ServiceKey, "test"));
-        Assert.NotNull(eventBusConsumer);
-        Assert.Equal(ServiceLifetime.Scoped, eventBusConsumer.Lifetime);
-
-        var consumerOptions = serviceDescriptors.FirstOrDefault(x => object.Equals(x.ServiceKey, "test") && x.ServiceType == typeof(IConsumerOptions));
-        Assert.NotNull(consumerOptions);
-        Assert.Equal(ServiceLifetime.Singleton, consumerOptions.Lifetime);
-
-        var eventInfo = serviceDescriptors.FirstOrDefault(x => x.ServiceType == typeof(IEventHandlerFactory<UsableEvent>));
-        Assert.NotNull(eventInfo);
-        Assert.Equal(ServiceLifetime.Singleton, eventInfo.Lifetime);
-
-        var hostedServices = serviceDescriptors.Where(x => x.ServiceType == typeof(IHostedService)).ToArray();
-        Assert.Single(hostedServices);
-        var consumerHostService = hostedServices.FirstOrDefault();
-        Assert.NotNull(consumerHostService);
-        Assert.Equal(typeof(EventBusHostService<EventBusConsumer<UsableEvent>, UsableEvent>), consumerHostService.ImplementationType);
+        var serviceDescriptor = services.FirstOrDefault(x => x.ServiceType == typeof(IEventMiddleware<MiddlewareEvent>));
+        Assert.NotNull(serviceDescriptor);
+        Assert.Equal(ServiceLifetime.Scoped, serviceDescriptor.Lifetime);
+        Assert.Equal(typeof(TestEventMiddleware), serviceDescriptor.ImplementationType);
     }
+
 
     [Fact]
     public void Custom_Middleware()

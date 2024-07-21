@@ -16,12 +16,10 @@ namespace Maomi.MQ.Pool;
 /// IConnection,IChannel pool.<br />
 /// TCP 连接和通道.
 /// </summary>
-public class ConnectionObject : IDisposable
+public class ConnectionObject
 {
-    protected readonly IConnection _connection;
-    protected readonly IChannel _channel;
-
-    protected bool disposedValue;
+    protected IConnection _connection;
+    protected IChannel _channel;
 
     /// <summary>
     /// IConnection.
@@ -31,7 +29,7 @@ public class ConnectionObject : IDisposable
     /// <summary>
     /// IChannel.
     /// </summary>
-    public IChannel Channel => _channel;
+    public IChannel DefaultChannel => _channel;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConnectionObject"/> class.
@@ -51,30 +49,5 @@ public class ConnectionObject : IDisposable
     {
         _connection = connectionObject._connection;
         _channel = connectionObject._channel;
-    }
-
-    /// <inheritdoc/>
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// <inheritdoc cref="IDisposable.Dispose"/>.
-    /// </summary>
-    /// <param name="disposing"></param>
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!disposedValue)
-        {
-            if (disposing)
-            {
-                _channel.Dispose();
-                _connection.Dispose();
-            }
-
-            disposedValue = true;
-        }
     }
 }

@@ -1,24 +1,18 @@
-﻿using Maomi.MQ.Default;
-using Maomi.MQ.Hosts;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
 using System.Reflection;
-using static Maomi.MQ.Diagnostics.DiagnosticName;
 
-namespace Maomi.MQ.Tests.CustomConsumer;
-
-public class BaseHostTest
+namespace Maomi.MQ.Tests;
+public class BaseMock
 {
     public readonly Mock<IConnectionFactory> _mockConnectionFactory = new();
     public readonly Mock<IConnection> _mockConnection = new Mock<IConnection>();
     public readonly Mock<IChannel> _mockChannel = new Mock<IChannel>();
 
-    public BaseHostTest()
+    public BaseMock()
     {
         _mockConnectionFactory
             .Setup(c => c.CreateConnectionAsync(CancellationToken.None))
@@ -52,7 +46,7 @@ public class BaseHostTest
             options.WorkId = 1;
             options.Rabbit = rabbit => { };
         }, Array.Empty<Assembly>());
-        services.AddSingleton<MqOptions>(new MqOptions
+        services.AddSingleton(new MqOptions
         {
             AppName = "test",
             WorkId = 0,
@@ -61,42 +55,4 @@ public class BaseHostTest
         return services;
     }
 
-    public class ExceptionJsonSerializer : IJsonSerializer
-    {
-        public TObject? Deserialize<TObject>(ReadOnlySpan<byte> bytes) where TObject : class
-        {
-            throw new NotImplementedException();
-        }
-
-        public byte[] Serializer<TObject>(TObject obj) where TObject : class
-        {
-            return System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(obj);
-        }
-    }
-
-    [Consumer("test")]
-    public class UnSetConsumer<TEvent> : IConsumer<TEvent>, IRetry, IEventBody<TEvent>
-    where TEvent : class
-    {
-        public EventBody<TEvent> EventBody { get; private set; } = default!;
-
-        public int RetryCount { get; private set; }
-        public bool IsFallbacked { get; private set; }
-
-        public Task ExecuteAsync(EventBody<TEvent> message)
-        {
-            EventBody = message;
-            return Task.CompletedTask;
-        }
-        public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
-        {
-            RetryCount = retryCount;
-            return Task.CompletedTask;
-        }
-        public Task<bool> FallbackAsync(EventBody<TEvent>? message)
-        {
-            IsFallbacked = true;
-            return Task.FromResult(false);
-        }
-    }
 }

@@ -4,57 +4,24 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-#pragma warning disable SA1649
 #pragma warning disable SA1401
 #pragma warning disable SA1600
+#pragma warning disable CS1591
 
 using Maomi.MQ.Default;
-using Maomi.MQ.Hosts;
+using Maomi.MQ.Pool;
 using Microsoft.Extensions.Logging;
-using System.Reflection;
 
-namespace Maomi.MQ;
+namespace Maomi.MQ.Hosts;
 
 /// <summary>
-/// Base consumer service.
+/// Base consumer service.Initialize the queue and build the consumer application.<br />
+/// 初始化队列和构建消费者程序.
 /// </summary>
-/// <typeparam name="TConsumer"><see cref="IConsumer{TEvent}"/>.</typeparam>
-/// <typeparam name="TEvent">Event model.</typeparam>
-public class ConsumerHostService<TConsumer, TEvent> : ConsumerBaseHostService
-    where TEvent : class
-    where TConsumer : IConsumer<TEvent>
+public class ConsumerHostService : ConsumerBaseHostService
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ConsumerHostService{TConsumer, TEvent}"/> class.
-    /// </summary>
-    /// <param name="serviceProvider"></param>
-    /// <param name="serviceFactory"></param>
-    /// <param name="logger"></param>
-    public ConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ILogger<ConsumerBaseHostService> logger)
-        : base(serviceProvider, serviceFactory, logger, GetConsumerType())
+    public ConsumerHostService(IServiceProvider serviceProvider, ServiceFactory serviceFactory, ConnectionPool connectionPool, ILogger<ConsumerBaseHostService> logger, IReadOnlyList<ConsumerType> consumerTypes)
+        : base(serviceProvider, serviceFactory, connectionPool, logger, consumerTypes)
     {
-    }
-
-    /// <summary>
-    /// Get options.
-    /// </summary>
-    /// <returns><see cref="ConsumerOptions"/>.</returns>
-    public static IReadOnlyList<ConsumerType> GetConsumerType()
-    {
-        var consumerAttribute = typeof(TConsumer).GetCustomAttribute<ConsumerAttribute>();
-        if (consumerAttribute == null)
-        {
-            ArgumentNullException.ThrowIfNull(consumerAttribute);
-        }
-
-        return new List<ConsumerType>
-        {
-            new ConsumerType
-            {
-                Queue = consumerAttribute.Queue,
-                Consumer = typeof(TConsumer),
-                Event = typeof(TEvent)
-            }
-        };
     }
 }

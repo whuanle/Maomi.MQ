@@ -9,7 +9,7 @@ namespace Maomi.MQ;
 /// <summary>
 /// Consumer info.
 /// </summary>
-public class ConsumerType
+public class ConsumerType : IComparable<ConsumerType>
 {
     /// <summary>
     /// Queue.
@@ -25,4 +25,32 @@ public class ConsumerType
     /// Event model.
     /// </summary>
     public Type Event { get; init; } = null!;
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Queue);
+    }
+
+    /// <inheritdoc/>
+    public override bool Equals(object? obj)
+    {
+        if (obj == null)
+        {
+            return false;
+        }
+
+        if (obj is ConsumerType consumerType)
+        {
+            return consumerType.Queue == this.Queue;
+        }
+
+        return false;
+    }
+
+    /// <inheritdoc/>
+    public int CompareTo(ConsumerType? other)
+    {
+        return this.Queue.CompareTo(other?.Queue);
+    }
 }
