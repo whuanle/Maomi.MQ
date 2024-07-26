@@ -1,4 +1,4 @@
-* # Maomi.MQ 　　　　　　　　　　　　　　　　　　　　[中文](https://github.com/whuanle/Maomi.MQ/blob/main/README.md)
+* # Maomi.MQ 　　　　　　　　　　　　　　　　　　　　[中文](https://github.com/whuanle/Maomi.MQ/blob/main/README.zh-cn.md)
 
   **Author:**  whuanle   
   **Documentation URL:** [https://mmq.whuanle.cn](https://mmq.whuanle.cn)    

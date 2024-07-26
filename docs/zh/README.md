@@ -1,4 +1,4 @@
-# Maomi.MQ 　　　　　　　　　　　　　　　　　　　　[English](https://github.com/whuanle/Maomi.MQ/blob/main/README.md)
+# 文档说明
 
 作者：痴者工良
 
@@ -28,14 +28,27 @@ Maomi.MQ.RabbitMQ 是一个用于专为 RabbitMQ 设计的发布者和消费者�
 
 ### 目录
 
-* [快速入门](https://mmq.whuanle.cn/1.start.html)
-* [发布事件](https://mmq.whuanle.cn/2.publisher.html)
-* [消费者](https://mmq.whuanle.cn/2.0.consumer.html)
-  - [消费者模式](https://mmq.whuanle.cn/2.1.consumer.html)
-  - [事件总线模式](https://mmq.whuanle.cn/2.2.eventbus.html)
-  - [自定义消费者和动态订阅](https://mmq.whuanle.cn/2.3.dynamic.md)
-* [配置和调试](https://mmq.whuanle.cn/3.configuration.html)
-* [Qos 并发和顺序](https://mmq.whuanle.cn/4.qos.html)
-* [重试](https://mmq.whuanle.cn/5.retry.html)
-* [死信队列](https://mmq.whuanle.cn/6.dead_queue.html)
-* [可观测性](https://mmq.whuanle.cn/7.opentelemetry.html)
+* [快速入门](1.start.md) 
+* [发布事件](2.publisher.md)
+* [消费者](2.0.consumer.md)
+  * [消费者模式](2.1.consumer.md)
+  * [事件总线模式](2.2.eventbus.md)
+  *  [动态消费者和动态订阅](2.3.dynamic.md) 
+* [配置和调试](3.configuration.md)
+* [Qos 并发和顺序](4.qos.md)
+* [重试](5.retry.md)
+* [死信队列](6.dead_queue.md)
+* [可观测性](7.opentelemetry.md)
+
+
+
+
+
+### 新版本改动
+
+**1.3.0**
+
+* 去掉了连接池。
+* 去掉了 IMessagePublisher 接口的 ConnectionPool 属性。
+* 增加了动态消费者
+* 增加动态订阅功能
