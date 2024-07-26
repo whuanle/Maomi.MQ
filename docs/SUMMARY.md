@@ -1,7 +1,5 @@
 # Maomi.MQ 文档
 
-* [English](en/README.md)
-
 * [快速入门](1.start.md) 
 * [发布事件](2.publisher.md)
 * [消费者](2.0.consumer.md)
