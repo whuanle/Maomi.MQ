@@ -9,7 +9,7 @@ using RabbitMQ.Client;
 namespace Maomi.MQ;
 
 /// <summary>
-/// extensions.
+/// Extensions.
 /// </summary>
 public static class PublisherExtensions
 {

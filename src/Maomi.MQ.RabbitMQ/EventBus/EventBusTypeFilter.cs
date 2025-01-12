@@ -57,10 +57,9 @@ public class EventBusTypeFilter : ITypeFilter
             }
 
             // Singleton.
-            var handlerFactory = (Activator.CreateInstance(typeof(EventHandlerFactory<>).MakeGenericType(eventType), item.Value.Handlers) as IEventHandlerFactory)!;
             services.Add(new ServiceDescriptor(
                 serviceType: typeof(IEventHandlerFactory<>).MakeGenericType(eventType),
-                instance: handlerFactory));
+                instance: () => { return (Activator.CreateInstance(typeof(EventHandlerFactory<>).MakeGenericType(eventType), item.Value.Handlers) as IEventHandlerFactory)!; }));
 
             services.Add(new ServiceDescriptor(
                 serviceType: typeof(IEventMiddleware<>).MakeGenericType(eventType),

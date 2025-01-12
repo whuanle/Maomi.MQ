@@ -43,30 +43,30 @@ public class ServiceFactory
     /// <summary>
     /// <see cref="MqOptions"/>.
     /// </summary>
-    public MqOptions Options { get; private set; }
+    public MqOptions Options { get; private init; }
 
     /// <summary>
     /// <see cref="IIdFactory"/>.
     /// </summary>
-    public IIdFactory Ids { get; private set; }
+    public IIdFactory Ids { get; private init; }
 
     /// <summary>
     /// <see cref="IJsonSerializer"/>.
     /// </summary>
-    public IJsonSerializer Serializer { get; private set; }
+    public IJsonSerializer Serializer { get; private init; }
 
     /// <summary>
     /// <see cref="IRetryPolicyFactory"/>.
     /// </summary>
-    public IRetryPolicyFactory RetryPolicyFactory { get; private set; }
+    public IRetryPolicyFactory RetryPolicyFactory { get; private init; }
 
     /// <summary>
     /// <see cref="IWaitReadyFactory"/>.
     /// </summary>
-    public IWaitReadyFactory WaitReadyFactory { get; private set; }
+    public IWaitReadyFactory WaitReadyFactory { get; private init; }
 
     /// <summary>
     /// <see cref="ICircuitBreakerFactory"/>.
     /// </summary>
-    public ICircuitBreakerFactory CircuitBreakerFactory { get; private set; }
+    public ICircuitBreakerFactory CircuitBreakerFactory { get; private init; }
 }

@@ -31,6 +31,7 @@ public interface IConsumer<TEvent>
     /// <returns><see cref="Task"/>.</returns>
     public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message);
 
+    // todo: 返回值 bool 改成枚举
     /// <summary>
     /// Executed when the last retry fails.<br />
     /// 最后一次重试失败时执行.

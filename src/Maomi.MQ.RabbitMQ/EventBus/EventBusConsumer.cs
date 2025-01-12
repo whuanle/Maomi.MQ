@@ -4,8 +4,6 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-using Maomi.MQ.Defaults;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Maomi.MQ.EventBus;

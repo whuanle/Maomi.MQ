@@ -14,7 +14,6 @@ using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
-using System.Data.Common;
 
 namespace Maomi.MQ.Hosts;
 

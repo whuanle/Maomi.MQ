@@ -27,18 +27,18 @@ public abstract class EmptyConsumer<TEvent> : IEmptyConsumer<TEvent>
     /// <inheritdoc />
     public Task ExecuteAsync(EventBody<TEvent> message)
     {
-        throw new NotImplementedException();
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc />
     public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
     {
-        throw new NotImplementedException();
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc />
     public Task<bool> FallbackAsync(EventBody<TEvent>? message)
     {
-        throw new NotImplementedException();
+        return Task.CompletedTask;
     }
 }

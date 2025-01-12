@@ -17,6 +17,7 @@ namespace Maomi.MQ.EventBus;
 public delegate Task EventHandlerDelegate<TEvent>(EventBody<TEvent> @event, CancellationToken cancellationToken);
 
 /// <summary>
+/// Event Middleware.<br />
 /// 事件中间件.
 /// </summary>
 /// <typeparam name="TEvent">事件模型.</typeparam>

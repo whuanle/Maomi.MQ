@@ -16,6 +16,7 @@ namespace Maomi.MQ.Default;
 /// </summary>
 public class DefaultRetryPolicyFactory : IRetryPolicyFactory
 {
+    private const int RetryCount = 5;
     private readonly ILogger<DefaultRetryPolicyFactory> _logger;
 
     /// <summary>
@@ -35,7 +36,7 @@ public class DefaultRetryPolicyFactory : IRetryPolicyFactory
         var retryPolicy = Policy
             .Handle<Exception>()
             .WaitAndRetryAsync(
-                retryCount: 5,
+                retryCount: RetryCount,
                 sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
                 onRetry: async (exception, timeSpan, retryCount, context) =>
                 {
