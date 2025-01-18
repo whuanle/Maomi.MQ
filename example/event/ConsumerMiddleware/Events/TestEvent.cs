@@ -25,11 +25,11 @@ public class TestEventMiddleware : IEventMiddleware<TestEvent>
         _bloggingContext = bloggingContext;
     }
 
-    public async Task ExecuteAsync(EventBody<TestEvent> @event, EventHandlerDelegate<TestEvent> next)
+    public async Task ExecuteAsync(EventBody<TestEvent> message, EventHandlerDelegate<TestEvent> next)
     {
         using (var transaction = _bloggingContext.Database.BeginTransaction())
         {
-            await next(@event, CancellationToken.None);
+            await next(message, CancellationToken.None);
             await transaction.CommitAsync();
         }
     }
@@ -55,12 +55,12 @@ public class My1EventEventHandler : IEventHandler<TestEvent>
         _bloggingContext = bloggingContext;
     }
 
-    public async Task CancelAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
+    public async Task CancelAsync(EventBody<TestEvent> message, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"{@event.Id} 被补偿,[1]");
+        Console.WriteLine($"{message.Id} 被补偿,[1]");
     }
 
-    public async Task ExecuteAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(EventBody<TestEvent> message, CancellationToken cancellationToken)
     {
         await _bloggingContext.Posts.AddAsync(new Post
         {
@@ -80,12 +80,12 @@ public class My2EventEventHandler : IEventHandler<TestEvent>
     {
         _bloggingContext = bloggingContext;
     }
-    public async Task CancelAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
+    public async Task CancelAsync(EventBody<TestEvent> message, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"{@event.Id} 被补偿,[2]");
+        Console.WriteLine($"{message.Id} 被补偿,[2]");
     }
 
-    public async Task ExecuteAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(EventBody<TestEvent> message, CancellationToken cancellationToken)
     {
         await _bloggingContext.Posts.AddAsync(new Post
         {

@@ -17,7 +17,7 @@ public partial class HandlerMediatorTests
         public int CancelCount { get; }
     }
 
-    public abstract class TEventEventHandler<TEvent> : IEventHandler<TEvent>, IHandlerRecord
+    public abstract class TMessageEventHandler<TMessage> : IEventHandler<TMessage>, IHandlerRecord
     {
         public DateTime? HandlerTime { get; private set; }
         public DateTime? CancelTime { get; private set; }
@@ -26,14 +26,14 @@ public partial class HandlerMediatorTests
 
         public int CancelCount { get; private set; }
 
-        public virtual Task CancelAsync(EventBody<TEvent> @event, CancellationToken cancellationToken)
+        public virtual Task CancelAsync(EventBody<TMessage> message, CancellationToken cancellationToken)
         {
             CancelTime = DateTime.Now;
             CancelCount++;
             return Task.CompletedTask;
         }
 
-        public virtual Task ExecuteAsync(EventBody<TEvent> @event, CancellationToken cancellationToken)
+        public virtual Task ExecuteAsync(EventBody<TMessage> message, CancellationToken cancellationToken)
         {
             HandlerTime = DateTime.Now;
             HandlerCount++;
@@ -48,27 +48,27 @@ public partial class HandlerMediatorTests
     }
 
     [EventOrder(0)]
-    public class Usable_0_EventHandler<UsableEvent> : TEventEventHandler<UsableEvent>
+    public class Usable_0_EventHandler<UsableEvent> : TMessageEventHandler<UsableEvent>
     {
     }
     [EventOrder(1)]
-    public class Usable_1_EventHandler<UsableEvent> : TEventEventHandler<UsableEvent>
+    public class Usable_1_EventHandler<UsableEvent> : TMessageEventHandler<UsableEvent>
     {
     }
     [EventOrder(2)]
-    public class Usable_2_EventHandler<UsableEvent> : TEventEventHandler<UsableEvent>
+    public class Usable_2_EventHandler<UsableEvent> : TMessageEventHandler<UsableEvent>
     {
     }
     [EventOrder(3)]
-    public class Usable_3_EventHandler<UsableEvent> : TEventEventHandler<UsableEvent>
+    public class Usable_3_EventHandler<UsableEvent> : TMessageEventHandler<UsableEvent>
     {
     }
     [EventOrder(4)]
-    public class Usable_4_EventHandler<UsableEvent> : TEventEventHandler<UsableEvent>
+    public class Usable_4_EventHandler<UsableEvent> : TMessageEventHandler<UsableEvent>
     {
     }
     [EventOrder(5)]
-    public class Usable_5_EventHandler<UsableEvent> : TEventEventHandler<UsableEvent>
+    public class Usable_5_EventHandler<UsableEvent> : TMessageEventHandler<UsableEvent>
     {
     }
 
@@ -79,30 +79,30 @@ public partial class HandlerMediatorTests
     }
 
     [EventOrder(0)]
-    public class Exception_0_EventHandler<ExceptionEvent> : TEventEventHandler<ExceptionEvent>
+    public class Exception_0_EventHandler<ExceptionEvent> : TMessageEventHandler<ExceptionEvent>
     {
     }
     [EventOrder(1)]
-    public class Exception_1_EventHandler<ExceptionEvent> : TEventEventHandler<ExceptionEvent>
+    public class Exception_1_EventHandler<ExceptionEvent> : TMessageEventHandler<ExceptionEvent>
     {
     }
     [EventOrder(2)]
-    public class Exception_2_EventHandler<ExceptionEvent> : TEventEventHandler<ExceptionEvent>
+    public class Exception_2_EventHandler<ExceptionEvent> : TMessageEventHandler<ExceptionEvent>
     {
     }
     [EventOrder(3)]
-    public class Exception_3_EventHandler<ExceptionEvent> : TEventEventHandler<ExceptionEvent>
+    public class Exception_3_EventHandler<ExceptionEvent> : TMessageEventHandler<ExceptionEvent>
     {
     }
     [EventOrder(4)]
-    public class Exception_4_EventHandler<ExceptionEvent> : TEventEventHandler<ExceptionEvent>
+    public class Exception_4_EventHandler<ExceptionEvent> : TMessageEventHandler<ExceptionEvent>
     {
     }
 
     [EventOrder(5)]
-    public class Exception_5_EventHandler<ExceptionEvent> : TEventEventHandler<ExceptionEvent>
+    public class Exception_5_EventHandler<ExceptionEvent> : TMessageEventHandler<ExceptionEvent>
     {
-        public override Task ExecuteAsync(EventBody<ExceptionEvent> @event, CancellationToken cancellationToken)
+        public override Task ExecuteAsync(EventBody<ExceptionEvent> message, CancellationToken cancellationToken)
         {
             throw new OperationCanceledException();
         }

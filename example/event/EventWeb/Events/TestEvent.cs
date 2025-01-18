@@ -17,9 +17,9 @@ public class TestEvent
 
 public class TestEventMiddleware : IEventMiddleware<TestEvent>
 {
-    public async Task ExecuteAsync(EventBody<TestEvent> @event, EventHandlerDelegate<TestEvent> next)
+    public async Task ExecuteAsync(EventBody<TestEvent> message, EventHandlerDelegate<TestEvent> next)
     {
-        await next(@event, CancellationToken.None);
+        await next(message, CancellationToken.None);
     }
     public Task FaildAsync(Exception ex, int retryCount, EventBody<TestEvent>? message) => Task.CompletedTask;
     public Task<bool> FallbackAsync(EventBody<TestEvent>? message) => Task.FromResult(true);
@@ -28,26 +28,26 @@ public class TestEventMiddleware : IEventMiddleware<TestEvent>
 [EventOrder(0)]
 public class My1EventEventHandler : IEventHandler<TestEvent>
 {
-    public async Task CancelAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
+    public async Task CancelAsync(EventBody<TestEvent> message, CancellationToken cancellationToken)
     {
     }
 
-    public async Task ExecuteAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(EventBody<TestEvent> message, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"{@event.Id},事件 1 已被执行");
+        Console.WriteLine($"{message.Id},事件 1 已被执行");
     }
 }
 
 [EventOrder(1)]
 public class My2EventEventHandler : IEventHandler<TestEvent>
 {
-    public async Task CancelAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
+    public async Task CancelAsync(EventBody<TestEvent> message, CancellationToken cancellationToken)
     {
     }
 
-    public async Task ExecuteAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(EventBody<TestEvent> message, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"{@event.Id},事件 2 已被执行");
+        Console.WriteLine($"{message.Id},事件 2 已被执行");
     }
 }
 
@@ -66,12 +66,12 @@ public class DynamicTestEvent
 [EventOrder(0)]
 public class DynamicEventEventHandler : IEventHandler<DynamicTestEvent>
 {
-    public async Task CancelAsync(EventBody<DynamicTestEvent> @event, CancellationToken cancellationToken)
+    public async Task CancelAsync(EventBody<DynamicTestEvent> message, CancellationToken cancellationToken)
     {
     }
 
-    public async Task ExecuteAsync(EventBody<DynamicTestEvent> @event, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(EventBody<DynamicTestEvent> message, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"{@event.Id},事件 1 已被执行");
+        Console.WriteLine($"{message.Id},事件 1 已被执行");
     }
 }

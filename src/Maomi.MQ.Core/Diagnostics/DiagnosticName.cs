@@ -5,7 +5,7 @@
 // </copyright>
 
 #pragma warning disable SA1600
-#pragma warning disable CS1591 // 缺少对公共可见类型或成员的 XML 注释
+#pragma warning disable CS1591
 
 namespace Maomi.MQ.Diagnostics;
 
@@ -15,6 +15,16 @@ namespace Maomi.MQ.Diagnostics;
 public static class DiagnosticName
 {
     public const string MaomiMQ = "Maomi.MQ";
+    public const string EventBus = "Maomi.MQ.EventBus";
+    public const string ConsumerName = "Maomi.MQ.Consumer";
+    public const string PublisherName = "Maomi.MQ.Publisher";
+
+    public static class MessageHeader
+    {
+        public const string Id = "mm.id";
+        public const string CreationTime = "mm.creationtime";
+        public const string Publisher = "mm.publisher";
+    }
 
     public static class Tag
     {

@@ -4,7 +4,7 @@ namespace Maomi.MQ.Tests;
 
 public class BaseHostTests : BaseMock
 {
-    public class ExceptionJsonSerializer : IJsonSerializer
+    public class ExceptionJsonSerializer : IMessageSerializer
     {
         public TObject? Deserialize<TObject>(ReadOnlySpan<byte> bytes) where TObject : class
         {
@@ -18,25 +18,25 @@ public class BaseHostTests : BaseMock
     }
 
     [Consumer("test")]
-    public class UnSetConsumer<TEvent> : IConsumer<TEvent>, IRetry, IEventBody<TEvent>
-    where TEvent : class
+    public class UnSetConsumer<TMessage> : IConsumer<TMessage>, IRetry, IEventBody<TMessage>
+    where TMessage : class
     {
-        public EventBody<TEvent> EventBody { get; private set; } = default!;
+        public EventBody<TMessage> EventBody { get; private set; } = default!;
 
         public int RetryCount { get; private set; }
         public bool IsFallbacked { get; private set; }
 
-        public Task ExecuteAsync(EventBody<TEvent> message)
+        public Task ExecuteAsync(EventBody<TMessage> message)
         {
             EventBody = message;
             return Task.CompletedTask;
         }
-        public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
+        public Task FaildAsync(Exception ex, int retryCount, EventBody<TMessage>? message)
         {
             RetryCount = retryCount;
             return Task.CompletedTask;
         }
-        public Task<bool> FallbackAsync(EventBody<TEvent>? message)
+        public Task<bool> FallbackAsync(EventBody<TMessage>? message)
         {
             IsFallbacked = true;
             return Task.FromResult(false);

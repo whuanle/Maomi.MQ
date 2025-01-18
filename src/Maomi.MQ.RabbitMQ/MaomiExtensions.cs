@@ -9,6 +9,8 @@ using Maomi.MQ.EventBus;
 using Maomi.MQ.Hosts;
 using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 using System.Reflection;
 
@@ -76,12 +78,11 @@ public static partial class MaomiExtensions
         services.AddMaomiMQCore();
         services.AddSingleton<IIdFactory>(new DefaultIdFactory((ushort)optionsBuilder.WorkId));
         services.AddSingleton<ServiceFactory>();
+        services.AddSingleton<IDynamicConsumer, DynamicConsumerService>();
 
-        services.AddSingleton(connectionFactory);
         services.AddSingleton<ConnectionPool>();
 
-        services.AddSingleton<IMessagePublisher, DefaultMessagePublisher>();
-        services.AddSingleton<IDynamicConsumer, DynamicConsumer>();
+        services.AddScoped<IMessagePublisher, DefaultMessagePublisher>();
 
         foreach (var assembly in assemblies)
         {
@@ -94,12 +95,26 @@ public static partial class MaomiExtensions
             }
         }
 
-        foreach (var item in typeFilters)
+        List<ConsumerType> consumerTypes = new();
+
+        foreach (var filter in typeFilters)
         {
-            item.Build(services);
+            var types = filter.Build(services);
+            consumerTypes.AddRange(types);
         }
 
-        services.AddHostedService<WaitReadyHostService>();
+        services.AddSingleton<IConsumerTypeProvider>(new ConsumerTypeProvider(consumerTypes));
+
+        Func<IServiceProvider, ConsumerHostedService> funcFactory = (serviceProvider) =>
+        {
+            return new ConsumerHostedService(
+                serviceProvider.GetRequiredService<ServiceFactory>(),
+                serviceProvider.GetRequiredService<ConnectionPool>(),
+                consumerTypes);
+        };
+
+        services.TryAddEnumerable(new ServiceDescriptor(serviceType: typeof(IHostedService), factory: funcFactory, lifetime: ServiceLifetime.Singleton));
+
         return services;
     }
 }

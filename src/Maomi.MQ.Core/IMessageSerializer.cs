@@ -10,16 +10,27 @@ namespace Maomi.MQ;
 /// Serializer.<br />
 /// 序列化消息.
 /// </summary>
-public interface IJsonSerializer
+public interface IMessageSerializer
 {
+    /// <summary>
+    /// MIME content encoding.<br />
+    /// 消息的编码格式.
+    /// </summary>
+    public string ContentEncoding { get; }
+
+    /// <summary>
+    /// MIME content type.<br />
+    /// 消息的编码类型.
+    /// </summary>
+    public string ContentType { get; }
+
     /// <summary>
     /// Serializer.
     /// </summary>
     /// <typeparam name="TObject">Type.</typeparam>
     /// <param name="obj">Object.</param>
     /// <returns><see cref="byte"/>[].</returns>
-    public byte[] Serializer<TObject>(TObject obj)
-        where TObject : class;
+    public byte[] Serializer<TObject>(TObject obj);
 
     /// <summary>
     /// Deserialize.
@@ -27,6 +38,5 @@ public interface IJsonSerializer
     /// <typeparam name="TObject">Type.</typeparam>
     /// <param name="bytes"><see cref="byte"/>[].</param>
     /// <returns>TObject.</returns>
-    public TObject? Deserialize<TObject>(ReadOnlySpan<byte> bytes)
-        where TObject : class;
+    public TObject? Deserialize<TObject>(ReadOnlySpan<byte> bytes);
 }

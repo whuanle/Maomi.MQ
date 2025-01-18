@@ -8,6 +8,8 @@ using RabbitMQ.Client;
 
 namespace Maomi.MQ;
 
+// todo: 重构
+
 /// <summary>
 /// extensions.
 /// </summary>
@@ -18,37 +20,18 @@ public static class PublisherExtensions
     /// 独占连接对象的发布者.
     /// </summary>
     /// <param name="messagePublisher"></param>
-    /// <returns><see cref="SinglePublisher"/>.</returns>
-    public static SinglePublisher CreateSingle(this IMessagePublisher messagePublisher)
+    /// <param name="createChannelOptions"><see cref="CreateChannelOptions"/>.</param>
+    /// <returns><see cref="ISingleChannelPublisher"/>.</returns>
+    public static ISingleChannelPublisher CreateSingle(this IMessagePublisher messagePublisher, CreateChannelOptions? createChannelOptions = default)
     {
-        if (messagePublisher is DefaultMessagePublisher publisher)
+        if (createChannelOptions == null)
         {
-            var isExchange = messagePublisher is ExchangePublisher;
-            var exchange = new SinglePublisher(publisher, isExchange);
-            return exchange;
+            createChannelOptions = new CreateChannelOptions(publisherConfirmationsEnabled: false, publisherConfirmationTrackingEnabled: false);
         }
 
-        throw new InvalidCastException($"Unable to cast object of type '{messagePublisher.GetType().Name}' to type '{nameof(DefaultMessagePublisher)}'.");
-    }
-
-    /// <summary>
-    /// The publisher of an exchange connection. <br />
-    /// 创建用于发布到交换器的发布者.
-    /// </summary>
-    /// <param name="messagePublisher"></param>
-    /// <returns><see cref="TransactionPublisher"/>.</returns>
-    public static ExchangePublisher CreateExchange(this IMessagePublisher messagePublisher)
-    {
         if (messagePublisher is DefaultMessagePublisher publisher)
         {
-            var isExchange = messagePublisher is ExchangePublisher;
-            if (isExchange)
-            {
-                throw new InvalidCastException($"Unable to cast object of type '{messagePublisher.GetType().Name}' to type '{nameof(DefaultMessagePublisher)}'.");
-            }
-
-            var exchange = new ExchangePublisher(publisher);
-            return exchange;
+            return new SingleChannelPublisher(publisher, createChannelOptions);
         }
 
         throw new InvalidCastException($"Unable to cast object of type '{messagePublisher.GetType().Name}' to type '{nameof(DefaultMessagePublisher)}'.");
@@ -61,7 +44,7 @@ public static class PublisherExtensions
     /// </summary>
     /// <param name="messagePublisher"></param>
     /// <returns><see cref="TransactionPublisher"/>.</returns>
-    public static async Task<TransactionPublisher> TxSelectAsync(this IMessagePublisher messagePublisher)
+    public static async Task<ITransactionPublisher> TxSelectAsync(this IMessagePublisher messagePublisher)
     {
         var tran = CreateTransaction(messagePublisher);
         await tran.TxSelectAsync();
@@ -75,42 +58,12 @@ public static class PublisherExtensions
     /// </summary>
     /// <param name="messagePublisher"></param>
     /// <returns><see cref="TransactionPublisher"/>.</returns>
-    public static TransactionPublisher CreateTransaction(this IMessagePublisher messagePublisher)
+    public static ITransactionPublisher CreateTransaction(this IMessagePublisher messagePublisher)
     {
         if (messagePublisher is DefaultMessagePublisher publisher)
         {
-            var isExchange = messagePublisher is ExchangePublisher;
-            var tran = new TransactionPublisher(publisher, isExchange);
+            var tran = new TransactionPublisher(publisher);
             return tran;
-        }
-
-        throw new InvalidCastException($"Unable to cast object of type '{messagePublisher.GetType().Name}' to type '{nameof(DefaultMessagePublisher)}'.");
-    }
-
-    /// <summary>
-    /// <inheritdoc cref="IChannel.ConfirmSelectAsync(CancellationToken)"/>.
-    /// </summary>
-    /// <param name="messagePublisher"></param>
-    /// <returns><see cref="TransactionPublisher"/>.</returns>
-    public static async Task<ConfirmPublisher> ConfirmSelectAsync(this IMessagePublisher messagePublisher)
-    {
-        var confirm = CreateConfirm(messagePublisher);
-        await confirm.ConfirmSelectAsync();
-        return confirm;
-    }
-
-    /// <summary>
-    /// <inheritdoc cref="IChannel.ConfirmSelectAsync(CancellationToken)"/>.
-    /// </summary>
-    /// <param name="messagePublisher"></param>
-    /// <returns><see cref="TransactionPublisher"/>.</returns>
-    public static ConfirmPublisher CreateConfirm(this IMessagePublisher messagePublisher)
-    {
-        if (messagePublisher is DefaultMessagePublisher publisher)
-        {
-            var isExchange = messagePublisher is ExchangePublisher;
-            var confirm = new ConfirmPublisher(publisher, isExchange);
-            return confirm;
         }
 
         throw new InvalidCastException($"Unable to cast object of type '{messagePublisher.GetType().Name}' to type '{nameof(DefaultMessagePublisher)}'.");

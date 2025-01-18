@@ -16,15 +16,15 @@ public static class Heler
         return NullLogger<T>.Instance;
     }
 
-    public static EventBody<TEvent> CreateEvent<TEvent>(long id, string queue, TEvent @event)
-        where TEvent : class
+    public static EventBody<TMessage> CreateEvent<TMessage>(long id, string queue, TMessage message)
+        where TMessage : class
     {
-        return new EventBody<TEvent>()
+        return new EventBody<TMessage>()
         {
             Id = id,
             Queue = queue,
             CreationTime = DateTimeOffset.Now,
-            Body = @event
+            Body = message
         };
     }
 }

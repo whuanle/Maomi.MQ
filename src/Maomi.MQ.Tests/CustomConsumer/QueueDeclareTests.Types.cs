@@ -5,7 +5,7 @@ public partial class QueueDeclareTests
     public class TestEvent { }
 
     [Consumer("test",
-        DeadQueue = "test_dead",
+        DeadRoutingKey = "test_dead",
         ExecptionRequeue = true,
         Expiration = 1000,
         Qos = 10,

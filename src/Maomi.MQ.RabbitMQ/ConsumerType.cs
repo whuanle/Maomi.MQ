@@ -17,7 +17,7 @@ public class ConsumerType : IComparable<ConsumerType>
     public string Queue { get; init; } = null!;
 
     /// <summary>
-    /// <see cref="IConsumer{TEvent}"/>.
+    /// <see cref="IConsumer{TMessage}"/>.
     /// </summary>
     public Type Consumer { get; init; } = null!;
 
@@ -25,6 +25,11 @@ public class ConsumerType : IComparable<ConsumerType>
     /// Event model.
     /// </summary>
     public Type Event { get; init; } = null!;
+
+    /// <summary>
+    /// Consumer options.
+    /// </summary>
+    public IConsumerOptions ConsumerOptions { get; init; } = null!;
 
     /// <inheritdoc/>
     public override int GetHashCode()

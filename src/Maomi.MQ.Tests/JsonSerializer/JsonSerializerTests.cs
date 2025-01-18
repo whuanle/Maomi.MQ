@@ -10,7 +10,7 @@ public class JsonSerializerTests
         var services = MaomiHostHelper.BuildEmpty();
 
         var ioc = services.BuildServiceProvider();
-        var serializer = ioc.GetRequiredService<IJsonSerializer>();
+        var serializer = ioc.GetRequiredService<IMessageSerializer>();
 
         var model = new TestEvent
         {

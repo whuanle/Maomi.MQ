@@ -1,22 +1,14 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-#nullable disable
-
 // NOTE: This version of PropertyFetcher is AOT-compatible.
 // Usages of the non-AOT-compatible version can be moved over to this one when they need to support AOT/trimming.
 // Copied from https://github.com/open-telemetry/opentelemetry-dotnet/blob/86a6ba0b7f7ed1f5e84e5a6610e640989cd3ae9f/src/Shared/DiagnosticSourceInstrumentation/PropertyFetcher.cs#L30
 
-#nullable enable
-
-#pragma warning disable IDE0005 // Using directive is unnecessary.
-#if NETSTANDARD2_1_0_OR_GREATER || NET6_0_OR_GREATER
+#if NETSTANDARD2_1_0_OR_GREATER || NET
 using System.Diagnostics.CodeAnalysis;
 #endif
-using System;
-using System.Linq;
 using System.Reflection;
-#pragma warning restore IDE0005 // Using directive is unnecessary.
 
 namespace OpenTelemetry.Instrumentation;
 
@@ -26,7 +18,7 @@ namespace OpenTelemetry.Instrumentation;
 /// <typeparam name="T">The type of the property being fetched.</typeparam>
 internal sealed class PropertyFetcher<T>
 {
-#if NET6_0_OR_GREATER
+#if NET
     private const string TrimCompatibilityMessage = "PropertyFetcher is used to access properties on objects dynamically by design and cannot be made trim compatible.";
 #endif
     private readonly string propertyName;
@@ -51,26 +43,21 @@ internal sealed class PropertyFetcher<T>
     /// <param name="obj">Object to be fetched.</param>
     /// <param name="value">Fetched value.</param>
     /// <returns><see langword= "true"/> if the property was fetched.</returns>
-#if NET6_0_OR_GREATER
+#if NET
     [RequiresUnreferencedCode(TrimCompatibilityMessage)]
 #endif
     public bool TryFetch(
-#if NETSTANDARD2_1_0_OR_GREATER || NET6_0_OR_GREATER
+#if NETSTANDARD2_1_0_OR_GREATER || NET
         [NotNullWhen(true)]
 #endif
         object? obj,
         out T? value)
     {
         var innerFetcher = this.innerFetcher;
-        if (innerFetcher is null)
-        {
-            return TryFetchRare(obj, this.propertyName, ref this.innerFetcher, out value);
-        }
-
-        return innerFetcher.TryFetch(obj, out value);
+        return innerFetcher is null ? TryFetchRare(obj, this.propertyName, ref this.innerFetcher, out value) : innerFetcher.TryFetch(obj, out value);
     }
 
-#if NET6_0_OR_GREATER
+#if NET
     [RequiresUnreferencedCode(TrimCompatibilityMessage)]
 #endif
     private static bool TryFetchRare(object? obj, string propertyName, ref PropertyFetch? destination, out T? value)
@@ -95,7 +82,7 @@ internal sealed class PropertyFetcher<T>
     }
 
     // see https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/DiagnosticSourceEventSource.cs
-#if NET6_0_OR_GREATER
+#if NET
     [RequiresUnreferencedCode(TrimCompatibilityMessage)]
 #endif
     private abstract class PropertyFetch
@@ -140,7 +127,7 @@ internal sealed class PropertyFetcher<T>
                 // IL3050 was generated here because of the call to MakeGenericType, which is problematic in AOT if one of the type parameters is a value type;
                 // because the compiler might need to generate code specific to that type.
                 // If the type parameter is a reference type, there will be no problem; because the generated code can be shared among all reference type instantiations.
-#if NET6_0_OR_GREATER
+#if NET
                 [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The code guarantees that all the generic parameters are reference types.")]
 #endif
                 static PropertyFetch? DynamicInstantiationHelper(Type declaringType, PropertyInfo propertyInfo)
@@ -148,13 +135,13 @@ internal sealed class PropertyFetcher<T>
                     return (PropertyFetch?)typeof(PropertyFetch)
                         .GetMethod(nameof(CreateInstantiated), BindingFlags.NonPublic | BindingFlags.Static)!
                         .MakeGenericMethod(declaringType) // This is validated in the earlier call chain to be a reference type.
-                        .Invoke(null, new object[] { propertyInfo })!;
+                        .Invoke(null, [propertyInfo])!;
                 }
             }
         }
 
         public abstract bool TryFetch(
-#if NETSTANDARD2_1_0_OR_GREATER || NET6_0_OR_GREATER
+#if NETSTANDARD2_1_0_OR_GREATER || NET
             [NotNullWhen(true)]
 #endif
             object? obj,
@@ -182,7 +169,7 @@ internal sealed class PropertyFetcher<T>
             where TDeclaredObject : class
             => new PropertyFetchInstantiated<TDeclaredObject>(propertyInfo);
 
-#if NET6_0_OR_GREATER
+#if NET
         [RequiresUnreferencedCode(TrimCompatibilityMessage)]
 #endif
         private sealed class PropertyFetchInstantiated<TDeclaredObject> : PropertyFetch
@@ -195,7 +182,11 @@ internal sealed class PropertyFetcher<T>
             public PropertyFetchInstantiated(PropertyInfo property)
             {
                 this.propertyName = property.Name;
+#if NET
+                this.propertyFetch = property.GetMethod!.CreateDelegate<Func<TDeclaredObject, T>>();
+#else
                 this.propertyFetch = (Func<TDeclaredObject, T>)property.GetMethod!.CreateDelegate(typeof(Func<TDeclaredObject, T>));
+#endif
             }
 
             public override int NumberOfInnerFetchers => this.innerFetcher == null
@@ -203,7 +194,7 @@ internal sealed class PropertyFetcher<T>
                 : 1 + this.innerFetcher.NumberOfInnerFetchers;
 
             public override bool TryFetch(
-#if NETSTANDARD2_1_0_OR_GREATER || NET6_0_OR_GREATER
+#if NETSTANDARD2_1_0_OR_GREATER || NET
                 [NotNullWhen(true)]
 #endif
                 object? obj,
@@ -216,12 +207,7 @@ internal sealed class PropertyFetcher<T>
                 }
 
                 var innerFetcher = this.innerFetcher;
-                if (innerFetcher is null)
-                {
-                    return TryFetchRare(obj, this.propertyName, ref this.innerFetcher, out value);
-                }
-
-                return innerFetcher.TryFetch(obj, out value);
+                return innerFetcher is null ? TryFetchRare(obj, this.propertyName, ref this.innerFetcher, out value) : innerFetcher.TryFetch(obj, out value);
             }
         }
     }

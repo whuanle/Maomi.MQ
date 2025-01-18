@@ -14,8 +14,9 @@ namespace Maomi.MQ.Defaults;
 public class EmptyTypeFilter : ITypeFilter
 {
     /// <inheritdoc />
-    public void Build(IServiceCollection services)
+    public IEnumerable<ConsumerType> Build(IServiceCollection services)
     {
+        return Array.Empty<ConsumerType>();
     }
 
     /// <inheritdoc />

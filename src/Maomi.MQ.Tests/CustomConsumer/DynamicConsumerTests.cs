@@ -8,7 +8,7 @@ public class DynamicConsumerTests : BaseHostTests
     public void AddConsumer()
     {
         var services = Mock();
-        DynamicConsumerTypeFilter typeFilter = new();
+        CustomConsumerTypeFilter typeFilter = new();
         typeFilter.AddConsumer(typeof(MyConsumer1), new ConsumerOptions
         {
             Queue = "test1"
