@@ -39,7 +39,7 @@ public partial class EventBusConsumerHostTests : BaseHostTests
                         serviceProvider,
                         serviceProvider.GetRequiredService<ServiceFactory>(),
                         serviceProvider.GetRequiredService<ConnectionPool>(),
-                        serviceProvider.GetRequiredService<ILogger<ConsumerBaseHostService>>(),
+                        serviceProvider.GetRequiredService<ILogger<ConsumerHostedService>>(),
                         new List<ConsumerType>());
                 };
 
@@ -49,7 +49,7 @@ public partial class EventBusConsumerHostTests : BaseHostTests
                         serviceProvider,
                         serviceProvider.GetRequiredService<ServiceFactory>(),
                         serviceProvider.GetRequiredService<ConnectionPool>(),
-                        serviceProvider.GetRequiredService<ILogger<ConsumerBaseHostService>>(),
+                        serviceProvider.GetRequiredService<ILogger<ConsumerHostedService>>(),
                         new List<ConsumerType>());
                 };
 
@@ -59,7 +59,7 @@ public partial class EventBusConsumerHostTests : BaseHostTests
                         serviceProvider,
                         serviceProvider.GetRequiredService<ServiceFactory>(),
                         serviceProvider.GetRequiredService<ConnectionPool>(),
-                        serviceProvider.GetRequiredService<ILogger<ConsumerBaseHostService>>(),
+                        serviceProvider.GetRequiredService<ILogger<ConsumerHostedService>>(),
                         new List<ConsumerType>());
                 };
 
@@ -252,7 +252,7 @@ public partial class EventBusConsumerHostTests : BaseHostTests
 
         var ioc = services.BuildServiceProvider();
 
-        var jsonSerializer = ioc.GetRequiredService<IJsonSerializer>();
+        var jsonSerializer = ioc.GetRequiredService<IMessageSerializer>();
         var consumer = ioc.GetRequiredKeyedService<IConsumer<IdEvent>>("test") as UnSetConsumer<IdEvent>;
         Assert.NotNull(consumer);
         using var hostService = ioc.GetRequiredService<IEnumerable<IHostedService>>().OfType<TestDefaultConsumerHostService>().First();
@@ -314,7 +314,7 @@ public partial class EventBusConsumerHostTests : BaseHostTests
     {
         var consumer = await Retry<ConsumerException<FalseRequeueEvent_Group>, FalseRequeueEvent_Group>(new FalseRequeueEvent_Group { Id = 1 }, (services) =>
         {
-            services.AddSingleton<IJsonSerializer, ExceptionJsonSerializer>();
+            services.AddSingleton<IMessageSerializer, ExceptionJsonSerializer>();
         });
         // requeue: false
         _mockChannel.Verify(a => a.BasicNackAsync(It.IsAny<ulong>(), It.IsAny<bool>(), false, It.IsAny<CancellationToken>()), Times.Once);
@@ -325,7 +325,7 @@ public partial class EventBusConsumerHostTests : BaseHostTests
     {
         var consumer = await Retry<ConsumerException<TrueRequeueEvent_Group>, TrueRequeueEvent_Group>(new TrueRequeueEvent_Group { Id = 1 }, (services) =>
         {
-            services.AddSingleton<IJsonSerializer, ExceptionJsonSerializer>();
+            services.AddSingleton<IMessageSerializer, ExceptionJsonSerializer>();
         });
         // requeue: true
         _mockChannel.Verify(a => a.BasicNackAsync(It.IsAny<ulong>(), It.IsAny<bool>(), true, It.IsAny<CancellationToken>()), Times.Once);
@@ -333,14 +333,14 @@ public partial class EventBusConsumerHostTests : BaseHostTests
     }
 
     /*
-         private async Task<TConsumer> Retry<TConsumer, TEvent, THandler>(TEvent @event, Action<IServiceCollection>? action = null)
-        where TConsumer : class, IConsumer<TEvent>, IRetry
-        where TEvent : class
-        where THandler : IEventHandler<TEvent>
+         private async Task<TConsumer> Retry<TConsumer, TMessage, THandler>(TMessage message, Action<IServiceCollection>? action = null)
+        where TConsumer : class, IConsumer<TMessage>, IRetry
+        where TMessage : class
+        where THandler : IEventHandler<TMessage>
      */
-    private async Task<TConsumer> Retry<TConsumer, TEvent>(TEvent @event, Action<IServiceCollection>? action = null)
-        where TConsumer : class, IConsumer<TEvent>
-        where TEvent : class
+    private async Task<TConsumer> Retry<TConsumer, TMessage>(TMessage message, Action<IServiceCollection>? action = null)
+        where TConsumer : class, IConsumer<TMessage>
+        where TMessage : class
     {
         ServiceCollection services = Mock();
 
@@ -348,15 +348,15 @@ public partial class EventBusConsumerHostTests : BaseHostTests
         services.AddSingleton<IRetryPolicyFactory>(retryFactory);
 
         var typeFilter = new EventBusTypeFilter();
-        typeFilter.Filter(services, typeof(TEvent));
-        typeFilter.Filter(services, typeof(ExceptionEventHandler<TEvent>));
+        typeFilter.Filter(services, typeof(TMessage));
+        typeFilter.Filter(services, typeof(ExceptionEventHandler<TMessage>));
         typeFilter.Build(services);
 
-        services.AddKeyedSingleton<IConsumer<TEvent>, TConsumer>("test");
+        services.AddKeyedSingleton<IConsumer<TMessage>, TConsumer>("test");
         RegisterHost(services, new ConsumerType
         {
-            Consumer = typeof(IConsumer<TEvent>),
-            Event = typeof(TEvent),
+            Consumer = typeof(IConsumer<TMessage>),
+            Event = typeof(TMessage),
             Queue = "test"
         });
 
@@ -366,25 +366,25 @@ public partial class EventBusConsumerHostTests : BaseHostTests
         }
 
         var ioc = services.BuildServiceProvider();
-        var jsonSerializer = ioc.GetRequiredService<IJsonSerializer>();
-        var consumer = ioc.GetRequiredKeyedService<IConsumer<TEvent>>("test") as TConsumer;
+        var jsonSerializer = ioc.GetRequiredService<IMessageSerializer>();
+        var consumer = ioc.GetRequiredKeyedService<IConsumer<TMessage>>("test") as TConsumer;
         Assert.NotNull(consumer);
         using var hostService = ioc.GetRequiredService<IEnumerable<IHostedService>>().OfType<TestDefaultConsumerHostService>().First();
 
         await hostService.StartAsync(CancellationToken.None);
-        var eventBody = new EventBody<TEvent>()
+        var eventBody = new EventBody<TMessage>()
         {
             Id = 1,
             Queue = "test",
             CreationTime = DateTimeOffset.Now,
-            Body = @event
+            Body = message
         };
 
         var bytes = jsonSerializer.Serializer(eventBody);
         var buffer = new byte[1000];
         IAmqpWriteable _basicProperties = new BasicProperties { Persistent = true, AppId = "AppId", ContentEncoding = "content" };
         int offset = _basicProperties.WriteTo(buffer);
-        await hostService.PublishAsync<TEvent>("test", _mockChannel.Object, new BasicDeliverEventArgs("aa", 1, false, "test", "", new ReadOnlyBasicProperties(buffer.AsSpan()), bytes));
+        await hostService.PublishAsync<TMessage>("test", _mockChannel.Object, new BasicDeliverEventArgs("aa", 1, false, "test", "", new ReadOnlyBasicProperties(buffer.AsSpan()), bytes));
 
         return consumer;
     }
@@ -397,7 +397,7 @@ public partial class EventBusConsumerHostTests : BaseHostTests
                 serviceProvider,
                 serviceProvider.GetRequiredService<ServiceFactory>(),
                 serviceProvider.GetRequiredService<ConnectionPool>(),
-                serviceProvider.GetRequiredService<ILogger<ConsumerBaseHostService>>(),
+                serviceProvider.GetRequiredService<ILogger<ConsumerHostedService>>(),
                 consumerTypes.ToList());
         };
 

@@ -11,6 +11,8 @@ using System.Diagnostics;
 
 namespace Maomi.MQ.Diagnostics;
 
+// todo: 重构
+
 /*
  Activity 不能设置 ActivityKind，需要通过 MaomiMQDiagnosticListener 拦截处理，请阅读 OpenTelemetry.Instrumentation.MaomiMQ 项目。
  */

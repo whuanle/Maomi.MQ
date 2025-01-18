@@ -24,7 +24,7 @@ public class MessagePublisherTests : BaseMock
             AppName = "test",
             ConnectionFactory = _mockConnectionFactory.Object
         };
-        var jsonSerializer = new DefaultJsonSerializer();
+        var jsonSerializer = new DefaultMessageSerializer();
         var pool = new ConnectionPool(options);
 
         DefaultMessagePublisher publisher = new(options, jsonSerializer, pool, idgen, new NullLogger<DefaultMessagePublisher>());

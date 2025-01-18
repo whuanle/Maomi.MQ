@@ -1,6 +1,6 @@
 ﻿namespace Maomi.MQ.Tests.CustomConsumer;
 
-public interface IEventBody<TEvent>
+public interface IEventBody<TMessage>
 {
-    public EventBody<TEvent> EventBody { get; }
+    public EventBody<TMessage> EventBody { get; }
 }

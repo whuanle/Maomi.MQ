@@ -7,6 +7,7 @@
 using Maomi.MQ.Default;
 using Maomi.MQ.Defaults;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Maomi.MQ;
 
@@ -23,11 +24,11 @@ public static class MaomiCoreExtensions
     /// <returns><see cref="IServiceCollection"/>.</returns>
     public static IServiceCollection AddMaomiMQCore(this IServiceCollection services)
     {
-        services.AddHostedService<FirstHostService>();
-        services.AddSingleton<IJsonSerializer, DefaultJsonSerializer>();
+        services.AddSingleton<IMessageSerializer, DefaultMessageSerializer>();
         services.AddSingleton<IWaitReadyFactory, DefaultWaitReadyFactory>();
         services.AddSingleton<IRetryPolicyFactory, DefaultRetryPolicyFactory>();
         services.AddSingleton<ICircuitBreakerFactory, DefaultCircuitBreakerFactory>();
+        services.AddSingleton<IIdFactory>(new DefaultIdFactory(0));
         return services;
     }
 }

@@ -12,21 +12,21 @@ namespace Maomi.MQ.EventBus;
 /// Eventbus consumer.<br />
 /// 事件总线消费者.
 /// </summary>
-/// <typeparam name="TEvent">Event model.</typeparam>
-public class EventBusConsumer<TEvent> : IConsumer<TEvent>
-    where TEvent : class
+/// <typeparam name="TMessage">Event model.</typeparam>
+public class EventBusConsumer<TMessage> : IConsumer<TMessage>
+    where TMessage : class
 {
-    private readonly IEventMiddleware<TEvent> _eventMiddleware;
-    private readonly IHandlerMediator<TEvent> _handlerBroker;
-    private readonly ILogger<EventBusConsumer<TEvent>> _logger;
+    private readonly IEventMiddleware<TMessage> _eventMiddleware;
+    private readonly IHandlerMediator<TMessage> _handlerBroker;
+    private readonly ILogger<EventBusConsumer<TMessage>> _logger;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="EventBusConsumer{TEvent}"/> class.
+    /// Initializes a new instance of the <see cref="EventBusConsumer{TMessage}"/> class.
     /// </summary>
     /// <param name="eventMiddleware"></param>
     /// <param name="handlerBroker"></param>
     /// <param name="logger"></param>
-    public EventBusConsumer(IEventMiddleware<TEvent> eventMiddleware, IHandlerMediator<TEvent> handlerBroker, ILogger<EventBusConsumer<TEvent>> logger)
+    public EventBusConsumer(IEventMiddleware<TMessage> eventMiddleware, IHandlerMediator<TMessage> handlerBroker, ILogger<EventBusConsumer<TMessage>> logger)
     {
         _eventMiddleware = eventMiddleware;
         _handlerBroker = handlerBroker;
@@ -34,20 +34,20 @@ public class EventBusConsumer<TEvent> : IConsumer<TEvent>
     }
 
     /// <inheritdoc />
-    public virtual async Task ExecuteAsync(EventBody<TEvent> message)
+    public Task ExecuteAsync(MessageHeader messageHeader, TMessage message)
     {
-        await _eventMiddleware.ExecuteAsync(message, _handlerBroker.ExecuteAsync);
+        return _eventMiddleware.ExecuteAsync(messageHeader, message, _handlerBroker.ExecuteAsync);
     }
 
     /// <inheritdoc />
-    public virtual Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
+    public Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, TMessage message)
     {
-        return _eventMiddleware.FaildAsync(ex, retryCount, message);
+        return _eventMiddleware.FaildAsync(messageHeader, ex, retryCount, message);
     }
 
     /// <inheritdoc />
-    public virtual Task<bool> FallbackAsync(EventBody<TEvent>? message)
+    public Task<FallbackState> FallbackAsync(MessageHeader messageHeader, TMessage message)
     {
-        return _eventMiddleware.FallbackAsync(message);
+        return _eventMiddleware.FallbackAsync(messageHeader, message);
     }
 }

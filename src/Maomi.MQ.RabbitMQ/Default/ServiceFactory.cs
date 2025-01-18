@@ -4,9 +4,6 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-using Maomi.MQ.Pool;
-using RabbitMQ.Client;
-
 namespace Maomi.MQ.Default;
 
 /// <summary>
@@ -19,19 +16,22 @@ public class ServiceFactory
     /// Initializes a new instance of the <see cref="ServiceFactory"/> class.
     /// </summary>
     /// <param name="options"></param>
+    /// <param name="serviceProvider"></param>
     /// <param name="serializer"></param>
     /// <param name="retryPolicyFactory"></param>
     /// <param name="waitReadyFactory"></param>
     /// <param name="circuitBreakerFactory"></param>
     /// <param name="ids"></param>
     public ServiceFactory(
+        IServiceProvider serviceProvider,
         MqOptions options,
-        IJsonSerializer serializer,
+        IMessageSerializer serializer,
         IRetryPolicyFactory retryPolicyFactory,
         IWaitReadyFactory waitReadyFactory,
         ICircuitBreakerFactory circuitBreakerFactory,
         IIdFactory ids)
     {
+        ServiceProvider = serviceProvider;
         Options = options;
         Serializer = serializer;
         RetryPolicyFactory = retryPolicyFactory;
@@ -46,14 +46,19 @@ public class ServiceFactory
     public MqOptions Options { get; private init; }
 
     /// <summary>
+    /// <see cref="IServiceProvider"/>.
+    /// </summary>
+    public IServiceProvider ServiceProvider { get; private set; }
+
+    /// <summary>
     /// <see cref="IIdFactory"/>.
     /// </summary>
     public IIdFactory Ids { get; private init; }
 
     /// <summary>
-    /// <see cref="IJsonSerializer"/>.
+    /// <see cref="IMessageSerializer"/>.
     /// </summary>
-    public IJsonSerializer Serializer { get; private init; }
+    public IMessageSerializer Serializer { get; private set; }
 
     /// <summary>
     /// <see cref="IRetryPolicyFactory"/>.

@@ -4,47 +4,37 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-using Maomi.MQ.Pool;
-using RabbitMQ.Client;
-
 namespace Maomi.MQ;
 
 /// <summary>
 /// RabbitMQ transaction.
 /// </summary>
-public sealed class TransactionPublisher : SinglePublisher, IMessagePublisher, IDisposable
+public sealed class TransactionPublisher : SingleChannelPublisher, ITransactionPublisher, ISingleChannelPublisher, IMessagePublisher, IDisposable
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="TransactionPublisher"/> class.
     /// </summary>
     /// <param name="messagePublisher"></param>
-    /// <param name="isExchange"></param>
-    internal TransactionPublisher(DefaultMessagePublisher messagePublisher, bool isExchange)
-        : base(messagePublisher, isExchange)
+    internal TransactionPublisher(DefaultMessagePublisher messagePublisher)
+        : base(messagePublisher)
     {
     }
 
-    /// <inheritdoc cref="IChannel.TxSelectAsync(CancellationToken)"/>
+    /// <inheritdoc />
     public Task TxSelectAsync(CancellationToken cancellationToken = default)
     {
-        return _channel.TxSelectAsync(cancellationToken);
+        return _channel.Value.TxSelectAsync(cancellationToken);
     }
 
-    /// <inheritdoc cref="IChannel.TxCommitAsync(CancellationToken)"/>
+    /// <inheritdoc />
     public Task TxCommitAsync(CancellationToken cancellationToken = default)
     {
-        return _channel.TxCommitAsync(cancellationToken);
+        return _channel.Value.TxCommitAsync(cancellationToken);
     }
 
-    /// <inheritdoc cref="IChannel.TxRollbackAsync(CancellationToken)"/>
+    /// <inheritdoc />
     public Task TxRollbackAsync(CancellationToken cancellationToken = default)
     {
-        return _channel.TxRollbackAsync(cancellationToken);
-    }
-
-    /// <inheritdoc cref="IMessagePublisher.CustomPublishAsync{TEvent}(string, EventBody{TEvent}, BasicProperties)"/>
-    public override Task CustomPublishAsync<TEvent>(string queue, EventBody<TEvent> message, BasicProperties properties)
-    {
-        return PublishAsync(_channel, queue, message, properties, _isExchange);
+        return _channel.Value.TxRollbackAsync(cancellationToken);
     }
 }

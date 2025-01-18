@@ -7,23 +7,25 @@
 namespace Maomi.MQ.EventBus;
 
 /// <inheritdoc />
-public class DefaultEventMiddleware<TEvent> : IEventMiddleware<TEvent>
+public class DefaultEventMiddleware<TMessage> : IEventMiddleware<TMessage>
 {
+    private readonly CancellationTokenSource _cancellationTokenSource = new();
+
     /// <inheritdoc />
-    public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
+    public Task ExecuteAsync(MessageHeader messageHeader, TMessage message, EventHandlerDelegate<TMessage> next)
+    {
+        return next.Invoke(messageHeader, message, _cancellationTokenSource.Token);
+    }
+
+    /// <inheritdoc />
+    public Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, TMessage? message)
     {
         return Task.CompletedTask;
     }
 
     /// <inheritdoc />
-    public Task<bool> FallbackAsync(EventBody<TEvent>? message)
+    public Task<FallbackState> FallbackAsync(MessageHeader messageHeader, TMessage? message)
     {
-        return Task.FromResult(false);
-    }
-
-    /// <inheritdoc />
-    public Task ExecuteAsync(EventBody<TEvent> eventBody, EventHandlerDelegate<TEvent> next)
-    {
-        return next(eventBody, CancellationToken.None);
+        return Task.FromResult(FallbackState.Ack);
     }
 }

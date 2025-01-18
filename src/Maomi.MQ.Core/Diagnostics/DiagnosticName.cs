@@ -15,6 +15,16 @@ namespace Maomi.MQ.Diagnostics;
 public static class DiagnosticName
 {
     public const string MaomiMQ = "Maomi.MQ";
+    public const string EventBus = "Maomi.MQ.EventBus";
+    public const string ConsumerName = "Maomi.MQ.Consumer";
+    public const string PublisherName = "Maomi.MQ.Publisher";
+
+    public static class MessageHeader
+    {
+        public const string Id = "mm.id";
+        public const string CreationTime = "mm.creationtime";
+        public const string Publisher = "mm.publisher";
+    }
 
     public static class Tag
     {

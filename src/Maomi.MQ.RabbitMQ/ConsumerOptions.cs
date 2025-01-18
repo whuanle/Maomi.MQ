@@ -13,19 +13,22 @@ namespace Maomi.MQ;
 public class ConsumerOptions : IConsumerOptions
 {
     /// <inheritdoc />
-    public string Queue { get; set; } = null!;
+    public string Queue { get; set; }
 
     /// <inheritdoc />
-    public string? DeadQueue { get; set; }
+    public string? DeadExchange { get; set; }
 
     /// <inheritdoc />
-    public ushort Qos { get; set; }
+    public string? DeadRoutingKey { get; set; }
+
+    /// <inheritdoc />
+    public ushort Qos { get; set; } = 100;
 
     /// <inheritdoc />
     public bool RetryFaildRequeue { get; set; }
 
     /// <inheritdoc />
-    public bool ExecptionRequeue { get; set; }
+    public bool ExecptionRequeue { get; set; } = true;
 
     /// <inheritdoc />
     public int Expiration { get; set; }
@@ -35,4 +38,44 @@ public class ConsumerOptions : IConsumerOptions
 
     /// <inheritdoc />
     public string? BindExchange { get; set; }
+
+    /// <inheritdoc />
+    public string? ExchangeType { get; set; }
+
+    /// <inheritdoc />
+    public string? RoutingKey { get; set; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ConsumerOptions"/> class.
+    /// </summary>
+    /// <param name="queue">Queue name.</param>
+    public ConsumerOptions(string queue)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(queue, nameof(queue));
+        Queue = queue;
+    }
+
+    /// <inheritdoc />
+    public IConsumerOptions Clone()
+    {
+        var newOptions = new ConsumerOptions(string.Empty);
+        newOptions.CopyFrom(this);
+        return newOptions;
+    }
+
+    /// <inheritdoc />
+    public void CopyFrom(IConsumerOptions options)
+    {
+        this.Queue = options.Queue;
+        this.DeadExchange = options.DeadExchange;
+        this.DeadRoutingKey = options.DeadRoutingKey;
+        this.Qos = options.Qos;
+        this.RetryFaildRequeue = options.RetryFaildRequeue;
+        this.ExecptionRequeue = options.ExecptionRequeue;
+        this.Expiration = options.Expiration;
+        this.AutoQueueDeclare = options.AutoQueueDeclare;
+        this.BindExchange = options.BindExchange;
+        this.ExchangeType = options.ExchangeType;
+        this.RoutingKey = options.RoutingKey;
+    }
 }

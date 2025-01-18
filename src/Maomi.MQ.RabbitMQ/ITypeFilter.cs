@@ -26,5 +26,6 @@ public interface ITypeFilter
     /// Build.
     /// </summary>
     /// <param name="services"></param>
-    void Build(IServiceCollection services);
+    /// <returns>ConsumerType collection.</returns>
+    IEnumerable<ConsumerType> Build(IServiceCollection services);
 }

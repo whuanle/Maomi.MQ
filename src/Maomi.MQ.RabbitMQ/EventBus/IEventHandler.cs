@@ -9,23 +9,23 @@ namespace Maomi.MQ.EventBus;
 /// <summary>
 /// 事件执行器接口.
 /// </summary>
-/// <typeparam name="TEvent">事件模型.</typeparam>
-public interface IEventHandler<TEvent>
+/// <typeparam name="TMessage">事件模型.</typeparam>
+public interface IEventHandler<TMessage>
 {
     /// <summary>
     /// Forward execution event.<br />
     /// 正向执行事件.
     /// </summary>
-    /// <param name="eventBody">Event object.<br />事件对象.</param>
+    /// <param name="event">Event object.<br />事件对象.</param>
     /// <param name="cancellationToken"></param>
     /// <returns><see cref="Task"/>.</returns>
-    Task ExecuteAsync(EventBody<TEvent> eventBody, CancellationToken cancellationToken);
+    Task ExecuteAsync(TMessage message, CancellationToken cancellationToken);
 
     /// <summary>
     /// 补偿事件.
     /// </summary>
-    /// <param name="eventBody">Event object.<br />事件对象.</param>
+    /// <param name="event">Event object.<br />事件对象.</param>
     /// <param name="cancellationToken"></param>
     /// <returns><see cref="Task"/>.</returns>
-    Task CancelAsync(EventBody<TEvent> eventBody, CancellationToken cancellationToken);
+    Task CancelAsync(TMessage message, CancellationToken cancellationToken);
 }

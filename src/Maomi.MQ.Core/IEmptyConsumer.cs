@@ -10,35 +10,8 @@ namespace Maomi.MQ;
 /// Empty consumer, only the definition is created, no consumption is performed.<br />
 /// 空消费者，只创建定义，不执行消费.
 /// </summary>
-/// <typeparam name="TEvent">Event model.</typeparam>
-public interface IEmptyConsumer<TEvent> : IConsumer<TEvent>
-    where TEvent : class
+/// <typeparam name="TMessage">Event model.</typeparam>
+public interface IEmptyConsumer<TMessage> : IConsumer<TMessage>
+    where TMessage : class
 {
-}
-
-/// <summary>
-/// Empty consumer, only the definition is created, no consumption is performed.<br />
-/// 空消费者，只创建定义，不执行消费.
-/// </summary>
-/// <typeparam name="TEvent">Event model.</typeparam>
-public abstract class EmptyConsumer<TEvent> : IEmptyConsumer<TEvent>
-    where TEvent : class
-{
-    /// <inheritdoc />
-    public Task ExecuteAsync(EventBody<TEvent> message)
-    {
-        return Task.CompletedTask;
-    }
-
-    /// <inheritdoc />
-    public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
-    {
-        return Task.CompletedTask;
-    }
-
-    /// <inheritdoc />
-    public Task<bool> FallbackAsync(EventBody<TEvent>? message)
-    {
-        return Task.CompletedTask;
-    }
 }

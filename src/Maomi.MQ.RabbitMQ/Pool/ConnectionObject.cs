@@ -18,18 +18,18 @@ namespace Maomi.MQ.Pool;
 /// </summary>
 public class ConnectionObject
 {
-    protected IConnection _connection;
-    protected IChannel _channel;
+    protected Lazy<IConnection> _connection;
+    protected Lazy<IChannel> _channel;
 
     /// <summary>
     /// IConnection.
     /// </summary>
-    public IConnection Connection => _connection;
+    public IConnection Connection => _connection.Value;
 
     /// <summary>
     /// IChannel.
     /// </summary>
-    public IChannel DefaultChannel => _channel;
+    public IChannel DefaultChannel => _channel.Value;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConnectionObject"/> class.
@@ -37,8 +37,8 @@ public class ConnectionObject
     /// <param name="mqOptions"></param>
     public ConnectionObject(MqOptions mqOptions)
     {
-        _connection = mqOptions.ConnectionFactory.CreateConnectionAsync().Result;
-        _channel = _connection.CreateChannelAsync().Result;
+        _connection = new Lazy<IConnection>(() => mqOptions.ConnectionFactory.CreateConnectionAsync().Result);
+        _channel = new Lazy<IChannel>(() => _connection.Value.CreateChannelAsync().Result);
     }
 
     /// <summary>

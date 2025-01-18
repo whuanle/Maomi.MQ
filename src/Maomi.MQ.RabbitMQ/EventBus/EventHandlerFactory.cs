@@ -9,9 +9,9 @@ namespace Maomi.MQ.EventBus;
 /// <summary>
 /// Event factory.
 /// </summary>
-/// <typeparam name="TEvent">Event model.</typeparam>
-internal class EventHandlerFactory<TEvent> : IEventHandlerFactory<TEvent>
-        where TEvent : class
+/// <typeparam name="TMessage">Event model.</typeparam>
+internal class EventHandlerFactory<TMessage> : IEventHandlerFactory<TMessage>
+        where TMessage : class
 {
     /// <summary>
     /// <inheritdoc/>
@@ -19,7 +19,7 @@ internal class EventHandlerFactory<TEvent> : IEventHandlerFactory<TEvent>
     public IReadOnlyDictionary<int, Type> Handlers { get; init; } = null!;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="EventHandlerFactory{TEvent}"/> class.
+    /// Initializes a new instance of the <see cref="EventHandlerFactory{TMessage}"/> class.
     /// </summary>
     /// <param name="handlers"></param>
     public EventHandlerFactory(IReadOnlyDictionary<int, Type> handlers)

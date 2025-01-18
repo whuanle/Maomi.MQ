@@ -15,14 +15,17 @@ public interface IDynamicConsumer
     /// <summary>
     /// Start new consumer.
     /// </summary>
-    /// <typeparam name="TConsumer"><see cref="IConsumer{TEvent}"/>.</typeparam>
-    /// <typeparam name="TEvent">Event type.</typeparam>
+    /// <typeparam name="TConsumer"><see cref="IConsumer{TMessage}"/>.</typeparam>
+    /// <typeparam name="TMessage">Event type.</typeparam>
     /// <param name="consumerOptions"></param>
     /// <param name="stoppingToken"></param>
     /// <returns>If a consumer already exists in the queue, return false.<br />如果队列存在消费者，则返回添加失败.</returns>
-    Task<bool> StartAsync<TConsumer, TEvent>(IConsumerOptions consumerOptions, CancellationToken stoppingToken = default)
-        where TConsumer : class, IConsumer<TEvent>
-        where TEvent : class;
+    Task StartAsync<TConsumer, TMessage>(IConsumerOptions consumerOptions, CancellationToken stoppingToken = default)
+        where TConsumer : class, IConsumer<TMessage>
+        where TMessage : class;
+
+    Task StartEventAsync<TMessage>(IConsumerOptions consumerOptions, CancellationToken stoppingToken = default)
+        where TMessage : class;
 
     /// <summary>
     /// Stop consumer.

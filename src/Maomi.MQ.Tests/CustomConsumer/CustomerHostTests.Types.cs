@@ -18,14 +18,14 @@ public partial class DefaultCustomerHostTests
 
     #region WaitReady
 
-    public abstract class WaitReadyConsumerHostService : ConsumerBaseHostService
+    public abstract class WaitReadyConsumerHostService : ConsumerHostedService
     {
         public DateTime InitTime { get; protected set; }
         public WaitReadyConsumerHostService(
             IServiceProvider serviceProvider,
             ServiceFactory serviceFactory,
             ConnectionPool connectionPool,
-            ILogger<ConsumerBaseHostService> logger,
+            ILogger<ConsumerHostedService> logger,
             List<ConsumerType> consumers)
             : base(serviceProvider, serviceFactory, connectionPool, logger, consumers)
         {
@@ -39,14 +39,14 @@ public partial class DefaultCustomerHostTests
         }
     }
 
-    public abstract class WaitReadyConsumerHostService<TConsumer, TEvent> : ConsumerBaseHostService
+    public abstract class WaitReadyConsumerHostService<TConsumer, TMessage> : ConsumerHostedService
     {
         public DateTime InitTime { get; protected set; }
         public WaitReadyConsumerHostService(
             IServiceProvider serviceProvider,
             ServiceFactory serviceFactory,
             ConnectionPool connectionPool,
-            ILogger<ConsumerBaseHostService> logger,
+            ILogger<ConsumerHostedService> logger,
             List<ConsumerType> consumers)
             : base(serviceProvider, serviceFactory, connectionPool, logger, consumers)
         {
@@ -60,44 +60,44 @@ public partial class DefaultCustomerHostTests
         }
     }
 
-    public class WaitReady_0_ConsumerHostService<TConsumer, TEvent> : WaitReadyConsumerHostService<TConsumer, TEvent>
-    where TEvent : class
-    where TConsumer : IConsumer<TEvent>
+    public class WaitReady_0_ConsumerHostService<TConsumer, TMessage> : WaitReadyConsumerHostService<TConsumer, TMessage>
+    where TMessage : class
+    where TConsumer : IConsumer<TMessage>
     {
         public WaitReady_0_ConsumerHostService(
             IServiceProvider serviceProvider,
             ServiceFactory serviceFactory,
             ConnectionPool connectionPool,
-            ILogger<ConsumerBaseHostService> logger,
+            ILogger<ConsumerHostedService> logger,
             List<ConsumerType> consumers)
             : base(serviceProvider, serviceFactory, connectionPool, logger, consumers)
         {
         }
     }
 
-    public class WaitReady_1_ConsumerHostService<TConsumer, TEvent> : WaitReadyConsumerHostService<TConsumer, TEvent>
-    where TEvent : class
-    where TConsumer : IConsumer<TEvent>
+    public class WaitReady_1_ConsumerHostService<TConsumer, TMessage> : WaitReadyConsumerHostService<TConsumer, TMessage>
+    where TMessage : class
+    where TConsumer : IConsumer<TMessage>
     {
         public WaitReady_1_ConsumerHostService(
             IServiceProvider serviceProvider,
             ServiceFactory serviceFactory,
             ConnectionPool connectionPool,
-            ILogger<ConsumerBaseHostService> logger,
+            ILogger<ConsumerHostedService> logger,
             List<ConsumerType> consumers)
             : base(serviceProvider, serviceFactory, connectionPool, logger, consumers)
         {
         }
     }
-    public class WaitReady_2_ConsumerHostService<TConsumer, TEvent> : WaitReadyConsumerHostService<TConsumer, TEvent>
-    where TEvent : class
-    where TConsumer : IConsumer<TEvent>
+    public class WaitReady_2_ConsumerHostService<TConsumer, TMessage> : WaitReadyConsumerHostService<TConsumer, TMessage>
+    where TMessage : class
+    where TConsumer : IConsumer<TMessage>
     {
         public WaitReady_2_ConsumerHostService(
             IServiceProvider serviceProvider,
             ServiceFactory serviceFactory,
             ConnectionPool connectionPool,
-            ILogger<ConsumerBaseHostService> logger,
+            ILogger<ConsumerHostedService> logger,
             List<ConsumerType> consumers)
             : base(serviceProvider, serviceFactory, connectionPool, logger, consumers)
         {
@@ -110,43 +110,43 @@ public partial class DefaultCustomerHostTests
             IServiceProvider serviceProvider,
             ServiceFactory serviceFactory,
             ConnectionPool connectionPool,
-            ILogger<ConsumerBaseHostService> logger,
+            ILogger<ConsumerHostedService> logger,
             List<ConsumerType> consumers)
             : base(serviceProvider, serviceFactory, connectionPool, logger, consumers)
         {
         }
         // Analog received data.
-        public async Task PublishAsync<TEvent>(string queue, IChannel channel, BasicDeliverEventArgs eventArgs)
-            where TEvent : class
+        public async Task PublishAsync<TMessage>(string queue, IChannel channel, BasicDeliverEventArgs eventArgs)
+            where TMessage : class
         {
             var consumerOptions = _serviceProvider.GetRequiredKeyedService<IConsumerOptions>(serviceKey: queue);
             var consumer = new MessageConsumer(_serviceProvider, _serviceFactory, _serviceProvider.GetRequiredService<ILogger<MessageConsumer>>(), consumerOptions);
-            await consumer.ConsumerAsync<TEvent>(channel, eventArgs);
+            await consumer.ConsumerAsync<TMessage>(channel, eventArgs);
         }
     }
 
     #endregion
 
     [Consumer("test", Qos = 1, RetryFaildRequeue = false, ExecptionRequeue = false)]
-    private class Exception_NoRequeue_Consumer<TEvent> : IConsumer<TEvent>, IRetry, IEventBody<TEvent>
-        where TEvent : class
+    private class Exception_NoRequeue_Consumer<TMessage> : IConsumer<TMessage>, IRetry, IEventBody<TMessage>
+        where TMessage : class
     {
-        public EventBody<TEvent> EventBody { get; private set; }
+        public EventBody<TMessage> EventBody { get; private set; }
 
         public int RetryCount { get; private set; }
         public bool IsFallbacked { get; private set; }
 
-        public Task ExecuteAsync(EventBody<TEvent> message)
+        public Task ExecuteAsync(EventBody<TMessage> message)
         {
             EventBody = message;
             throw new OperationCanceledException();
         }
-        public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
+        public Task FaildAsync(Exception ex, int retryCount, EventBody<TMessage>? message)
         {
             RetryCount = retryCount;
             return Task.CompletedTask;
         }
-        public Task<bool> FallbackAsync(EventBody<TEvent>? message)
+        public Task<bool> FallbackAsync(EventBody<TMessage>? message)
         {
             IsFallbacked = true;
             return Task.FromResult(false);
@@ -154,25 +154,25 @@ public partial class DefaultCustomerHostTests
     }
 
     [Consumer("test", Qos = 1, RetryFaildRequeue = true, ExecptionRequeue = true)]
-    private class Exception_Requeue_Consumer<TEvent> : IConsumer<TEvent>, IRetry, IEventBody<TEvent>
-    where TEvent : class
+    private class Exception_Requeue_Consumer<TMessage> : IConsumer<TMessage>, IRetry, IEventBody<TMessage>
+    where TMessage : class
     {
-        public EventBody<TEvent> EventBody { get; private set; }
+        public EventBody<TMessage> EventBody { get; private set; }
 
         public int RetryCount { get; private set; }
         public bool IsFallbacked { get; private set; }
 
-        public Task ExecuteAsync(EventBody<TEvent> message)
+        public Task ExecuteAsync(EventBody<TMessage> message)
         {
             EventBody = message;
             throw new OperationCanceledException();
         }
-        public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
+        public Task FaildAsync(Exception ex, int retryCount, EventBody<TMessage>? message)
         {
             RetryCount = retryCount;
             return Task.CompletedTask;
         }
-        public Task<bool> FallbackAsync(EventBody<TEvent>? message)
+        public Task<bool> FallbackAsync(EventBody<TMessage>? message)
         {
             IsFallbacked = true;
             return Task.FromResult(false);
@@ -180,24 +180,24 @@ public partial class DefaultCustomerHostTests
     }
 
     [Consumer("test", Qos = 1, RetryFaildRequeue = true, ExecptionRequeue = true)]
-    private class Retry_Faild_Fallback_False_Requeue_Consumer<TEvent> : IConsumer<TEvent>, IRetry, IEventBody<TEvent>
-        where TEvent : class
+    private class Retry_Faild_Fallback_False_Requeue_Consumer<TMessage> : IConsumer<TMessage>, IRetry, IEventBody<TMessage>
+        where TMessage : class
     {
         public int RetryCount { get; private set; }
         public bool IsFallbacked { get; private set; }
-        public EventBody<TEvent> EventBody { get; private set; }
+        public EventBody<TMessage> EventBody { get; private set; }
 
-        public Task ExecuteAsync(EventBody<TEvent> message)
+        public Task ExecuteAsync(EventBody<TMessage> message)
         {
             EventBody = message;
             throw new OperationCanceledException();
         }
-        public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
+        public Task FaildAsync(Exception ex, int retryCount, EventBody<TMessage>? message)
         {
             RetryCount = retryCount;
             return Task.CompletedTask;
         }
-        public Task<bool> FallbackAsync(EventBody<TEvent>? message)
+        public Task<bool> FallbackAsync(EventBody<TMessage>? message)
         {
             IsFallbacked = true;
             throw new OperationCanceledException();
@@ -205,24 +205,24 @@ public partial class DefaultCustomerHostTests
     }
 
     [Consumer("test", Qos = 1)]
-    private class Retry_Faild_Fallback_True_Consumer<TEvent> : IConsumer<TEvent>, IRetry, IEventBody<TEvent>
-    where TEvent : class
+    private class Retry_Faild_Fallback_True_Consumer<TMessage> : IConsumer<TMessage>, IRetry, IEventBody<TMessage>
+    where TMessage : class
     {
         public int RetryCount { get; private set; }
         public bool IsFallbacked { get; private set; }
-        public EventBody<TEvent> EventBody { get; private set; }
+        public EventBody<TMessage> EventBody { get; private set; }
 
-        public Task ExecuteAsync(EventBody<TEvent> message)
+        public Task ExecuteAsync(EventBody<TMessage> message)
         {
             EventBody = message;
             throw new OperationCanceledException();
         }
-        public Task FaildAsync(Exception ex, int retryCount, EventBody<TEvent>? message)
+        public Task FaildAsync(Exception ex, int retryCount, EventBody<TMessage>? message)
         {
             RetryCount = retryCount;
             return Task.CompletedTask;
         }
-        public Task<bool> FallbackAsync(EventBody<TEvent>? message)
+        public Task<bool> FallbackAsync(EventBody<TMessage>? message)
         {
             IsFallbacked = true;
             return Task.FromResult(true);
