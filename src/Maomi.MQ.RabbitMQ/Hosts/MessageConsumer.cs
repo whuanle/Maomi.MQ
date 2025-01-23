@@ -18,7 +18,6 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-using System.Reflection;
 
 namespace Maomi.MQ.Hosts;
 
@@ -27,252 +26,312 @@ namespace Maomi.MQ.Hosts;
 /// </summary>
 public class MessageConsumer
 {
-    protected readonly TagList _tags;
-    protected readonly Meter _consumerMeter;
+    protected static readonly DiagnosticListener _diagnosticListener = new DiagnosticListener(DiagnosticName.Listener.Consumer);
+    protected static readonly ActivitySource _activitySource = new ActivitySource(DiagnosticName.ActivitySource.Consumer);
+
+    protected readonly Meter _meter;
     protected readonly Counter<int> _pullMessageCount;
     protected readonly Counter<int> _messageFaildCount;
     protected readonly Counter<int> _messageFallbackCount;
     protected readonly Histogram<int> _messageSize;
-
-    protected readonly DiagnosticsWriter _diagnosticsWriter = new DiagnosticsWriter();
-
+    protected readonly TagList _tags;
 
     protected readonly IServiceProvider _serviceProvider;
     protected readonly MqOptions _mqOptions;
-    protected readonly IMessageSerializer _jsonSerializer;
+    protected readonly IMessageSerializer _messageSerializer;
     protected readonly IRetryPolicyFactory _policyFactory;
-    protected readonly ILogger _logger;
     protected readonly IConsumerOptions _consumerOptions;
-    protected readonly Func<IServiceProvider,object> _consumerType;
+    protected readonly Func<IServiceProvider, object> _consumerInstance;
+    protected readonly ILogger _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MessageConsumer"/> class.
     /// </summary>
-    /// <param name="serviceFactory"></param>
+    /// <param name="serviceProvider"></param>
     /// <param name="consumerOptions"></param>
-    /// <param name="consumerType"></param>
+    /// <param name="consumerInstance"></param>
     public MessageConsumer(
-        ServiceFactory serviceFactory,
+        IServiceProvider serviceProvider,
         IConsumerOptions consumerOptions,
-        Func<IServiceProvider, object> consumerType)
+        Func<IServiceProvider, object> consumerInstance)
     {
-        _serviceProvider = serviceFactory.ServiceProvider;
-        _logger = serviceFactory.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger(DiagnosticName.ConsumerName);
-
+        var serviceFactory = serviceProvider.GetRequiredService<ServiceFactory>();
+        _serviceProvider = serviceProvider;
         _mqOptions = serviceFactory.Options;
 
-        _jsonSerializer = serviceFactory.Serializer;
+        _messageSerializer = serviceFactory.Serializer;
         _policyFactory = serviceFactory.RetryPolicyFactory;
         _consumerOptions = consumerOptions;
-        _consumerType = consumerType;
+        _consumerInstance = consumerInstance;
+        _logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger(DiagnosticName.Consumer);
 
         _tags = new TagList
         {
-            { "AppName", _mqOptions.AppName },
-            { "Queue", consumerOptions.Queue }
+            { "AppId", _mqOptions.AppName },
+            { "Queue", consumerOptions.Queue },
+            { "Exchange", consumerOptions.BindExchange },
+            { "RoutingKey", consumerOptions.RoutingKey },
         };
 
-        _consumerMeter = new("MaomiMQ.Consumer", Assembly.GetAssembly(typeof(DefaultMessagePublisher))!.GetName()!.Version!.ToString(), _tags);
-        _pullMessageCount = _consumerMeter.CreateCounter<int>("maomimq.consumer.message.pull.count", null, "The number of messages pushed or pulled by the server", _tags);
-        _messageFaildCount = _consumerMeter.CreateCounter<int>("maomimq.consumer.message.faild.count", null, "The total number of retries for processing messages", _tags);
-        _messageFallbackCount = _consumerMeter.CreateCounter<int>("maomimq.consumer.message.fallback.count", null, "The number of times the compensation method is executed", _tags);
-        _messageSize = _consumerMeter.CreateHistogram<int>("maomimq.consumer.message.received", "Byte", "The size of the received message", _tags);
+        var meterFactory = _serviceProvider.GetService<IMeterFactory>();
+        _meter = meterFactory != null ? meterFactory.Create(DiagnosticName.Meter.Consumer) : SharedMeter.Consumer;
+
+        _pullMessageCount = _meter.CreateCounter<int>("maomimq.consumer.message.pull.count", "{request}", "The number of messages pushed or pulled by the server", _tags);
+        _messageFaildCount = _meter.CreateCounter<int>("maomimq.consumer.message.faild.count", "{request}", "The total number of retries for processing messages", _tags);
+        _messageFallbackCount = _meter.CreateCounter<int>("maomimq.consumer.message.fallback.count", "{request}", "The number of times the compensation method is executed", _tags);
+        _messageSize = _meter.CreateHistogram<int>("maomimq.consumer.message.received", "Byte", "The size of the received message", _tags);
     }
 
     public virtual async Task ConsumerAsync<TMessage>(IChannel channel, BasicDeliverEventArgs eventArgs)
         where TMessage : class
     {
-        _pullMessageCount.Add(1, _tags);
-        _messageSize.Record(eventArgs.Body.Length, _tags);
+        using Activity? activity = _activitySource.StartActivity(DiagnosticName.ActivitySource.Consumer, ActivityKind.Consumer);
 
-        object? eventId = "-1";
-        object? publisher = "unknown";
-        _ = eventArgs.BasicProperties.Headers?.TryGetValue(DiagnosticName.Event.Id, out eventId);
-        _ = eventArgs.BasicProperties.Headers?.TryGetValue(DiagnosticName.Event.Publisher, out publisher);
+        MessageHeader messageHeader = eventArgs.BasicProperties.GetMessageHeader();
 
-        // 从属性里面 取出 messageHeader
+        OnStartEvent(messageHeader, eventArgs, _consumerOptions.Queue, activity);
 
-        MessageHeader messageHeader = new();
-
-        var tags = new ActivityTagsCollection()
+        var consumer = _consumerInstance(_serviceProvider) as IConsumer<TMessage>;
+        if (consumer == null)
         {
-            { DiagnosticName.Event.Queue, _consumerOptions.Queue },
-            { DiagnosticName.Event.Id, eventId },
-            { DiagnosticName.Event.Publisher, publisher },
-            { DiagnosticName.Event.Consumer, _mqOptions.AppName }
-        };
+            var breakdown = _serviceProvider.GetRequiredService<IBreakdown>();
+            await breakdown.NotFoundConsumer(_consumerOptions.Queue, typeof(TMessage), typeof(IConsumer<TMessage>));
+            throw new ArgumentNullException(nameof(consumer), "The consumer instance cannot be null.");
+        }
 
-        using Activity? consumerActivity = _diagnosticsWriter.WriteStarted(
-            DiagnosticName.Activity.Consumer,
-            DateTimeOffset.Now,
-            tags);
-
-        var scope = _serviceProvider.CreateScope();
-        var ioc = scope.ServiceProvider;
-
-        var consumer = _consumerType(ioc) as IConsumer<TMessage>;
-
+        ConsumerState fallbackState = ConsumerState.Ack;
         TMessage? eventBody = null;
 
         try
         {
-            eventBody = _jsonSerializer.Deserialize<TMessage>(eventArgs.Body.Span)!;
-            tags[DiagnosticName.Event.Id] = messageHeader.Id;
-            tags[DiagnosticName.Event.Publisher] = messageHeader.Publisher;
-            tags[DiagnosticName.Event.CreationTime] = messageHeader.CreationTime;
-            consumerActivity?.SetTag(DiagnosticName.Event.Id, messageHeader.Id);
-            consumerActivity?.SetTag(DiagnosticName.Event.Publisher, messageHeader.Publisher);
-            consumerActivity?.SetTag(DiagnosticName.Event.CreationTime, messageHeader.CreationTime);
-
-            // Executed on the last retry.
-            // 最后一次重试失败时执行.
-            var fallbackPolicy = Policy<FallbackState>
-                .Handle<Exception>()
-                .FallbackAsync(async (c) =>
-                {
-                    _messageFallbackCount.Add(1);
-                    return await FallbackAsync(_consumerOptions, tags, consumer, messageHeader, eventBody);
-                });
-
-            int retryCount = 0;
-
-            // Custom retry policy.
-            // 自定义重试策略.
-            AsyncRetryPolicy customRetryPolicy = await _policyFactory.CreatePolicy(_consumerOptions.Queue, messageHeader.Id);
-
-            var policyWrap = fallbackPolicy.WrapAsync(customRetryPolicy);
-
-            var executeResult = await policyWrap.ExecuteAsync(async () =>
+            eventBody = _messageSerializer.Deserialize<TMessage>(eventArgs.Body.Span)!;
+            if (eventBody == null)
             {
-                Interlocked.Increment(ref retryCount);
-                var result = await ExecuteAndRetryAsync(tags, consumer, messageHeader, eventBody, retryCount);
-                return result;
-            });
-
-            // The execution completed normally, or the FallbackAsync function was executed to compensate for the last retry.
-            // 正常执行完成，或执行了 FallbackAsync 函数补偿最后一次重试.
-            if (executeResult == FallbackState.Ack)
-            {
-                await channel.BasicAckAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false);
-                tags[DiagnosticName.Tag.ACK] = "ack";
-
-                consumerActivity?.SetStatus(ActivityStatusCode.Ok);
+                ArgumentNullException.ThrowIfNull(eventBody, "The message body cannot be null.");
             }
-            else
-            {
-                // Whether to put it back to the queue when the last retry fails.
-                // 最后一次重试失败时，是否放回队列.
-                if (executeResult == FallbackState.Nack)
-                {
-                    await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: _consumerOptions.RetryFaildRequeue);
-                }
-                else if (executeResult == FallbackState.NackAndRetry)
-                {
-                    await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: true);
-                }
-                else
-                {
-                    await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: false);
-                }
-
-                tags[DiagnosticName.Tag.ACK] = "nack";
-                tags[DiagnosticName.Tag.Requeue] = _consumerOptions.RetryFaildRequeue;
-
-                consumerActivity?.SetStatus(ActivityStatusCode.Error, "Failed to consume message");
-            }
-
-            _diagnosticsWriter.WriteStopped(consumerActivity, DateTimeOffset.Now, tags);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "An error occurred while processing the message,queue [{Queue}],id [{Id}].", _consumerOptions.Queue, messageHeader.Id);
-            _diagnosticsWriter.WriteException(consumerActivity, ex);
-
-            using Activity? retrykActivity = _diagnosticsWriter.WriteStarted(DiagnosticName.Activity.Retry, DateTimeOffset.Now, tags);
-
-            try
-            {
-                await consumer.FaildAsync(messageHeader, ex, -1, eventBody);
-            }
-            catch (Exception faildEx)
-            {
-                _logger.LogWarning(faildEx, "An error occurred while executing the FaildAsync method,queue [{Queue}],id [{Id}].", _consumerOptions.Queue, messageHeader?.Id);
-                _diagnosticsWriter.WriteException(retrykActivity, ex);
-            }
-            finally
-            {
-                _diagnosticsWriter.WriteStopped(retrykActivity, DateTimeOffset.Now);
-            }
-
-            await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: _consumerOptions.ExecptionRequeue);
-
-            tags[DiagnosticName.Tag.ACK] = "nack";
-            tags[DiagnosticName.Tag.Requeue] = _consumerOptions.RetryFaildRequeue;
-            _diagnosticsWriter.WriteStopped(consumerActivity, DateTimeOffset.Now, tags);
+            activity?.AddException(ex);
+            fallbackState = await FallbackAsync(eventArgs, consumer, messageHeader, eventBody, ex);
+            goto Fallback;
         }
+
+        // Executed on the last retry.
+        // 最后一次重试失败时执行.
+        var fallbackPolicy = Policy<ConsumerState>
+            .Handle<Exception>()
+            .FallbackAsync(async (c) =>
+            {
+                return await FallbackAsync(eventArgs, consumer, messageHeader, eventBody, null);
+            });
+
+        int retryCount = 0;
+
+        // Custom retry policy.
+        // 自定义重试策略.
+        AsyncRetryPolicy customRetryPolicy = await _policyFactory.CreatePolicy(_consumerOptions.Queue, messageHeader.Id);
+
+        var policyWrap = fallbackPolicy.WrapAsync(customRetryPolicy);
+        var circuitBreaker = _circuitBreakerFactory.Create(_consumerOptions.Queue, messageHeader.Id);
+
+        policyWrap = policyWrap.WrapAsync(circuitBreaker);
+
+        // 执行消费和重试.
+        fallbackState = await policyWrap.ExecuteAsync(async () =>
+        {
+            Interlocked.Increment(ref retryCount);
+            var executeState = await ExecuteAndRetryAsync(consumer, messageHeader, eventBody, retryCount);
+            return executeState;
+        });
+
+    /* 根据结果进行 ACK 或 NACK.*/
+
+    Fallback:
+
+        // The execution completed normally, or the FallbackAsync function was executed to compensate for the last retry.
+        // 正常执行完成，或执行了 FallbackAsync 函数补偿最后一次重试.
+        if (fallbackState == ConsumerState.Ack)
+        {
+            await channel.BasicAckAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false);
+        }
+
+        // Whether to put it back to the queue when the last retry fails.
+        // 最后一次重试失败时，是否放回队列.
+        else if (fallbackState == ConsumerState.Nack)
+        {
+            await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: _consumerOptions.RetryFaildRequeue);
+        }
+        else if (fallbackState == ConsumerState.NackAndRequeue)
+        {
+            await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: true);
+        }
+        else
+        {
+            await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: false);
+        }
+
+        OnEndEvent(messageHeader, activity);
     }
 
-    public virtual async Task<FallbackState> ExecuteAndRetryAsync<TMessage>(ActivityTagsCollection tags, IConsumer<TMessage> consumer, MessageHeader messageHeader, TMessage eventBody, int retryCount)
+    protected virtual async Task<ConsumerState> FallbackAsync<TMessage>(BasicDeliverEventArgs eventArgs, IConsumer<TMessage> consumer, MessageHeader messageHeader, TMessage? eventBody, Exception? ex)
         where TMessage : class
     {
-        using Activity? executekActivity = _diagnosticsWriter.WriteStarted(DiagnosticName.Activity.Execute, DateTimeOffset.Now, tags);
+        var fallbackActivity = _activitySource.StartActivity(DiagnosticName.ActivitySource.Fallback, ActivityKind.Internal);
+        OnFallbackStartEvent(messageHeader, eventArgs, _consumerOptions.Queue, fallbackActivity);
+        ConsumerState fallbackState = ConsumerState.Ack;
 
         try
         {
+            var fallbackResult = await consumer.FallbackAsync(messageHeader, eventBody, ex);
+            return fallbackResult;
+        }
+        catch (Exception fallbackEx)
+        {
+            _logger.LogWarning(
+                fallbackEx,
+                "An error occurred while executing the FallbackAsync method,exchange [{Exchange}],routing [{RoutingKey}],id [{Id}],deliveryTag [{DeliveryTag}].",
+                eventArgs.Exchange,
+                eventArgs.RoutingKey,
+                messageHeader.Id,
+                eventArgs.DeliveryTag);
+
+            OnFallbackExceptionEvent(messageHeader, fallbackEx, fallbackActivity);
+            return ConsumerState.Exception;
+        }
+        finally
+        {
+            OnFallbackEndEvent(messageHeader, fallbackState, fallbackActivity);
+        }
+    }
+
+    protected virtual async Task<ConsumerState> ExecuteAndRetryAsync<TMessage>(IConsumer<TMessage> consumer, MessageHeader messageHeader, TMessage eventBody, int retryCount)
+        where TMessage : class
+    {
+        using Activity? executekActivity = _activitySource.StartActivity(DiagnosticName.ActivitySource.Execute, ActivityKind.Internal);
+
+        try
+        {
+            executekActivity?.Start();
             await consumer.ExecuteAsync(messageHeader, eventBody);
-            _diagnosticsWriter.WriteStopped(executekActivity, DateTimeOffset.Now);
+            executekActivity?.Stop();
         }
         catch (Exception ex)
         {
-            _diagnosticsWriter.WriteException(executekActivity, ex);
-            _diagnosticsWriter.WriteStopped(executekActivity, DateTimeOffset.Now);
+            executekActivity?.AddException(ex);
+            executekActivity?.Stop();
 
-            using Activity? retrykActivity = _diagnosticsWriter.WriteStarted(DiagnosticName.Activity.Retry, DateTimeOffset.Now, tags);
-            _diagnosticsWriter.WriteEvent(retrykActivity, DiagnosticName.Event.Retry, "retry.count", retryCount);
+            using Activity? retrykActivity = _activitySource.StartActivity(DiagnosticName.ActivitySource.Retry, ActivityKind.Internal);
 
             // Each retry.
             // 每次失败时执行.
             try
             {
                 _messageFaildCount.Add(1);
+                retrykActivity?.Start();
                 await consumer.FaildAsync(messageHeader, ex, retryCount, eventBody);
+                retrykActivity?.Stop();
             }
             catch (Exception faildEx)
             {
                 _logger.LogWarning(faildEx, "An error occurred while executing the FaildAsync method,queue [{Queue}],id [{Id}].", _consumerOptions.Queue, messageHeader.Id);
-                _diagnosticsWriter.WriteException(retrykActivity, faildEx);
-            }
-            finally
-            {
-                _diagnosticsWriter.WriteStopped(retrykActivity, DateTimeOffset.Now);
+                retrykActivity?.AddException(faildEx);
+                retrykActivity?.Stop();
+
+                throw;
             }
 
             throw;
         }
 
-        return FallbackState.Ack;
+        return ConsumerState.Ack;
     }
 
-    public virtual async Task<FallbackState> FallbackAsync<TMessage>(IConsumerOptions consumerOptions, ActivityTagsCollection tags, IConsumer<TMessage> consumer, MessageHeader messageHeader, TMessage eventBody)
-        where TMessage : class
+    protected bool IsEnabledListener()
     {
-        using Activity? fallbackActivity = _diagnosticsWriter.WriteStarted(DiagnosticName.Activity.Fallback, DateTimeOffset.Now, tags);
-        try
-        {
-            var fallbackResult = await consumer.FallbackAsync(messageHeader, eventBody);
-            _diagnosticsWriter.WriteEvent(fallbackActivity, DiagnosticName.Event.FallbackCompleted, DiagnosticName.Tag.Status, fallbackResult);
+        // check if there is a parent Activity or if someone listens to "<Maomi.MQ.Publisher>" ActivitySource or "MaomiMQPublisherHandlerDiagnosticListener" DiagnosticListener.
+        return Activity.Current != null ||
+               _activitySource.HasListeners() ||
+               _diagnosticListener.IsEnabled();
+    }
 
-            return fallbackResult;
-        }
-        catch (Exception ex)
+    protected virtual void OnStartEvent(MessageHeader messageHeader, BasicDeliverEventArgs eventArgs, string queue, Activity? activity)
+    {
+        if (activity == null || !IsEnabledListener())
         {
-            _logger.LogWarning(ex, "An error occurred while executing the FallbackAsync method,queue [{Queue}],id [{Id}].", consumerOptions.Queue, messageHeader.Id);
-            _diagnosticsWriter.WriteException(fallbackActivity, ex);
-            return FallbackState.Nack;
+            return;
         }
-        finally
+
+        activity.AddTag("Id", messageHeader.Id);
+        activity.AddTag("Timestamp", messageHeader.Timestamp);
+        activity.AddTag("AppId", messageHeader.AppId);
+        activity.AddTag("ContentEncoding", messageHeader.ContentEncoding);
+        activity.AddTag("ContentType", messageHeader.ContentType);
+        activity.AddTag("Type", messageHeader.Type);
+        activity.AddTag("UserId", messageHeader.UserId);
+        activity.AddTag("Exchange", eventArgs.Exchange);
+        activity.AddTag("RoutingKey", eventArgs.RoutingKey);
+        activity.AddTag("Queue", queue);
+
+        activity.Start();
+
+        _pullMessageCount.Add(1);
+        _messageSize.Record(eventArgs.Body.Length);
+
+        _diagnosticListener.Write(DiagnosticName.Event.ConsumerStart, messageHeader);
+    }
+
+    protected virtual void OnEndEvent(MessageHeader messageHeader, Activity? activity)
+    {
+        if (activity == null || !IsEnabledListener())
         {
-            _diagnosticsWriter.WriteStopped(fallbackActivity, DateTimeOffset.Now, tags);
+            return;
         }
+
+        activity.Stop();
+
+        _pullMessageCount.Add(1);
+
+        _diagnosticListener.Write(DiagnosticName.Event.ConsumerStop, messageHeader);
+    }
+
+    protected virtual void OnFallbackStartEvent(MessageHeader messageHeader, BasicDeliverEventArgs eventArgs, string queue, Activity? activity)
+    {
+        if (activity == null || !IsEnabledListener())
+        {
+            return;
+        }
+
+        activity.Start();
+
+        _pullMessageCount.Add(1);
+        _messageSize.Record(eventArgs.Body.Length);
+
+        _diagnosticListener.Write(DiagnosticName.Event.FallbackStart, messageHeader);
+    }
+
+    protected virtual void OnFallbackEndEvent(MessageHeader messageHeader, ConsumerState fallbackState, Activity? activity)
+    {
+        if (activity == null || !IsEnabledListener())
+        {
+            return;
+        }
+
+        activity.AddTag("state", fallbackState);
+        activity.Stop();
+
+        _diagnosticListener.Write(DiagnosticName.Event.FallbackStop, messageHeader);
+    }
+
+    protected virtual void OnFallbackExceptionEvent(MessageHeader messageHeader, Exception ex, Activity? activity)
+    {
+        if (activity == null || !IsEnabledListener())
+        {
+            return;
+        }
+
+        activity.AddTag("exception", ex);
+
+        _diagnosticListener.Write(DiagnosticName.Event.FallbackExecption, ex);
     }
 }

@@ -1,4 +1,4 @@
-﻿// <copyright file="IEmptyConsumer.cs" company="Maomi">
+﻿// <copyright file="EmptyConsumer.cs" company="Maomi">
 // Copyright (c) Maomi. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/Maomi.MQ
@@ -27,8 +27,8 @@ public abstract class EmptyConsumer<TMessage> : IEmptyConsumer<TMessage>
     }
 
     /// <inheritdoc />
-    public Task<FallbackState> FallbackAsync(MessageHeader messageHeader, TMessage message)
+    public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, TMessage? message, Exception? ex)
     {
-        return Task.FromResult(FallbackState.Ack);
+        return Task.FromResult(ConsumerState.Ack);
     }
 }

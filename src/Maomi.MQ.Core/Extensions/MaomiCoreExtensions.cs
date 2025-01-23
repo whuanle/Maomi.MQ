@@ -25,9 +25,7 @@ public static class MaomiCoreExtensions
     public static IServiceCollection AddMaomiMQCore(this IServiceCollection services)
     {
         services.AddSingleton<IMessageSerializer, DefaultMessageSerializer>();
-        services.AddSingleton<IWaitReadyFactory, DefaultWaitReadyFactory>();
         services.AddSingleton<IRetryPolicyFactory, DefaultRetryPolicyFactory>();
-        services.AddSingleton<ICircuitBreakerFactory, DefaultCircuitBreakerFactory>();
         services.AddSingleton<IIdFactory>(new DefaultIdFactory(0));
         return services;
     }

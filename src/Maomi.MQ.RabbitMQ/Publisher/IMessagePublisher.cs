@@ -23,8 +23,9 @@ public interface IMessagePublisher
     /// <param name="routingKey">Queue name.<br />队列名称.</param>
     /// <param name="message">Event object.<br />事件对象.</param>
     /// <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
+    /// <param name="cancellationToken"></param>
     /// <returns><see cref="Task"/>.</returns>
-    Task PublishAsync<TMessage>(string exchange, string routingKey, TMessage message, Action<BasicProperties>? properties = null)
+    Task PublishAsync<TMessage>(string exchange, string routingKey, TMessage message, Action<BasicProperties>? properties = null, CancellationToken cancellationToken = default)
         where TMessage : class;
 
     /// <summary>
@@ -34,8 +35,9 @@ public interface IMessagePublisher
     /// <typeparam name="TMessage">Event model.<br />事件模型类.</typeparam>
     /// <param name="message">Event object.<br />事件对象.</param>
     /// <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
+    /// <param name="cancellationToken"></param>
     /// <returns><see cref="Task"/>.</returns>
-    Task PublishAsync<TMessage>(TMessage message, Action<BasicProperties>? properties = null)
+    Task PublishAsync<TMessage>(TMessage message, Action<BasicProperties>? properties = null, CancellationToken cancellationToken = default)
         where TMessage : class;
 
     /// <summary>
@@ -47,8 +49,9 @@ public interface IMessagePublisher
     /// <param name="routingKey">Queue name.<br />队列名称.</param>
     /// <param name="message">Event object.<br />事件对象.</param>
     /// <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
+    /// <param name="cancellationToken"></param>
     /// <returns><see cref="Task"/>.</returns>
-    Task PublishAsync<TMessage>(string exchange, string routingKey, TMessage message, BasicProperties? properties = default);
+    Task PublishAsync<TMessage>(string exchange, string routingKey, TMessage message, BasicProperties? properties = default, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Publish messagge.<br />
@@ -57,8 +60,9 @@ public interface IMessagePublisher
     /// <typeparam name="TMessage">Event model.<br />事件模型类.</typeparam>
     /// <param name="message">Event object.<br />事件对象.</param>
     /// <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
+    /// <param name="cancellationToken"></param>
     /// <returns><see cref="Task"/>.</returns>
-    Task PublishAsync<TMessage>(TMessage message, BasicProperties? properties = default);
+    Task PublishAsync<TMessage>(TMessage message, BasicProperties? properties = default, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Publish messagge.<br />
@@ -69,6 +73,7 @@ public interface IMessagePublisher
     /// <param name="routingKey">Queue name.<br />队列名称.</param>
     /// <param name="message">Event object.<br />事件对象.</param>
     /// <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
+    /// <param name="cancellationToken"></param>
     /// <returns><see cref="Task"/>.</returns>
-    Task CustomPublishAsync<TMessage>(string exchange, string routingKey, TMessage message, BasicProperties? properties = default);
+    Task CustomPublishAsync<TMessage>(string exchange, string routingKey, TMessage message, BasicProperties? properties = default, CancellationToken cancellationToken = default);
 }

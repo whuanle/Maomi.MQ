@@ -76,6 +76,7 @@ public static partial class MaomiExtensions
         });
 
         services.AddMaomiMQCore();
+        services.AddScoped<IBreakdown, DefaultBreakdown>();
         services.AddSingleton<IIdFactory>(new DefaultIdFactory((ushort)optionsBuilder.WorkId));
         services.AddSingleton<ServiceFactory>();
         services.AddSingleton<IDynamicConsumer, DynamicConsumerService>();

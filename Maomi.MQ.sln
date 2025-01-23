@@ -58,6 +58,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenTelemetryConsole", "exa
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DynamicConsumerWeb", "example\consumer\DynamicConsumerWeb\DynamicConsumerWeb.csproj", "{FB55DF34-4F67-47B4-BB9B-D8159AFF789B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Maomi.MQ.Tests.old", "src\Maomi.MQ.Testsold\Maomi.MQ.Tests.old.csproj", "{B0BF29CB-3F26-485F-BBD9-0844CB8AD47A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -132,6 +134,10 @@ Global
 		{FB55DF34-4F67-47B4-BB9B-D8159AFF789B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FB55DF34-4F67-47B4-BB9B-D8159AFF789B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FB55DF34-4F67-47B4-BB9B-D8159AFF789B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0BF29CB-3F26-485F-BBD9-0844CB8AD47A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0BF29CB-3F26-485F-BBD9-0844CB8AD47A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0BF29CB-3F26-485F-BBD9-0844CB8AD47A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0BF29CB-3F26-485F-BBD9-0844CB8AD47A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -160,6 +166,7 @@ Global
 		{34D910A5-431C-4E1F-966B-4EF0B2FD0D6A} = {3A5731A3-9BAC-454B-B76B-81C381404ABC}
 		{C3CBC692-F6C3-4EA6-B0AA-103844967944} = {8979DE46-2DFE-424E-8C3F-010D6913D44D}
 		{FB55DF34-4F67-47B4-BB9B-D8159AFF789B} = {C26DE99E-BA5B-440A-A731-3E19710E6367}
+		{B0BF29CB-3F26-485F-BBD9-0844CB8AD47A} = {5B4C0FA8-62E1-499B-8DB1-9C1CB0DE705D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {57DBA87C-FF49-40F6-8727-BBB51395CFEC}

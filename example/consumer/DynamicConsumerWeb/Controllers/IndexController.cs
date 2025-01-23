@@ -38,7 +38,7 @@ public class IndexController : ControllerBase
     {
         foreach (var item in consumer.Queues)
         {
-            await _dynamicConsumer.StopAsync(item);
+            await _dynamicConsumer.StopConsumerAsync(item);
         }
 
         return "ok";
@@ -72,7 +72,7 @@ public class IndexController : ControllerBase
 public class ConsumerDto
 {
     /// <summary>
-    /// ¶ÓÁĞÃû³Æ.
+    /// é˜Ÿåˆ—åç§°.
     /// </summary>
     public string[] Queues { get; set; } = null!;
 }

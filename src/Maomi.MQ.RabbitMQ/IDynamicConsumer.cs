@@ -20,18 +20,24 @@ public interface IDynamicConsumer
     /// <param name="consumerOptions"></param>
     /// <param name="stoppingToken"></param>
     /// <returns>If a consumer already exists in the queue, return false.<br />如果队列存在消费者，则返回添加失败.</returns>
-    Task StartAsync<TConsumer, TMessage>(IConsumerOptions consumerOptions, CancellationToken stoppingToken = default)
-        where TConsumer : class, IConsumer<TMessage>
+    Task ConsumerAsync<TConsumer, TMessage>(IConsumerOptions consumerOptions, CancellationToken stoppingToken = default)
+    where TMessage : class
+    where TConsumer : class, IConsumer<TMessage>;
+
+    Task ConsumerAsync<TMessage>(IConsumerOptions consumerOptions, CancellationToken stoppingToken = default)
         where TMessage : class;
 
-    Task StartEventAsync<TMessage>(IConsumerOptions consumerOptions, CancellationToken stoppingToken = default)
-        where TMessage : class;
+    Task ConsumerAsync<TMessage>(
+            IConsumerOptions consumerOptions,
+            ConsumerExecuteAsync<TMessage> execute,
+            ConsumerFaildAsync<TMessage>? faild = null,
+            ConsumerFallbackAsync<TMessage>? fallback = null)
+            where TMessage : class;
 
     /// <summary>
     /// Stop consumer.
     /// </summary>
     /// <param name="queue"></param>
-    /// <param name="stoppingToken"></param>
     /// <returns><see cref="Task"/>.</returns>
-    Task StopAsync(string queue, CancellationToken stoppingToken = default);
+    Task StopConsumerAsync(string queue);
 }

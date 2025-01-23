@@ -18,19 +18,19 @@ public class EventBusConsumer<TMessage> : IConsumer<TMessage>
 {
     private readonly IEventMiddleware<TMessage> _eventMiddleware;
     private readonly IHandlerMediator<TMessage> _handlerBroker;
-    private readonly ILogger<EventBusConsumer<TMessage>> _logger;
+    private readonly ILogger _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EventBusConsumer{TMessage}"/> class.
     /// </summary>
     /// <param name="eventMiddleware"></param>
     /// <param name="handlerBroker"></param>
-    /// <param name="logger"></param>
-    public EventBusConsumer(IEventMiddleware<TMessage> eventMiddleware, IHandlerMediator<TMessage> handlerBroker, ILogger<EventBusConsumer<TMessage>> logger)
+    /// <param name="loggerFactory"></param>
+    public EventBusConsumer(IEventMiddleware<TMessage> eventMiddleware, IHandlerMediator<TMessage> handlerBroker, ILoggerFactory loggerFactory)
     {
         _eventMiddleware = eventMiddleware;
         _handlerBroker = handlerBroker;
-        _logger = logger;
+        _logger = loggerFactory.CreateLogger(Diagnostics.DiagnosticName.EventBus);
     }
 
     /// <inheritdoc />
@@ -46,8 +46,8 @@ public class EventBusConsumer<TMessage> : IConsumer<TMessage>
     }
 
     /// <inheritdoc />
-    public Task<FallbackState> FallbackAsync(MessageHeader messageHeader, TMessage message)
+    public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, TMessage? message, Exception? ex)
     {
-        return _eventMiddleware.FallbackAsync(messageHeader, message);
+        return _eventMiddleware.FallbackAsync(messageHeader, message, ex);
     }
 }

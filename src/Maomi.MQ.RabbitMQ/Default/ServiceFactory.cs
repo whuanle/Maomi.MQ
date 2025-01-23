@@ -19,24 +19,18 @@ public class ServiceFactory
     /// <param name="serviceProvider"></param>
     /// <param name="serializer"></param>
     /// <param name="retryPolicyFactory"></param>
-    /// <param name="waitReadyFactory"></param>
-    /// <param name="circuitBreakerFactory"></param>
     /// <param name="ids"></param>
     public ServiceFactory(
         IServiceProvider serviceProvider,
         MqOptions options,
         IMessageSerializer serializer,
         IRetryPolicyFactory retryPolicyFactory,
-        IWaitReadyFactory waitReadyFactory,
-        ICircuitBreakerFactory circuitBreakerFactory,
         IIdFactory ids)
     {
         ServiceProvider = serviceProvider;
         Options = options;
         Serializer = serializer;
         RetryPolicyFactory = retryPolicyFactory;
-        WaitReadyFactory = waitReadyFactory;
-        CircuitBreakerFactory = circuitBreakerFactory;
         Ids = ids;
     }
 
@@ -64,14 +58,4 @@ public class ServiceFactory
     /// <see cref="IRetryPolicyFactory"/>.
     /// </summary>
     public IRetryPolicyFactory RetryPolicyFactory { get; private init; }
-
-    /// <summary>
-    /// <see cref="IWaitReadyFactory"/>.
-    /// </summary>
-    public IWaitReadyFactory WaitReadyFactory { get; private init; }
-
-    /// <summary>
-    /// <see cref="ICircuitBreakerFactory"/>.
-    /// </summary>
-    public ICircuitBreakerFactory CircuitBreakerFactory { get; private init; }
 }

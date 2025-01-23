@@ -9,7 +9,6 @@
 #pragma warning disable CS1591
 
 using Maomi.MQ.Default;
-using Maomi.MQ.Diagnostics;
 using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -23,17 +22,13 @@ namespace Maomi.MQ.Hosts;
 /// </summary>
 public partial class ConsumerHostedService : ConsumerBaseService
 {
-    protected readonly TaskCompletionSource _readyCompletionSource;
-    protected readonly DiagnosticsWriter _diagnosticsWriter = new DiagnosticsWriter();
-
     protected readonly ConnectionObject _connectionObject;
 
     protected readonly IMessageSerializer _jsonSerializer;
     protected readonly IRetryPolicyFactory _policyFactory;
-    protected readonly IWaitReadyFactory _waitReadyFactory;
 
     protected readonly IReadOnlyList<ConsumerType> _consumerTypes;
-    protected readonly Dictionary<MessageConsumer, IChannel> _consumers = new();
+    protected readonly Dictionary<string, IChannel> _consumers = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConsumerHostedService"/> class.
@@ -45,31 +40,28 @@ public partial class ConsumerHostedService : ConsumerBaseService
         ServiceFactory serviceFactory,
         ConnectionPool connectionPool,
         IReadOnlyList<ConsumerType> consumerTypes)
-        : base(serviceFactory)
+        : base(serviceFactory, serviceFactory.ServiceProvider.GetRequiredService<ILoggerFactory>())
     {
         _connectionObject = connectionPool.Get();
 
         _jsonSerializer = serviceFactory.Serializer;
         _policyFactory = serviceFactory.RetryPolicyFactory;
-        _waitReadyFactory = serviceFactory.WaitReadyFactory;
         _consumerTypes = consumerTypes;
-
-        _readyCompletionSource = new();
-        _waitReadyFactory.AddTask(_readyCompletionSource.Task);
     }
 
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _logger.LogWarning("Detects queue information and initializes it.");
+
         try
         {
             await WaitReadyInitQueueAsync();
-            _readyCompletionSource.TrySetResult();
+            _logger.LogWarning("The consumer host has been started.");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while declaring the queue.");
-            _readyCompletionSource?.TrySetException(ex);
+            _logger.LogError(ex, "An error occurred while declaring the queue.Consumer services have been withdrawn.");
             throw;
         }
 
@@ -94,8 +86,9 @@ public partial class ConsumerHostedService : ConsumerBaseService
             }
 
             var currentChannel = await _connectionObject.Connection.CreateChannelAsync();
-            (string consumerTag, MessageConsumer consumer) = await CreateMessageConsumer(currentChannel, consumerType.Event, consumerOptions);
-            _consumers.Add(consumer, currentChannel);
+            var createConsumer = BuildCreateConsumerHandler(consumerType.Event);
+            var consumerTag = await createConsumer(this, currentChannel, consumerType.Event, consumerOptions);
+            _consumers.Add(consumerTag, currentChannel);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿// <copyright file="DynamicConsumerHostedService.cs" company="Maomi">
+﻿// <copyright file="DynamicProxyConsumer{TMessage}.cs" company="Maomi">
 // Copyright (c) Maomi. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/Maomi.MQ
@@ -39,13 +39,13 @@ public class DynamicProxyConsumer<TMessage> : IConsumer<TMessage>
         return _faild.Invoke(messageHeader, ex, retryCount, message);
     }
 
-    public Task<FallbackState> FallbackAsync(MessageHeader messageHeader, TMessage message)
+    public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, TMessage? message, Exception? ex)
     {
         if (_fallback == null)
         {
-            return Task.FromResult(FallbackState.Ack);
+            return Task.FromResult(ConsumerState.Ack);
         }
 
-        return _fallback.Invoke(messageHeader, message);
+        return _fallback.Invoke(messageHeader, message, ex);
     }
 }

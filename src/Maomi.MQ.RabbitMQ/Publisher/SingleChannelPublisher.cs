@@ -9,6 +9,7 @@
 #pragma warning disable SA1600
 
 using RabbitMQ.Client;
+using System.Threading;
 
 namespace Maomi.MQ;
 
@@ -43,7 +44,7 @@ public class SingleChannelPublisher : DefaultMessagePublisher, IMessagePublisher
         });
     }
 
-    public override Task CustomPublishAsync<TMessage>(string exchange, string routingKey, TMessage message, BasicProperties? properties = null)
+    public override Task CustomPublishAsync<TMessage>(string exchange, string routingKey, TMessage message, BasicProperties? properties = null, CancellationToken cancellationToken = default)
     {
         if (properties == null)
         {
@@ -53,7 +54,7 @@ public class SingleChannelPublisher : DefaultMessagePublisher, IMessagePublisher
             };
         }
 
-        return PublishChannelAsync(_channel.Value, exchange, routingKey, message, properties);
+        return PublishChannelAsync(_channel.Value, exchange, routingKey, message, properties, cancellationToken);
     }
 
     /// <inheritdoc />

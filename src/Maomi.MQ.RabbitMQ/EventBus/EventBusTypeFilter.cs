@@ -54,7 +54,6 @@ public class EventBusTypeFilter : ITypeFilter
 
             services.AddScoped(serviceType: typeof(IHandlerMediator<>).MakeGenericType(eventType), implementationType: typeof(HandlerMediator<>).MakeGenericType(eventType));
 
-            // services.AddKeyedSingleton(serviceKey: eventInfo.Queue, serviceType: typeof(IConsumerOptions), implementationInstance: eventInfo.Options);
             services.Add(new ServiceDescriptor(
                 serviceType: typeof(IConsumer<>).MakeGenericType(eventType),
                 implementationType: typeof(EventBusConsumer<>).MakeGenericType(eventType),

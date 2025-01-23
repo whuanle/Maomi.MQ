@@ -79,7 +79,6 @@ public class ConsumerTypeFilter : ITypeFilter
 
         // Each IConsumer<T> corresponds to one queue and one ConsumerHostSrvice<T>.
         // 每个 IConsumer<T> 对应一个队列、一个 ConsumerHostSrvice<T>.
-        //services.AddKeyedSingleton(serviceKey: consumerAttribute.Queue, serviceType: typeof(IConsumerOptions), implementationInstance: consumerAttribute);
         services.Add(new ServiceDescriptor(serviceType: consumerInterface, implementationType: type, lifetime: ServiceLifetime.Scoped));
 
         var eventType = consumerInterface.GenericTypeArguments[0];

@@ -16,14 +16,35 @@ public static class DiagnosticName
 {
     public const string MaomiMQ = "Maomi.MQ";
     public const string EventBus = "Maomi.MQ.EventBus";
-    public const string ConsumerName = "Maomi.MQ.Consumer";
-    public const string PublisherName = "Maomi.MQ.Publisher";
+    public const string Consumer = "Maomi.MQ.Consumer";
+    public const string Publisher = "Maomi.MQ.Publisher";
 
-    public static class MessageHeader
+    public static class Listener
     {
-        public const string Id = "mm.id";
-        public const string CreationTime = "mm.creationtime";
-        public const string Publisher = "mm.publisher";
+        public const string Publisher = "MaomiMQPublisherHandlerDiagnosticListener";
+        public const string Consumer = "MaomiMQConsumerHandlerDiagnosticListener";
+    }
+
+    public static class ActivitySource
+    {
+        public const string Publisher = "Maomi.MQ.Publisher";
+        public const string Consumer = "Maomi.MQ.Consumer";
+
+        public const string Fallback = "Maomi.MQ.Fallback";
+        public const string Execute = "Maomi.MQ.Execute";
+        public const string Retry = "Maomi.MQ.Retry";
+
+        public const string EventBusExecute = "Maomi.MQ.EventBus.Execute";
+    }
+
+    public static class Meter
+    {
+        public const string Publisher = "Maomi.MQ.Publisher";
+        public const string Consumer = "Maomi.MQ.Consumer";
+
+        public const string PublisherMessageCount = "maomimq.publisher.message.count";
+        public const string PublisherSuccessMessageCount = "maomimq.publisher.message.success.count";
+        public const string PublisherFaildMessageCount = "maomimq.publisher.message.faild.count";
     }
 
     public static class Tag
@@ -34,30 +55,19 @@ public static class DiagnosticName
         public const string Requeue = nameof(Requeue);
     }
 
-    public static class Activity
-    {
-        public const string Publisher = nameof(Publisher);
-        public const string Consumer = nameof(Consumer);
-        public const string Fallback = nameof(Fallback);
-        public const string Execute = nameof(Execute);
-        public const string Retry = nameof(Retry);
-        public const string EventBus = nameof(EventBus);
-    }
-
     public static class Event
     {
-        public const string Id = "event.id";
-        public const string Publisher = "event.publisher";
-        public const string Consumer = "event.consumer";
-        public const string CreationTime = "event.starttime";
-        public const string Queue = "event.queue";
+        public const string PublisherStart = ActivitySource.Publisher + ".Start";
+        public const string PublisherStop = ActivitySource.Publisher + ".Stop";
+        public const string PublisherExecption = ActivitySource.Publisher + ".Execption";
 
-        public const string FallbackCompleted = nameof(FallbackCompleted);
-        public const string ExecuteCompleted = nameof(ExecuteCompleted);
-        public const string RetryCompleted = nameof(RetryCompleted);
-        public const string Retry = nameof(Retry);
+        public const string ConsumerStart = ActivitySource.Consumer + ".Start";
+        public const string ConsumerStop = ActivitySource.Consumer + ".Stop";
+        public const string ConsumerExecption = ActivitySource.Consumer + ".Execption";
 
-        public const string Exception = "Exception";
+        public const string FallbackStart = "Maomi.MQ.Fallback" + ".Start";
+        public const string FallbackStop = "Maomi.MQ.Fallback" + ".Stop";
+        public const string FallbackExecption = "Maomi.MQ.Fallback" + ".Execption";
     }
 
     public static class HandlerMediator

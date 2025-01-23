@@ -31,7 +31,7 @@ public class DefaultRetryPolicyFactory : IRetryPolicyFactory
     }
 
     /// <inheritdoc/>
-    public virtual Task<AsyncRetryPolicy> CreatePolicy(string queue, long id)
+    public virtual Task<AsyncRetryPolicy> CreatePolicy(string queue, string id)
     {
         // Create a retry policy.
         // 创建重试策略.

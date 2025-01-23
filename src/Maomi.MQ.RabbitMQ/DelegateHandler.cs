@@ -11,15 +11,13 @@ using RabbitMQ.Client.Events;
 
 namespace Maomi.MQ;
 
-public delegate Task ConsumerHandler(MessageConsumer consumer, IChannel channel, BasicDeliverEventArgs eventArgs);
-
 public delegate Task ConsumerExecuteAsync<TMessage>(MessageHeader messageHeader, TMessage message)
     where TMessage : class;
 
 public delegate Task ConsumerFaildAsync<TMessage>(MessageHeader messageHeader, Exception ex, int retryCount, TMessage message)
     where TMessage : class;
 
-public delegate Task<FallbackState> ConsumerFallbackAsync<TMessage>(MessageHeader messageHeader, TMessage message)
+public delegate Task<ConsumerState> ConsumerFallbackAsync<TMessage>(MessageHeader messageHeader, TMessage? message, Exception? ex)
     where TMessage : class;
 
 /// <summary>

@@ -24,8 +24,8 @@ public class DefaultEventMiddleware<TMessage> : IEventMiddleware<TMessage>
     }
 
     /// <inheritdoc />
-    public Task<FallbackState> FallbackAsync(MessageHeader messageHeader, TMessage? message)
+    public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, TMessage? message, Exception? ex)
     {
-        return Task.FromResult(FallbackState.Ack);
+        return Task.FromResult(ConsumerState.Ack);
     }
 }

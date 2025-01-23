@@ -8,16 +8,14 @@ using RabbitMQ.Client;
 
 namespace Maomi.MQ;
 
-// todo: 重构
-
 /// <summary>
 /// Extensions.
 /// </summary>
 public static class PublisherExtensions
 {
     /// <summary>
-    /// The publisher of an exclusive connection. <br />
-    /// 独占连接对象的发布者.
+    /// The publisher of an exclusive connection channel. <br />
+    /// 独占连接通道的发布者.
     /// </summary>
     /// <param name="messagePublisher"></param>
     /// <param name="createChannelOptions"><see cref="CreateChannelOptions"/>.</param>

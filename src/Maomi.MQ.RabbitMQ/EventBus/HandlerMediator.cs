@@ -8,6 +8,7 @@ using Maomi.MQ.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 
 namespace Maomi.MQ.EventBus;
 
@@ -19,29 +20,36 @@ namespace Maomi.MQ.EventBus;
 public class HandlerMediator<TMessage> : IHandlerMediator<TMessage>
     where TMessage : class
 {
+#pragma warning disable CS1591 // 缺少对公共可见类型或成员的 XML 注释
+#pragma warning disable SA1600 // Elements should be documented
+
+    protected static readonly DiagnosticListener _diagnosticListener = new DiagnosticListener(DiagnosticName.Listener.Consumer);
+    protected static readonly ActivitySource _activitySource = new ActivitySource(DiagnosticName.ActivitySource.Consumer);
+
+#pragma warning restore SA1600 // Elements should be documented
+#pragma warning restore CS1591 // 缺少对公共可见类型或成员的 XML 注释
+
     private readonly IServiceProvider _serviceProvider;
     private readonly IEventHandlerFactory<TMessage> _eventInfo;
-    private readonly DiagnosticsWriter _diagnosticsWriter = new DiagnosticsWriter();
+    private readonly ILogger _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HandlerMediator{TMessage}"/> class.
     /// </summary>
     /// <param name="serviceProvider"></param>
     /// <param name="eventInfo"></param>
-    public HandlerMediator(IServiceProvider serviceProvider, IEventHandlerFactory<TMessage> eventInfo)
+    /// <param name="loggerFactory"></param>
+    public HandlerMediator(IServiceProvider serviceProvider, IEventHandlerFactory<TMessage> eventInfo, ILoggerFactory loggerFactory)
     {
         _serviceProvider = serviceProvider;
         _eventInfo = eventInfo;
+        _logger = loggerFactory.CreateLogger(DiagnosticName.EventBus);
     }
 
     /// <inheritdoc/>
     public async Task ExecuteAsync(MessageHeader messageHeader, TMessage message, CancellationToken cancellationToken)
     {
-        var logger = _serviceProvider.GetRequiredService<ILogger<TMessage>>();
         Stack<ActivityInit> eventHandlers = new(_eventInfo.Handlers.Count);
-
-        ActivityTagsCollection tags = new ActivityTagsCollection();
-        using Activity? activity = _diagnosticsWriter.WriteStarted(DiagnosticName.Activity.EventBus, DateTimeOffset.Now, tags);
 
         // Build execution flow.
         // 构建执行链.
@@ -55,7 +63,8 @@ public class HandlerMediator<TMessage> : IHandlerMediator<TMessage>
                 { "event.handler.name", handler.Value.Name }
             };
 
-            using var executeActivity = _diagnosticsWriter.WriteStarted(DiagnosticName.Activity.Execute, DateTimeOffset.Now, executeTags);
+            using Activity? activity = _activitySource.StartActivity(name: DiagnosticName.ActivitySource.EventBusExecute, kind: ActivityKind.Internal, tags: executeTags);
+            activity?.Start();
 
             try
             {
@@ -67,18 +76,16 @@ public class HandlerMediator<TMessage> : IHandlerMediator<TMessage>
                 eventHandlers.Push(new ActivityInit(activity, eventHandler));
 
                 await eventHandler.ExecuteAsync(message, cancellationToken);
+                activity?.Stop();
 
                 if (cancellationToken.IsCancellationRequested)
                 {
                     throw new OperationCanceledException(cancellationToken);
                 }
-
-                _diagnosticsWriter.WriteStopped(executeActivity, DateTimeOffset.Now);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "An exception occurred while executing the event,event type:[{Name}], event id:[{Id}]", typeof(TMessage).Name, messageHeader.Id);
-                _diagnosticsWriter.WriteException(executeActivity, ex);
+                _logger.LogError(ex, "An exception occurred while executing the event,event type:[{Name}], event id:[{Id}]", typeof(TMessage).Name, messageHeader.Id);
 
                 // Rollback.
                 // 回滚.
@@ -87,23 +94,15 @@ public class HandlerMediator<TMessage> : IHandlerMediator<TMessage>
                     try
                     {
                         await eventHandler.EventHandler.CancelAsync(message, cancellationToken);
-                    }
-                    catch (Exception cancelEx)
-                    {
-                        _diagnosticsWriter.WriteException(eventHandler.Activity, cancelEx);
-                        throw;
+                        eventHandler.Activity?.AddTag("event.handler.status", "cancel");
                     }
                     finally
                     {
-                        _diagnosticsWriter.WriteStopped(eventHandler.Activity, DateTimeOffset.Now);
+                        eventHandler.Activity?.Stop();
                     }
                 }
 
                 throw;
-            }
-            finally
-            {
-                _diagnosticsWriter.WriteStopped(activity, DateTimeOffset.Now);
             }
         }
     }

@@ -7,27 +7,59 @@
 namespace Maomi.MQ;
 
 /// <summary>
-/// 头部注释.
+/// Message identification.<br />
+/// 消息标识.
 /// </summary>
 public class MessageHeader
 {
     /// <summary>
-    /// 全局雪花 id.
+    /// Initializes a new instance of the <see cref="MessageHeader"/> class.
     /// </summary>
-    public long Id { get; init; }
+    public MessageHeader()
+    {
+        Id = Guid.NewGuid().ToString("N");
+        Timestamp = DateTimeOffset.Now;
+    }
 
     /// <summary>
-    /// 创建时间.
+    /// Message id.
     /// </summary>
-    public DateTimeOffset CreationTime { get; init; }
+    public string Id { get; init; } = null!;
 
     /// <summary>
-    /// 发布者.
+    /// The time when the message was created.<br />
+    /// 消息被创建的时间.
     /// </summary>
-    public string Publisher { get; init; } = null!;
+    public DateTimeOffset Timestamp { get; init; }
 
     /// <summary>
-    /// 不同 MQ 的属性信息不同，RabbitMQ 是 IBasicProperties.
+    /// The message comes with an attribute, which for RabbitMQ is IBasicProperties.<br />
+    /// 消息附带属性，对于 RabbitMQ 是 IBasicProperties.
     /// </summary>
     public object Properties { get; init; } = null!;
+
+    /// <summary>
+    /// The content format of the message,ex: "application/json".
+    /// </summary>
+    public string ContentType { get; init; }
+
+    /// <summary>
+    /// Encoding of message,ex: "UTF-8".
+    /// </summary>
+    public string ContentEncoding { get; init; }
+
+    /// <summary>
+    /// The message type,ex: "order".
+    /// </summary>
+    public string Type { get; init; }
+
+    /// <summary>
+    /// The message is sent by which user.<br />
+    /// </summary>
+    public string UserId { get; init; }
+
+    /// <summary>
+    /// The message is sent by which application.<br />
+    /// </summary>
+    public string AppId { get; init; }
 }

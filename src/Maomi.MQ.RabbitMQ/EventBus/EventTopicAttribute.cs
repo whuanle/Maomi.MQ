@@ -28,9 +28,6 @@ public class EventTopicAttribute : Attribute, IConsumerOptions
     public bool RetryFaildRequeue { get; set; }
 
     /// <inheritdoc />
-    public bool ExecptionRequeue { get; set; } = true;
-
-    /// <inheritdoc />
     public int Expiration { get; set; }
 
     /// <inheritdoc />
@@ -75,7 +72,6 @@ public class EventTopicAttribute : Attribute, IConsumerOptions
         this.DeadRoutingKey = options.DeadRoutingKey;
         this.Qos = options.Qos;
         this.RetryFaildRequeue = options.RetryFaildRequeue;
-        this.ExecptionRequeue = options.ExecptionRequeue;
         this.Expiration = options.Expiration;
         this.AutoQueueDeclare = options.AutoQueueDeclare;
         this.BindExchange = options.BindExchange;

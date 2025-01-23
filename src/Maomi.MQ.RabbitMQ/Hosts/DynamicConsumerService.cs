@@ -1,4 +1,4 @@
-﻿// <copyright file="DynamicConsumerHostedService.cs" company="Maomi">
+﻿// <copyright file="DynamicConsumerService.cs" company="Maomi">
 // Copyright (c) Maomi. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/Maomi.MQ
@@ -9,11 +9,12 @@
 #pragma warning disable CS1591
 
 using Maomi.MQ.Default;
-using Maomi.MQ.Diagnostics;
 using Maomi.MQ.EventBus;
 using Maomi.MQ.Pool;
-using RabbitMQ.Client.Events;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 using System.Collections.Concurrent;
 
 namespace Maomi.MQ.Hosts;
@@ -24,13 +25,11 @@ namespace Maomi.MQ.Hosts;
 /// </summary>
 public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
 {
-    protected readonly DiagnosticsWriter _diagnosticsWriter = new DiagnosticsWriter();
-
     protected readonly IConsumerTypeProvider _consumerTypeProvider;
     protected readonly ConnectionPool _connectionPool;
     protected readonly ConnectionObject _connectionObject;
 
-    private readonly ConcurrentDictionary<string, ConsumerTag> _consumers;
+    protected readonly ConcurrentDictionary<string, string> _consumers;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DynamicConsumerService"/> class.
@@ -42,7 +41,7 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
         ServiceFactory serviceFactory,
         ConnectionPool connectionPool,
         IConsumerTypeProvider consumerTypeProvider)
-        : base(serviceFactory)
+        : base(serviceFactory, serviceFactory.ServiceProvider.GetRequiredService<ILoggerFactory>())
     {
         _connectionPool = connectionPool;
         _connectionObject = _connectionPool.Get();
@@ -50,13 +49,43 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
         _consumerTypeProvider = consumerTypeProvider;
     }
 
-    public Task StartEventAsync<TMessage>(IConsumerOptions consumerOptions, CancellationToken stoppingToken = default)
+    public Task ConsumerAsync<TMessage>(IConsumerOptions consumerOptions, CancellationToken stoppingToken = default)
         where TMessage : class
     {
-        return StartAsync<EventBusConsumer<TMessage>, TMessage>(consumerOptions, stoppingToken);
+        return ConsumerAsync<EventBusConsumer<TMessage>, TMessage>(consumerOptions, stoppingToken);
     }
 
-    public async Task Consumer<TMessage>(
+    public async Task ConsumerAsync<TConsumer, TMessage>(IConsumerOptions consumerOptions, CancellationToken stoppingToken = default)
+    where TMessage : class
+    where TConsumer : class, IConsumer<TMessage>
+    {
+        var existConsumer = _consumerTypeProvider.FirstOrDefault(x => x.Queue == consumerOptions.Queue);
+        if (existConsumer != null)
+        {
+            throw new ArgumentException($"Queue[{consumerOptions.Queue}] have been used by consumer [{existConsumer.Event.Name}]");
+        }
+
+        if (_consumers.ContainsKey(consumerOptions.Queue))
+        {
+            throw new ArgumentException($"Queue[{consumerOptions.Queue}] have been used by dynamic consumer");
+        }
+
+        var consummerChannel = _connectionObject.DefaultChannel;
+        await InitQueueAsync(consummerChannel, consumerOptions);
+
+        var createConsumer = BuildCreateConsumerHandler(typeof(TMessage));
+        var consumerTag = await createConsumer(this, consummerChannel, typeof(TMessage), consumerOptions);
+
+        var isAdd = _consumers.TryAdd(consumerOptions.Queue, consumerTag);
+
+        if (!isAdd)
+        {
+            await consummerChannel.BasicCancelAsync(consumerTag, true, stoppingToken);
+            throw new ArgumentException($"Queue[{consumerOptions.Queue}] have been used by dynamic consumer");
+        }
+    }
+
+    public async Task ConsumerAsync<TMessage>(
         IConsumerOptions consumerOptions,
         ConsumerExecuteAsync<TMessage> execute,
         ConsumerFaildAsync<TMessage>? faild = null,
@@ -78,13 +107,9 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
         var consummerChannel = _connectionObject.DefaultChannel;
         await InitQueueAsync(consummerChannel, consumerOptions);
 
-        (string consumerTag, MessageConsumer consumer) = await CreateDynamicMessageConsumer(consummerChannel, consumerOptions, dynamicProxyConsumer);
+        string consumerTag = await CreateDynamicMessageConsumer(consummerChannel, consumerOptions, dynamicProxyConsumer);
 
-        var isAdd = _consumers.TryAdd(consumerOptions.Queue, new ConsumerTag
-        {
-            Tag = consumerTag,
-            MessageConsumer = consumer
-        });
+        var isAdd = _consumers.TryAdd(consumerOptions.Queue, consumerTag);
 
         if (!isAdd)
         {
@@ -93,24 +118,42 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
         }
     }
 
-    protected virtual async Task<(string ConsumerTag, MessageConsumer Consumer)> CreateDynamicMessageConsumer<TMessage>(IChannel consummerChannel, IConsumerOptions consumerOptions, DynamicProxyConsumer<TMessage> proxyConsumer)
+    public virtual async Task StopConsumerAsync(string queue)
+    {
+        if (_consumers.TryGetValue(queue, out var consumerTag))
+        {
+            await _connectionObject.DefaultChannel.BasicCancelAsync(consumerTag, true);
+            _consumers.Remove(queue, out _);
+        }
+
+        await Task.CompletedTask;
+    }
+
+    protected virtual async Task<string> CreateDynamicMessageConsumer<TMessage>(IChannel consummerChannel, IConsumerOptions consumerOptions, DynamicProxyConsumer<TMessage> proxyConsumer)
         where TMessage : class
     {
         await consummerChannel.BasicQosAsync(prefetchSize: 0, prefetchCount: consumerOptions.Qos, global: false);
         var consumer = new AsyncEventingBasicConsumer(consummerChannel);
 
-        MessageConsumer messageConsumer = new MessageConsumer(_serviceFactory, consumerOptions, s => proxyConsumer);
-
         consumer.ReceivedAsync += async (sender, eventArgs) =>
         {
-            Dictionary<string, object> loggerState = new() { { DiagnosticName.Activity.Consumer, consumerOptions.Queue } };
-            if (eventArgs.BasicProperties.Headers?.TryGetValue(DiagnosticName.Event.Id, out var eventId) == true)
+            Dictionary<string, object> loggerState = new()
             {
-                loggerState.Add(DiagnosticName.Event.Id, eventId!);
-            }
+                { "Queue", consumerOptions.Queue },
+                { "Exchange", eventArgs.Exchange },
+                { "RoutingKey", eventArgs.RoutingKey },
+                { "ConsumerTag", eventArgs.ConsumerTag },
+                { "DeliveryTag", eventArgs.DeliveryTag },
+                { "Redelivered", eventArgs.Redelivered },
+                { "MessageId", eventArgs.BasicProperties.MessageId ?? string.Empty }
+            };
 
             using (_logger.BeginScope(loggerState))
             {
+                using var scope = _serviceProvider.CreateScope();
+                var serviceProvider = scope.ServiceProvider;
+
+                MessageConsumer messageConsumer = new MessageConsumer(serviceProvider, consumerOptions, s => proxyConsumer);
                 await messageConsumer.ConsumerAsync<TMessage>(consummerChannel, eventArgs);
             }
         };
@@ -120,53 +163,7 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
             autoAck: false,
             consumer: consumer);
 
-        return (consumerTag, messageConsumer);
-    }
-
-    /// <inheritdoc/>
-    public async Task StartAsync<TConsumer, TMessage>(IConsumerOptions consumerOptions, CancellationToken stoppingToken = default)
-        where TMessage : class
-        where TConsumer : class, IConsumer<TMessage>
-    {
-        var existConsumer = _consumerTypeProvider.FirstOrDefault(x => x.Queue == consumerOptions.Queue);
-        if (existConsumer != null)
-        {
-            throw new ArgumentException($"Queue[{consumerOptions.Queue}] have been used by consumer [{existConsumer.Event.Name}]");
-        }
-
-        if (_consumers.ContainsKey(consumerOptions.Queue))
-        {
-            throw new ArgumentException($"Queue[{consumerOptions.Queue}] have been used by dynamic consumer");
-        }
-
-        var consummerChannel = _connectionObject.DefaultChannel;
-        await InitQueueAsync(consummerChannel, consumerOptions);
-
-        (string consumerTag, MessageConsumer consumer) = await CreateMessageConsumer(consummerChannel, typeof(TMessage), consumerOptions);
-
-        var isAdd = _consumers.TryAdd(consumerOptions.Queue, new ConsumerTag
-        {
-            Tag = consumerTag,
-            MessageConsumer = consumer
-        });
-
-        if (!isAdd)
-        {
-            await consummerChannel.BasicCancelAsync(consumerTag, true, stoppingToken);
-            throw new ArgumentException($"Queue[{consumerOptions.Queue}] have been used by dynamic consumer");
-        }
-    }
-
-    /// <inheritdoc/>
-    public async Task StopAsync(string queue, CancellationToken stoppingToken = default)
-    {
-        if (_consumers.TryGetValue(queue, out var messageConsumer))
-        {
-            await _connectionObject.DefaultChannel.BasicCancelAsync(messageConsumer.Tag, true);
-            _consumers.Remove(queue, out _);
-        }
-
-        await Task.CompletedTask;
+        return consumerTag;
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)

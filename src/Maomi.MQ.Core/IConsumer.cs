@@ -7,24 +7,24 @@
 namespace Maomi.MQ;
 
 /// <summary>
-/// Custom consumer.
+/// Consumer abstract interface.
 /// </summary>
 /// <typeparam name="TMessage">Event model.</typeparam>
 public interface IConsumer<TMessage>
     where TMessage : class
 {
     /// <summary>
-    /// Message handler.<br />
-    /// 消息处理.
+    /// The received message is processed when it has been deserialized correctly.<br />
+    /// 当消息被正确反序列化后，处理接收到的消息.
     /// </summary>
-    /// <param name="messageHeader"></param>
-    /// <param name="message">事件内容.</param>
+    /// <param name="messageHeader">Message identification.<br />消息标识.</param>
+    /// <param name="message">Message body.<br />消息内容.</param>
     /// <returns><see cref="Task"/>.</returns>
     public Task ExecuteAsync(MessageHeader messageHeader, TMessage message);
 
     /// <summary>
-    /// Executed on each failure.If the exception is not caused by the ExecuteAsync method, such as a serialization error, then the retryCount = -1.<br />
-    /// 每次消费失败时执行.如果异常不是因为 ExecuteAsync 方法导致的，例如序列化错误等，则 retryCount = -1.
+    /// When an exception occurs to ExecuteAsync, execute it immediately.<br />
+    /// 当 ExecuteAsync 出现异常后，立即执行.
     /// </summary>
     /// <param name="messageHeader"></param>
     /// <param name="ex">An anomaly occurs when consuming.<br />消费时出现的异常.</param>
@@ -33,13 +33,13 @@ public interface IConsumer<TMessage>
     /// <returns><see cref="Task"/>.</returns>
     public Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, TMessage message);
 
-    // todo: 返回值 bool 改成枚举
     /// <summary>
-    /// Executed when the last retry fails.<br />
-    /// 最后一次重试失败时执行.
+    /// When all retries fail, or an exception occurs that the ExecuteAsync method cannot be accessed.<br />
+    /// 当所有重试均失败，或出现不能进入 ExecuteAsync 方法的异常.
     /// </summary>
-    /// <param name="messageHeader"></param>
-    /// <param name="message"></param>
-    /// <returns>Check whether the rollback is successful.</returns>
-    public Task<FallbackState> FallbackAsync(MessageHeader messageHeader, TMessage message);
+    /// <param name="messageHeader">Message identification.<br />消息标识.</param>
+    /// <param name="message">Message body.<br />消息内容.</param>
+    /// <param name="ex"></param>
+    /// <returns>Determine how the message will be handled.</returns>
+    public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, TMessage? message, Exception? ex);
 }

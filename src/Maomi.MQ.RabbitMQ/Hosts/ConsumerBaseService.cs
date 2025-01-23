@@ -25,28 +25,35 @@ namespace Maomi.MQ.Hosts;
 /// </summary>
 public abstract class ConsumerBaseService : BackgroundService
 {
+    protected delegate Task<string> CreateConsumerHandler(ConsumerBaseService consumer, IChannel consummerChannel, Type messageType, IConsumerOptions consumerOptions);
+
     /// <summary>
     /// Consumer method.
     /// </summary>
-    protected static readonly MethodInfo ConsumerMethod = typeof(MessageConsumer)
-        .GetMethod(nameof(MessageConsumer.ConsumerAsync), BindingFlags.Instance | BindingFlags.Public)!;
+    protected static readonly MethodInfo ConsumerMethod = typeof(ConsumerBaseService)
+        .GetMethod(nameof(ConsumerBaseService.CreateMessageConsumer), BindingFlags.Instance | BindingFlags.Public)!;
 
     protected readonly ServiceFactory _serviceFactory;
-
     protected readonly IServiceProvider _serviceProvider;
     protected readonly MqOptions _mqOptions;
     protected readonly ILogger _logger;
 
-    protected ConsumerBaseService(ServiceFactory serviceFactory)
+    protected ConsumerBaseService(ServiceFactory serviceFactory, ILoggerFactory loggerFactory)
     {
         _serviceFactory = serviceFactory;
         _serviceProvider = serviceFactory.ServiceProvider;
         _mqOptions = _serviceFactory.Options;
 
-        var loggerFactory = _serviceProvider.GetRequiredService<ILoggerFactory>();
-        _logger = loggerFactory.CreateLogger(DiagnosticName.ConsumerName);
+        _logger = loggerFactory.CreateLogger(DiagnosticName.Consumer);
     }
 
+    /// <summary>
+    /// Create queue and bind properties, create exchange and bind RoutingKey.<br />
+    /// 创建队列和绑定属性，创建交换器和绑定 RoutingKey.
+    /// </summary>
+    /// <param name="channel"></param>
+    /// <param name="consumerOptions"></param>
+    /// <returns><see cref="Task"/>.</returns>
     protected virtual async Task InitQueueAsync(IChannel channel, IConsumerOptions consumerOptions)
     {
         Dictionary<string, object?> arguments = new();
@@ -100,29 +107,51 @@ public abstract class ConsumerBaseService : BackgroundService
         }
     }
 
-    protected virtual async Task<(string ConsumerTag, MessageConsumer Consumer)> CreateMessageConsumer(IChannel consummerChannel, Type eventType, IConsumerOptions consumerOptions)
+    /// <summary>
+    /// Create a consumer for the queue, specify how to consume.<br />
+    /// 为队列创建消费者，指定如何进行消费.
+    /// </summary>
+    /// <typeparam name="TMessage">Message type.</typeparam>
+    /// <param name="consummerChannel"></param>
+    /// <param name="messageType"></param>
+    /// <param name="consumerOptions"></param>
+    /// <returns>Consumer tag.</returns>
+    protected virtual async Task<string> CreateMessageConsumer<TMessage>(IChannel consummerChannel, Type messageType, IConsumerOptions consumerOptions)
+    where TMessage : class
     {
         await consummerChannel.BasicQosAsync(prefetchSize: 0, prefetchCount: consumerOptions.Qos, global: false);
         var consumer = new AsyncEventingBasicConsumer(consummerChannel);
 
-        var consumerHandler = BuildConsumerHandler(eventType);
-        MessageConsumer messageConsumer = new MessageConsumer(_serviceFactory, consumerOptions, s =>
-        {
-            return s.GetRequiredService(typeof(IConsumer<>).MakeGenericType(eventType));
-        });
-
         consumer.ReceivedAsync += async (sender, eventArgs) =>
         {
-            Dictionary<string, object> loggerState = new() { { DiagnosticName.Activity.Consumer, consumerOptions.Queue } };
-            if (eventArgs.BasicProperties.Headers?.TryGetValue(DiagnosticName.Event.Id, out var eventId) == true)
+            Dictionary<string, object> loggerState = new()
             {
-                loggerState.Add(DiagnosticName.Event.Id, eventId!);
-            }
+                { "Queue", consumerOptions.Queue },
+                { "Exchange", eventArgs.Exchange },
+                { "RoutingKey", eventArgs.RoutingKey },
+                { "ConsumerTag", eventArgs.ConsumerTag },
+                { "DeliveryTag", eventArgs.DeliveryTag },
+                { "Redelivered", eventArgs.Redelivered },
+                { "MessageId", eventArgs.BasicProperties.MessageId ?? string.Empty }
+            };
 
             using (_logger.BeginScope(loggerState))
             {
-                await consumerHandler(messageConsumer, consummerChannel, eventArgs);
+                using var scope = _serviceProvider.CreateScope();
+                var serviceProvider = scope.ServiceProvider;
+                MessageConsumer messageConsumer = new MessageConsumer(serviceProvider, consumerOptions, s =>
+                {
+                    return s.GetService<IConsumer<TMessage>>()!;
+                });
+
+                await messageConsumer.ConsumerAsync<TMessage>(consummerChannel, eventArgs);
             }
+        };
+
+        consummerChannel.BasicReturnAsync += async (sender, args) =>
+        {
+            var breakdown = _serviceProvider.GetRequiredService<IBreakdown>();
+            await breakdown.BasicReturn(sender, args);
         };
 
         var consumerTag = await consummerChannel.BasicConsumeAsync(
@@ -130,25 +159,27 @@ public abstract class ConsumerBaseService : BackgroundService
             autoAck: false,
             consumer: consumer);
 
-        return (consumerTag, messageConsumer);
+        return consumerTag;
     }
 
     /// <summary>
     /// Build delegate.
     /// </summary>
-    /// <param name="eventType"></param>
+    /// <param name="messageType"></param>
     /// <returns>Delegate.</returns>
-    protected virtual ConsumerHandler BuildConsumerHandler(Type eventType)
+    protected virtual CreateConsumerHandler BuildCreateConsumerHandler(Type messageType)
     {
-        ParameterExpression consumer = Expression.Variable(typeof(MessageConsumer), "consumer");
+        ParameterExpression service = Expression.Variable(typeof(ConsumerBaseService), "service");
         ParameterExpression channel = Expression.Parameter(typeof(IChannel), "channel");
-        ParameterExpression eventArgs = Expression.Parameter(typeof(BasicDeliverEventArgs), "eventArgs");
+        ParameterExpression type = Expression.Parameter(typeof(Type), "messageType");
+        ParameterExpression consumerOptions = Expression.Parameter(typeof(IConsumerOptions), "channel");
         MethodCallExpression method = Expression.Call(
-            consumer,
-            ConsumerMethod.MakeGenericMethod(eventType),
+            service,
+            ConsumerMethod.MakeGenericMethod(messageType),
             channel,
-            eventArgs);
+            type,
+            consumerOptions);
 
-        return Expression.Lambda<ConsumerHandler>(method, consumer, channel, eventArgs).Compile();
+        return Expression.Lambda<CreateConsumerHandler>(method, service, type, consumerOptions).Compile();
     }
 }
