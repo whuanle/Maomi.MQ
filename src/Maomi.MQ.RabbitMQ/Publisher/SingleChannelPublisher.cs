@@ -9,7 +9,6 @@
 #pragma warning disable SA1600
 
 using RabbitMQ.Client;
-using System.Threading;
 
 namespace Maomi.MQ;
 

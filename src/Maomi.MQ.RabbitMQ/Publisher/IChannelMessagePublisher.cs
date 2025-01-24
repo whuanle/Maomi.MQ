@@ -9,8 +9,8 @@ using RabbitMQ.Client;
 namespace Maomi.MQ;
 
 /// <summary>
-/// Publish messagge.<br />
-/// 消息发布者.
+/// A message publisher that has a separate IChannel channel.<br />
+/// 单独拥有一个 IChannel 通道的消息发布者.
 /// </summary>
 public interface IChannelMessagePublisher
 {

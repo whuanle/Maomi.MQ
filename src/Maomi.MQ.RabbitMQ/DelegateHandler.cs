@@ -5,18 +5,18 @@
 // </copyright>
 
 using Maomi.MQ.EventBus;
-using Maomi.MQ.Hosts;
-using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
 
 namespace Maomi.MQ;
 
+/// <inheritdoc cref="IConsumer{TMessage}.ExecuteAsync(Maomi.MQ.MessageHeader, TMessage)"/>.
 public delegate Task ConsumerExecuteAsync<TMessage>(MessageHeader messageHeader, TMessage message)
     where TMessage : class;
 
+/// <inheritdoc cref="IConsumer{TMessage}.FaildAsync(MessageHeader, Exception, int, TMessage)"/>.
 public delegate Task ConsumerFaildAsync<TMessage>(MessageHeader messageHeader, Exception ex, int retryCount, TMessage message)
     where TMessage : class;
 
+/// <inheritdoc cref="IConsumer{TMessage}.FallbackAsync(MessageHeader, TMessage, Exception?)"/>.
 public delegate Task<ConsumerState> ConsumerFallbackAsync<TMessage>(MessageHeader messageHeader, TMessage? message, Exception? ex)
     where TMessage : class;
 

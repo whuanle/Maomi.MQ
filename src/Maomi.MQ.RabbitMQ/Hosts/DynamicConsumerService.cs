@@ -49,13 +49,15 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
         _consumerTypeProvider = consumerTypeProvider;
     }
 
-    public Task ConsumerAsync<TMessage>(IConsumerOptions consumerOptions, CancellationToken stoppingToken = default)
+    /// <inheritdoc />
+    public Task<string> ConsumerAsync<TMessage>(IConsumerOptions consumerOptions)
         where TMessage : class
     {
-        return ConsumerAsync<EventBusConsumer<TMessage>, TMessage>(consumerOptions, stoppingToken);
+        return ConsumerAsync<EventBusConsumer<TMessage>, TMessage>(consumerOptions);
     }
 
-    public async Task ConsumerAsync<TConsumer, TMessage>(IConsumerOptions consumerOptions, CancellationToken stoppingToken = default)
+    /// <inheritdoc />
+    public async Task<string> ConsumerAsync<TConsumer, TMessage>(IConsumerOptions consumerOptions)
     where TMessage : class
     where TConsumer : class, IConsumer<TMessage>
     {
@@ -80,12 +82,15 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
 
         if (!isAdd)
         {
-            await consummerChannel.BasicCancelAsync(consumerTag, true, stoppingToken);
+            await consummerChannel.BasicCancelAsync(consumerTag, true);
             throw new ArgumentException($"Queue[{consumerOptions.Queue}] have been used by dynamic consumer");
         }
+
+        return consumerTag;
     }
 
-    public async Task ConsumerAsync<TMessage>(
+    /// <inheritdoc />
+    public async Task<string> ConsumerAsync<TMessage>(
         IConsumerOptions consumerOptions,
         ConsumerExecuteAsync<TMessage> execute,
         ConsumerFaildAsync<TMessage>? faild = null,
@@ -116,8 +121,11 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
             await consummerChannel.BasicCancelAsync(consumerTag, true);
             throw new ArgumentException($"Queue[{consumerOptions.Queue}] have been used by dynamic consumer");
         }
+
+        return consumerTag;
     }
 
+    /// <inheritdoc />
     public virtual async Task StopConsumerAsync(string queue)
     {
         if (_consumers.TryGetValue(queue, out var consumerTag))
@@ -125,6 +133,21 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
             await _connectionObject.DefaultChannel.BasicCancelAsync(consumerTag, true);
             _consumers.Remove(queue, out _);
         }
+
+        await Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public virtual async Task StopConsumerTagAsync(string consumerTag)
+    {
+        var kv = _consumers.FirstOrDefault(x => x.Value == consumerTag);
+
+        if (kv.Value != null)
+        {
+            _consumers.Remove(kv.Key, out _);
+        }
+
+        await _connectionObject.DefaultChannel.BasicCancelAsync(consumerTag, true);
 
         await Task.CompletedTask;
     }

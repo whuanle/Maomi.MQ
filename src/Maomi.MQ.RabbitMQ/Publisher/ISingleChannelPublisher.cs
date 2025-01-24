@@ -11,8 +11,8 @@
 namespace Maomi.MQ;
 
 /// <summary>
-/// The publisher of an exclusive channel.<br />
-/// 独占通道的发布者.
+/// A message publisher that has a separate IChannel channel.<br />
+/// 单独拥有一个 IChannel 通道的消息发布者.
 /// </summary>
 public interface ISingleChannelPublisher : IMessagePublisher, IDisposable
 {

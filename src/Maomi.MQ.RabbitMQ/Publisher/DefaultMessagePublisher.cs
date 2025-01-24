@@ -13,25 +13,25 @@ using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
+using System;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Diagnostics.Tracing;
 
 namespace Maomi.MQ;
-
-// todo：后续增加流量速率统计
 
 /// <summary>
 /// <inheritdoc />
 /// </summary>
-public class DefaultMessagePublisher : IMessagePublisher, IChannelMessagePublisher
+public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessagePublisher
 {
     protected static readonly DiagnosticListener _diagnosticListener = new DiagnosticListener(DiagnosticName.Listener.Publisher);
     protected static readonly ActivitySource _activitySource = new ActivitySource(DiagnosticName.ActivitySource.Publisher);
 
     protected readonly Meter _meter;
-    protected readonly Counter<int> _messageCount;
-    protected readonly Counter<int> _successMessageCount;
-    protected readonly Counter<int> _faildMessageCount;
+    protected readonly Counter<int> _meterPushMessageCount;
+    protected readonly Counter<int> _meterPushFaildMessageCount;
+    protected readonly Histogram<long> _meterPushMessageBytes;
 
     protected readonly IServiceProvider _serviceProvider;
     protected readonly MqOptions _mqOptions;
@@ -75,27 +75,23 @@ public class DefaultMessagePublisher : IMessagePublisher, IChannelMessagePublish
 
         var tags = new Dictionary<string, object?>()
         {
-            { "AppName", _mqOptions.AppName }
+            { nameof(MessageHeader.AppId), _mqOptions.AppName }
         };
 
         var meterFactory = serviceProvider.GetService<IMeterFactory>();
 
         _meter = meterFactory != null ? meterFactory.Create(DiagnosticName.Meter.Publisher) : SharedMeter.Publisher;
-        _messageCount = _meter.CreateCounter<int>(
+        _meterPushMessageCount = _meter.CreateCounter<int>(
             DiagnosticName.Meter.PublisherMessageCount,
             unit: "{request}",
-            description: "Number of published messages",
+            description: "The total number of messages published.",
             tags);
-        _successMessageCount = _meter.CreateCounter<int>(
-            DiagnosticName.Meter.PublisherSuccessMessageCount,
-            unit: "{request}",
-            "Number of failed messages to publish",
-            tags);
-        _faildMessageCount = _meter.CreateCounter<int>(
+        _meterPushFaildMessageCount = _meter.CreateCounter<int>(
             DiagnosticName.Meter.PublisherFaildMessageCount,
             unit: "{request}",
-            "Number of failed messages to publish",
+            "Total number of failed messages sent",
             tags);
+        _meterPushMessageBytes = _meter.CreateHistogram<long>("maomimq.consumer.message.received", "Byte", "The size of the received message", tags);
     }
 
     /// <summary>
@@ -115,9 +111,9 @@ public class DefaultMessagePublisher : IMessagePublisher, IChannelMessagePublish
         _logger = publisher._logger;
 
         _meter = publisher._meter;
-        _messageCount = publisher._messageCount;
-        _successMessageCount = publisher._successMessageCount;
-        _faildMessageCount = publisher._faildMessageCount;
+        _meterPushMessageCount = publisher._meterPushMessageCount;
+        _meterPushFaildMessageCount = publisher._meterPushFaildMessageCount;
+        _meterPushMessageBytes = publisher._meterPushMessageBytes;
     }
 
     /// <inheritdoc />
@@ -230,9 +226,10 @@ public class DefaultMessagePublisher : IMessagePublisher, IChannelMessagePublish
 
         OnStartEvent(messageHeader, exchange, reoutingKey, activity);
 
+        byte[]? body = default;
         try
         {
-            var body = _messageSerializer.Serializer(message);
+            body = _messageSerializer.Serializer(message);
             await channel.BasicPublishAsync(
                 exchange: exchange,
                 routingKey: reoutingKey,
@@ -240,8 +237,6 @@ public class DefaultMessagePublisher : IMessagePublisher, IChannelMessagePublish
                 body: body,
                 mandatory: true,
                 cancellationToken: cancellationToken);
-
-            OnStartEvent(messageHeader, exchange, reoutingKey, activity);
         }
         catch (OperationCanceledException)
         {
@@ -253,8 +248,19 @@ public class DefaultMessagePublisher : IMessagePublisher, IChannelMessagePublish
             OnExecptionEvent(messageHeader, exchange, reoutingKey, ex, activity);
             throw;
         }
+        finally
+        {
+            _meterPushMessageBytes.Record(body?.Length ?? 0);
+            OnStopEvent(messageHeader, exchange, reoutingKey, activity);
+        }
     }
+}
 
+/// <summary>
+/// <inheritdoc />
+/// </summary>
+public partial class DefaultMessagePublisher
+{
     protected virtual void InitializeMessageProperties<TMessage>(BasicProperties properties, MessageHeader messageHeader)
     {
         properties.AppId = _mqOptions.AppName;
@@ -299,8 +305,7 @@ public class DefaultMessagePublisher : IMessagePublisher, IChannelMessagePublish
         tagList.Add("Exchange", exchange);
         tagList.Add("RoutingKey", reoutingKey);
 
-        _messageCount.Add(1, tagList);
-
+        _meterPushMessageCount.Add(1, tagList);
         _diagnosticListener.Write(DiagnosticName.Event.PublisherStart, messageHeader);
     }
 
@@ -318,8 +323,6 @@ public class DefaultMessagePublisher : IMessagePublisher, IChannelMessagePublish
         tagList.Add(nameof(MessageHeader.AppId), messageHeader.AppId);
         tagList.Add("Exchange", exchange);
         tagList.Add("RoutingKey", reoutingKey);
-
-        _successMessageCount.Add(1, tagList);
 
         _diagnosticListener.Write(DiagnosticName.Event.PublisherStop, messageHeader);
     }
@@ -342,7 +345,7 @@ public class DefaultMessagePublisher : IMessagePublisher, IChannelMessagePublish
         DiagnosticsExtensions.AddException(activity, exception, tagList);
 #endif
         activity.SetStatus(ActivityStatusCode.Error);
-        _faildMessageCount.Add(1, tagList);
+        _meterPushFaildMessageCount.Add(1, tagList);
 
         _diagnosticListener.Write(DiagnosticName.Event.PublisherExecption, exception);
     }

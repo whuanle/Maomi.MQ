@@ -10,7 +10,7 @@
 
 namespace Maomi.MQ.Hosts;
 
-public class DynamicProxyConsumer<TMessage> : IConsumer<TMessage>
+public sealed class DynamicProxyConsumer<TMessage> : IConsumer<TMessage>
     where TMessage : class
 {
     private readonly ConsumerExecuteAsync<TMessage> _execute;

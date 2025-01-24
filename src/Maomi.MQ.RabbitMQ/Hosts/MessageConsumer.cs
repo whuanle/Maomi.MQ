@@ -133,9 +133,6 @@ public class MessageConsumer
         AsyncRetryPolicy customRetryPolicy = await _policyFactory.CreatePolicy(_consumerOptions.Queue, messageHeader.Id);
 
         var policyWrap = fallbackPolicy.WrapAsync(customRetryPolicy);
-        var circuitBreaker = _circuitBreakerFactory.Create(_consumerOptions.Queue, messageHeader.Id);
-
-        policyWrap = policyWrap.WrapAsync(circuitBreaker);
 
         // 执行消费和重试.
         fallbackState = await policyWrap.ExecuteAsync(async () =>
