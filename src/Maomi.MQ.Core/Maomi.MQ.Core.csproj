@@ -9,11 +9,10 @@
 		<PackageVersion>1.3.0</PackageVersion>
 		<Title>Maomi.MQ</Title>
 		<RootNamespace>Maomi.MQ</RootNamespace>
-		<Description>
-			RabbitMQ Publisher and consumer communication model framework.
-			RabbitMQ 发布者和消费者通讯模型框架。
+		<Description>RabbitMQ Publisher and consumer communication model framework.
+RabbitMQ 发布者和消费者通讯模型框架。
 		</Description>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageIcon>package.png</PackageIcon>
@@ -21,9 +20,8 @@
 		<RepositoryUrl>https://github.com/whuanle/Maomi.MQ</RepositoryUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryType>git</RepositoryType>
-		<PackageReleaseNotes>
-			RabbitMQ Publisher and consumer communication model framework.
-			RabbitMQ 发布者和消费者通讯模型框架。
+		<PackageReleaseNotes>RabbitMQ Publisher and consumer communication model framework.
+RabbitMQ 发布者和消费者通讯模型框架。
 		</PackageReleaseNotes>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>

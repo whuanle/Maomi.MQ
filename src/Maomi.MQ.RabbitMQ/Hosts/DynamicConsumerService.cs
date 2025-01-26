@@ -50,14 +50,14 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
     }
 
     /// <inheritdoc />
-    public Task<string> ConsumerAsync<TMessage>(IConsumerOptions consumerOptions)
+    public virtual Task<string> ConsumerAsync<TMessage>(IConsumerOptions consumerOptions)
         where TMessage : class
     {
         return ConsumerAsync<EventBusConsumer<TMessage>, TMessage>(consumerOptions);
     }
 
     /// <inheritdoc />
-    public async Task<string> ConsumerAsync<TConsumer, TMessage>(IConsumerOptions consumerOptions)
+    public virtual async Task<string> ConsumerAsync<TConsumer, TMessage>(IConsumerOptions consumerOptions)
     where TMessage : class
     where TConsumer : class, IConsumer<TMessage>
     {
@@ -90,7 +90,7 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
     }
 
     /// <inheritdoc />
-    public async Task<string> ConsumerAsync<TMessage>(
+    public virtual async Task<string> ConsumerAsync<TMessage>(
         IConsumerOptions consumerOptions,
         ConsumerExecuteAsync<TMessage> execute,
         ConsumerFaildAsync<TMessage>? faild = null,

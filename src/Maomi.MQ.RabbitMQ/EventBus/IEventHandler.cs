@@ -12,6 +12,7 @@ namespace Maomi.MQ.EventBus;
 /// </summary>
 /// <typeparam name="TMessage">Message body.</typeparam>
 public interface IEventHandler<TMessage>
+    where TMessage : class
 {
     /// <summary>
     /// Forward execution event.<br />

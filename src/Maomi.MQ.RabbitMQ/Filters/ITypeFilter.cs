@@ -6,7 +6,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Maomi.MQ;
+namespace Maomi.MQ.Filters;
 
 /// <summary>
 /// Type filter.<br />

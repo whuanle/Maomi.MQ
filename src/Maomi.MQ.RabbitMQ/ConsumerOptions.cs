@@ -55,7 +55,7 @@ public class ConsumerOptions : IConsumerOptions
     /// <inheritdoc />
     public IConsumerOptions Clone()
     {
-        var newOptions = new ConsumerOptions(string.Empty);
+        var newOptions = new ConsumerOptions(this.Queue);
         newOptions.CopyFrom(this);
         return newOptions;
     }

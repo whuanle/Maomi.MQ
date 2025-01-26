@@ -47,14 +47,6 @@ public static class DiagnosticName
         public const string PublisherFaildMessageCount = "maomimq.publisher.message.faild.count";
     }
 
-    public static class Tag
-    {
-        public const string Status = nameof(Status);
-        public const string ACK = "ack";
-        public const string NACK = "nack";
-        public const string Requeue = nameof(Requeue);
-    }
-
     public static class Event
     {
         public const string PublisherStart = ActivitySource.Publisher + ".Start";
@@ -68,13 +60,5 @@ public static class DiagnosticName
         public const string FallbackStart = "Maomi.MQ.Fallback" + ".Start";
         public const string FallbackStop = "Maomi.MQ.Fallback" + ".Stop";
         public const string FallbackExecption = "Maomi.MQ.Fallback" + ".Execption";
-    }
-
-    public static class HandlerMediator
-    {
-        public const string Eventbus = "eventbus";
-        public const string Execute = "eventbus.execute";
-        public const string ExecuteExcetion = "eventbus.exception";
-        public const string Cancel = "eventbus.cancel";
     }
 }

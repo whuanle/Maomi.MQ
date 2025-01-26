@@ -8,7 +8,6 @@ using Maomi.MQ.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
-using System.Diagnostics.Metrics;
 
 namespace Maomi.MQ.EventBus;
 

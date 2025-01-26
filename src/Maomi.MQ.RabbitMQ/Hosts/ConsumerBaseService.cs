@@ -31,7 +31,7 @@ public abstract class ConsumerBaseService : BackgroundService
     /// Consumer method.
     /// </summary>
     protected static readonly MethodInfo ConsumerMethod = typeof(ConsumerBaseService)
-        .GetMethod(nameof(ConsumerBaseService.CreateMessageConsumer), BindingFlags.Instance | BindingFlags.Public)!;
+        .GetMethod(nameof(ConsumerBaseService.CreateMessageConsumer), BindingFlags.Instance | BindingFlags.NonPublic)!;
 
     protected readonly ServiceFactory _serviceFactory;
     protected readonly IServiceProvider _serviceProvider;
@@ -103,7 +103,7 @@ public abstract class ConsumerBaseService : BackgroundService
         {
             ArgumentNullException.ThrowIfNull(consumerOptions.ExchangeType, nameof(consumerOptions.ExchangeType));
             await channel.ExchangeDeclareAsync(consumerOptions.BindExchange, consumerOptions.ExchangeType);
-            await channel.QueueBindAsync(exchange: consumerOptions.BindExchange, queue: consumerOptions.Queue, routingKey: consumerOptions.RoutingKey ?? consumerOptions.Queue);
+            await channel.QueueBindAsync(queue: consumerOptions.Queue, exchange: consumerOptions.BindExchange,  routingKey: consumerOptions.RoutingKey ?? consumerOptions.Queue);
         }
     }
 
@@ -150,7 +150,9 @@ public abstract class ConsumerBaseService : BackgroundService
 
         consummerChannel.BasicReturnAsync += async (sender, args) =>
         {
-            var breakdown = _serviceProvider.GetRequiredService<IBreakdown>();
+            using var scope = _serviceProvider.CreateScope();
+            var serviceProvider = scope.ServiceProvider;
+            var breakdown = serviceProvider.GetRequiredService<IBreakdown>();
             await breakdown.BasicReturn(sender, args);
         };
 
@@ -170,9 +172,9 @@ public abstract class ConsumerBaseService : BackgroundService
     protected virtual CreateConsumerHandler BuildCreateConsumerHandler(Type messageType)
     {
         ParameterExpression service = Expression.Variable(typeof(ConsumerBaseService), "service");
-        ParameterExpression channel = Expression.Parameter(typeof(IChannel), "channel");
+        ParameterExpression channel = Expression.Parameter(typeof(IChannel), "consummerChannel");
         ParameterExpression type = Expression.Parameter(typeof(Type), "messageType");
-        ParameterExpression consumerOptions = Expression.Parameter(typeof(IConsumerOptions), "channel");
+        ParameterExpression consumerOptions = Expression.Parameter(typeof(IConsumerOptions), "consumerOptions");
         MethodCallExpression method = Expression.Call(
             service,
             ConsumerMethod.MakeGenericMethod(messageType),
@@ -180,6 +182,6 @@ public abstract class ConsumerBaseService : BackgroundService
             type,
             consumerOptions);
 
-        return Expression.Lambda<CreateConsumerHandler>(method, service, type, consumerOptions).Compile();
+        return Expression.Lambda<CreateConsumerHandler>(method, service, channel, type, consumerOptions).Compile();
     }
 }

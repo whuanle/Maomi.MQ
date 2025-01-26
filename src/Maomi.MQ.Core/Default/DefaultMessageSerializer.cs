@@ -30,14 +30,12 @@ public class DefaultMessageSerializer : IMessageSerializer
     /// <inheritdoc />
     public TObject? Deserialize<TObject>(ReadOnlySpan<byte> bytes)
     {
-        // todo: 对于基元类型是否需要特殊处理
         return System.Text.Json.JsonSerializer.Deserialize<TObject>(bytes, JsonSerializerOptions);
     }
 
     /// <inheritdoc />
     public byte[] Serializer<TObject>(TObject obj)
     {
-        // todo: 对于基元类型是否需要特殊处理
         return System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(obj);
     }
 }

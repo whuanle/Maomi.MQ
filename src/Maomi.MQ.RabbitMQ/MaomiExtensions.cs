@@ -6,6 +6,7 @@
 
 using Maomi.MQ.Default;
 using Maomi.MQ.EventBus;
+using Maomi.MQ.Filters;
 using Maomi.MQ.Hosts;
 using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
@@ -77,6 +78,7 @@ public static partial class MaomiExtensions
 
         services.AddMaomiMQCore();
         services.AddScoped<IBreakdown, DefaultBreakdown>();
+        services.AddSingleton<IRoutingProvider, RoutingProvider>();
         services.AddSingleton<IIdFactory>(new DefaultIdFactory((ushort)optionsBuilder.WorkId));
         services.AddSingleton<ServiceFactory>();
         services.AddSingleton<IDynamicConsumer, DynamicConsumerService>();

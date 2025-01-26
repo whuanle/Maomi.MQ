@@ -10,7 +10,7 @@ namespace Maomi.MQ.EventBus;
 /// Event factory.
 /// </summary>
 /// <typeparam name="TMessage">Event model.</typeparam>
-internal class EventHandlerFactory<TMessage> : IEventHandlerFactory<TMessage>
+public class EventHandlerFactory<TMessage> : IEventHandlerFactory<TMessage>
         where TMessage : class
 {
     /// <summary>

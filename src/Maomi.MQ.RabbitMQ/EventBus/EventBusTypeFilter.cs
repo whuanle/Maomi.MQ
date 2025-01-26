@@ -4,8 +4,10 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
+using Maomi.MQ.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Maomi.MQ.EventBus;
@@ -43,9 +45,7 @@ public class EventBusTypeFilter : ITypeFilter
             }
 
             // Singleton.
-            services.Add(new ServiceDescriptor(
-                serviceType: typeof(IEventHandlerFactory<>).MakeGenericType(eventType),
-                instance: () => { return (Activator.CreateInstance(typeof(EventHandlerFactory<>).MakeGenericType(eventType), item.Value.Handlers) as IEventHandlerFactory)!; }));
+            AddIEventHandlerFactory(services, eventType, item.Value.Handlers);
 
             services.Add(new ServiceDescriptor(
                 serviceType: typeof(IEventMiddleware<>).MakeGenericType(eventType),
@@ -180,6 +180,31 @@ public class EventBusTypeFilter : ITypeFilter
                 throw new ArgumentException($"The Order values of {eventInfo.Handlers[eventOrder.Order].Name} and {type.Name} are repeated, with Order = {eventOrder.Order}.");
             }
         }
+    }
+
+    private static readonly MethodInfo AddIEventHandlerFactoryMethod = typeof(EventBusTypeFilter).GetMethod("AddSingletonIEventHandlerFactory", BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+    private void AddSingletonIEventHandlerFactory<TMessage>(IServiceCollection services, SortedDictionary<int, Type> handlers)
+        where TMessage : class
+    {
+        services.AddSingleton<IEventHandlerFactory<TMessage>>(s =>
+        {
+            return new EventHandlerFactory<TMessage>(handlers);
+        });
+    }
+
+    private void AddIEventHandlerFactory(IServiceCollection services, Type messageType, SortedDictionary<int, Type> handlers)
+    {
+        var instanceParameter = Expression.Constant(this);
+        var servicesParameter = Expression.Constant(services);
+        var handlersParameter = Expression.Constant(handlers);
+
+        var genericMethodInfo = AddIEventHandlerFactoryMethod.MakeGenericMethod(messageType);
+
+        var methodCallExpression = Expression.Call(instanceParameter, genericMethodInfo, servicesParameter, handlersParameter);
+        var lambda = Expression.Lambda<Action>(methodCallExpression);
+        var action = lambda.Compile();
+        action();
     }
 
     /// <summary>

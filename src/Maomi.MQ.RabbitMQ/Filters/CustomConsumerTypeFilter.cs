@@ -7,7 +7,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
-namespace Maomi.MQ;
+namespace Maomi.MQ.Filters;
 
 /// <summary>
 /// Dynamic consumer type filter.<br />

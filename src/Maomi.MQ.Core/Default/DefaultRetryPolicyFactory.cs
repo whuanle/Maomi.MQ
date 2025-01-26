@@ -4,6 +4,10 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
+#pragma warning disable CS1591
+#pragma warning disable SA1401
+#pragma warning disable SA1600
+
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
@@ -16,10 +20,10 @@ namespace Maomi.MQ.Default;
 /// </summary>
 public class DefaultRetryPolicyFactory : IRetryPolicyFactory
 {
-    private const int RetryCount = 5;
-    private const int RetryBaseDelaySeconds = 2;
+    protected readonly int RetryCount = 3;
+    protected readonly int RetryBaseDelaySeconds = 2;
 
-    private readonly ILogger<DefaultRetryPolicyFactory> _logger;
+    protected readonly ILogger<DefaultRetryPolicyFactory> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DefaultRetryPolicyFactory"/> class.
@@ -28,6 +32,9 @@ public class DefaultRetryPolicyFactory : IRetryPolicyFactory
     public DefaultRetryPolicyFactory(ILogger<DefaultRetryPolicyFactory> logger)
     {
         _logger = logger;
+
+        RetryCount = 3;
+        RetryBaseDelaySeconds = 2;
     }
 
     /// <inheritdoc/>

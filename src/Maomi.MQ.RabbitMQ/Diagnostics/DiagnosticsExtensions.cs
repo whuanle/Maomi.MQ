@@ -7,10 +7,7 @@
 #pragma warning disable SA1600 // Elements should be documented
 #pragma warning disable CS1591
 
-using System.Diagnostics;
-using System.Diagnostics.Metrics;
-
-namespace Maomi.MQ.Diagnostics;
+namespace System.Diagnostics;
 
 public static class DiagnosticsExtensions
 {
