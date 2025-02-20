@@ -43,6 +43,9 @@ public static class TraceProviderBuilderExtensions
         builder.AddInstrumentation(() => new Instrumentation.MaomiMQ.MaomiMQInstrumentation(options));
 
         builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.MaomiMQ);
+        builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.EventBus);
+        builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.Publisher);
+        builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.Consumer);
 
         foreach (var item in options.Sources)
         {

@@ -75,9 +75,9 @@ public class MessageConsumer
         var meterFactory = _serviceProvider.GetService<IMeterFactory>();
         _meter = meterFactory != null ? meterFactory.Create(DiagnosticName.Meter.Consumer) : SharedMeter.Consumer;
 
-        _pullMessageCount = _meter.CreateCounter<int>("maomimq.consumer.message.pull.count", "{request}", "The number of messages pushed or pulled by the server", _tags);
-        _messageFaildCount = _meter.CreateCounter<int>("maomimq.consumer.message.faild.count", "{request}", "The total number of retries for processing messages", _tags);
-        _messageSize = _meter.CreateHistogram<long>("maomimq.consumer.message.received", "Byte", "The size of the received message", _tags);
+        _pullMessageCount = _meter.CreateCounter<int>("maomimq_consumer_message_pull_count", "{request}", "The number of messages pushed or pulled by the server", _tags);
+        _messageFaildCount = _meter.CreateCounter<int>("maomimq_consumer_message_faild_count", "{request}", "The total number of retries for processing messages", _tags);
+        _messageSize = _meter.CreateHistogram<long>("maomimq_consumer_message_received", "Byte", "The size of the received message", _tags);
     }
 
     public virtual async Task ConsumerAsync<TMessage>(IChannel channel, BasicDeliverEventArgs eventArgs)
@@ -185,7 +185,6 @@ public class MessageConsumer
 
         try
         {
-            executekActivity?.Start();
             await consumer.ExecuteAsync(messageHeader, eventBody);
             executekActivity?.Stop();
         }
@@ -201,7 +200,6 @@ public class MessageConsumer
             // 每次失败时执行.
             try
             {
-                retrykActivity?.Start();
                 await consumer.FaildAsync(messageHeader, ex, retryCount, eventBody);
                 retrykActivity?.Stop();
             }
@@ -284,9 +282,8 @@ public class MessageConsumer
         activity.AddTag("RoutingKey", eventArgs.RoutingKey);
         activity.AddTag("Queue", queue);
 
-        activity.Start();
-
-        _pullMessageCount.Add(1);
+        _pullMessageCount.Add(1, _tags);
+        _messageFaildCount.Add(0, _tags);
         _messageSize.Record(eventArgs.Body.Length);
 
         _diagnosticListener.Write(DiagnosticName.Event.ConsumerStart, messageHeader);
@@ -323,8 +320,6 @@ public class MessageConsumer
         {
             return;
         }
-
-        activity.Start();
     }
 
     protected virtual void OnFallbackEndEvent(ref MessageHeader messageHeader, ConsumerState fallbackState, Activity? activity)

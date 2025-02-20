@@ -1,4 +1,6 @@
 ﻿using Maomi.MQ;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 public class MyPublishAsync : BackgroundService
 {
@@ -23,36 +25,46 @@ public class MyPublishAsync : BackgroundService
         var messagePublisher = _serviceProvider.CreateScope().ServiceProvider.GetRequiredService<IMessagePublisher>();
         var func = async (int index) =>
         {
-            await messagePublisher.PublishAsync(string.Empty, "opentelemetry_console", message: new TestEvent
+            await messagePublisher.PublishAsync("o1", "opentelemetry_console", message: new TestEvent
             {
                 Id = index,
                 Message = _message,
                 Data = _data
             });
-            await messagePublisher.PublishAsync(string.Empty, "opentelemetry_console2", message: new TestEvent
+            await messagePublisher.PublishAsync("o1", "opentelemetry_console2", message: new TestEvent
             {
                 Id = index,
                 Message = _message,
                 Data = _data
             });
-            await messagePublisher.PublishAsync(string.Empty, "opentelemetry_console3", message: new TestEvent
+            await messagePublisher.PublishAsync("o1", "opentelemetry_console3", message: new TestEvent
             {
                 Id = index,
                 Message = _message,
                 Data = _data
             });
+
+            //await messagePublisher.PublishAsync("o1", "opentelemetry_console4", message: new TestEvent
+            //{
+            //    Id = index,
+            //    Message = _message,
+            //    Data = _data
+            //});
         };
 
         while (true)
-        {
-            for (var i = 0; i < 100; i++)
-            {
-                var count = Interlocked.Increment(ref _count);
+        {     
+            var count = Interlocked.Increment(ref _count);
+            await func.Invoke(count);
 
-                _ = func.Invoke(count);
-            }
+            //for (var i = 0; i < 100; i++)
+            //{
+            //    var count = Interlocked.Increment(ref _count);
 
-            await Task.Delay(500);
+            //    _ = func.Invoke(count);
+            //}
+
+            //await Task.Delay(500);
         }
     }
 }

@@ -89,7 +89,7 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
             unit: "{request}",
             "Total number of failed messages sent",
             tags);
-        _meterPushMessageBytes = _meter.CreateHistogram<long>("maomimq.consumer.message.received", "Byte", "The size of the received message", tags);
+        _meterPushMessageBytes = _meter.CreateHistogram<long>(DiagnosticName.Meter.PublisherMessageSent, "Byte", "The size of the received message", tags);
     }
 
     /// <summary>
@@ -295,8 +295,6 @@ public partial class DefaultMessagePublisher
         activity.AddTag("UserId", messageHeader.UserId);
         activity.AddTag("Exchange", exchange);
         activity.AddTag("RoutingKey", reoutingKey);
-
-        activity.Start();
 
         TagList tagList = default;
         tagList.Add(nameof(MessageHeader.AppId), messageHeader.AppId);

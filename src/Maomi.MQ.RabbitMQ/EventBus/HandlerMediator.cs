@@ -63,7 +63,6 @@ public class HandlerMediator<TMessage> : IHandlerMediator<TMessage>
             };
 
             using Activity? activity = _activitySource.StartActivity(name: DiagnosticName.ActivitySource.EventBusExecute, kind: ActivityKind.Internal, tags: executeTags);
-            activity?.Start();
 
             try
             {

@@ -2,11 +2,11 @@
   "profiles": {
     "OpenTelemetryConsole": {
       "commandName": "Project",
-      "launchBrowser": true,
+      "launchBrowser": false,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "http://0.0.0.0:5257"
+      "applicationUrl": "https://localhost:55480;http://localhost:55481"
     }
   }
 }

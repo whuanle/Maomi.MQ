@@ -40,7 +40,7 @@ public class Program
                       options.RecordException = true;
                   })
                   .AddAspNetCoreInstrumentation()
-                  .AddOtlpExporter("trace", options =>
+                  .AddOtlpExporter(options =>
                   {
                       options.Endpoint = new Uri(Environment.GetEnvironmentVariable("OTLPEndpoint")! + "/v1/traces");
                       options.Protocol = OtlpExportProtocol.HttpProtobuf;
@@ -50,7 +50,7 @@ public class Program
               {
                   metrices.AddAspNetCoreInstrumentation()
                   .AddMaomiMQInstrumentation()
-                  .AddOtlpExporter("metrics", options =>
+                  .AddOtlpExporter( options =>
                   {
                       options.Endpoint = new Uri(Environment.GetEnvironmentVariable("OTLPEndpoint")! + "/v1/metrics");
                       options.Protocol = OtlpExportProtocol.HttpProtobuf;
@@ -63,8 +63,6 @@ public class Program
         var app = builder.Build();
 
         app.UseAuthorization();
-
-        app.MapPrometheusScrapingEndpoint();
 
         app.MapControllers();
 

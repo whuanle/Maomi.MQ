@@ -42,9 +42,9 @@ public static class DiagnosticName
         public const string Publisher = "Maomi.MQ.Publisher";
         public const string Consumer = "Maomi.MQ.Consumer";
 
-        public const string PublisherMessageCount = "maomimq.publisher.message.count";
-        public const string PublisherSuccessMessageCount = "maomimq.publisher.message.success.count";
-        public const string PublisherFaildMessageCount = "maomimq.publisher.message.faild.count";
+        public const string PublisherMessageCount = "maomimq_publisher_message_count";
+        public const string PublisherMessageSent = "maomimq_publisher_message_sent";
+        public const string PublisherFaildMessageCount = "maomimq_publisher_message_faild_count";
     }
 
     public static class Event
