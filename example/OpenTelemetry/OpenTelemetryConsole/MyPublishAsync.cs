@@ -1,6 +1,7 @@
 ﻿using Maomi.MQ;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
 
 public class MyPublishAsync : BackgroundService
 {
@@ -23,48 +24,42 @@ public class MyPublishAsync : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var messagePublisher = _serviceProvider.CreateScope().ServiceProvider.GetRequiredService<IMessagePublisher>();
-        var func = async (int index) =>
-        {
-            await messagePublisher.PublishAsync("o1", "opentelemetry_console", message: new TestEvent
-            {
-                Id = index,
-                Message = _message,
-                Data = _data
-            });
-            await messagePublisher.PublishAsync("o1", "opentelemetry_console2", message: new TestEvent
-            {
-                Id = index,
-                Message = _message,
-                Data = _data
-            });
-            await messagePublisher.PublishAsync("o1", "opentelemetry_console3", message: new TestEvent
-            {
-                Id = index,
-                Message = _message,
-                Data = _data
-            });
-
-            //await messagePublisher.PublishAsync("o1", "opentelemetry_console4", message: new TestEvent
-            //{
-            //    Id = index,
-            //    Message = _message,
-            //    Data = _data
-            //});
-        };
 
         while (true)
-        {     
-            var count = Interlocked.Increment(ref _count);
-            await func.Invoke(count);
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                var index = Interlocked.Increment(ref _count);
 
-            //for (var i = 0; i < 100; i++)
-            //{
-            //    var count = Interlocked.Increment(ref _count);
+                await messagePublisher.PublishAsync("o1", "opentelemetry_console", message: new TestEvent
+                {
+                    Id = index,
+                    Message = _message,
+                    Data = _data
+                });
+                await messagePublisher.PublishAsync("o1", "opentelemetry_console2", message: new TestEvent
+                {
+                    Id = index,
+                    Message = _message,
+                    Data = _data
+                });
+                await messagePublisher.PublishAsync("o1", "opentelemetry_console3", message: new TestEvent
+                {
+                    Id = index,
+                    Message = _message,
+                    Data = _data
+                });
 
-            //    _ = func.Invoke(count);
-            //}
+                //await messagePublisher.PublishAsync("o1", "opentelemetry_console4", message: new TestEvent
+                //{
+                //    Id = index,
+                //    Message = _message,
+                //    Data = _data
+                //});
+            }
 
-            //await Task.Delay(500);
+            Console.WriteLine($"Sent {_count}");
+            await Task.Delay(1000);
         }
     }
 }
