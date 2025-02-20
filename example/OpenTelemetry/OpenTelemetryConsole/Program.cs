@@ -23,9 +23,10 @@ public class Program
             options.AppName = serviceName;
             options.Rabbit = (options) =>
             {
-                options.HostName = "10.1.0.6";
+                options.HostName = Environment.GetEnvironmentVariable("RABBITMQ")!;
                 options.Port = 5672;
                 options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
+                options.ConsumerDispatchConcurrency = 1000;
             };
         }, [typeof(Program).Assembly]);
 
@@ -39,9 +40,9 @@ public class Program
                       options.RecordException = true;
                   })
                   .AddAspNetCoreInstrumentation()
-                  .AddOtlpExporter("trace", options =>
+                  .AddOtlpExporter(options =>
                   {
-                      options.Endpoint = new Uri("http://10.1.0.6:32774/v1/traces");
+                      options.Endpoint = new Uri(Environment.GetEnvironmentVariable("OTLPEndpoint")! + "/v1/traces");
                       options.Protocol = OtlpExportProtocol.HttpProtobuf;
                   });
               })
@@ -49,12 +50,11 @@ public class Program
               {
                   metrices.AddAspNetCoreInstrumentation()
                   .AddMaomiMQInstrumentation()
-                  .AddOtlpExporter("metrics", options =>
+                  .AddOtlpExporter( options =>
                   {
-                      options.Endpoint = new Uri("http://10.1.0.6:32774/metrics");
+                      options.Endpoint = new Uri(Environment.GetEnvironmentVariable("OTLPEndpoint")! + "/v1/metrics");
                       options.Protocol = OtlpExportProtocol.HttpProtobuf;
-                  })
-                  .AddPrometheusExporter();
+                  });
               });
 
         builder.Services.AddHostedService<MyPublishAsync>();
@@ -63,8 +63,6 @@ public class Program
         var app = builder.Build();
 
         app.UseAuthorization();
-
-        app.MapPrometheusScrapingEndpoint();
 
         app.MapControllers();
 

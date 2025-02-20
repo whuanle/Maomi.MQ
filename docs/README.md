@@ -16,7 +16,7 @@
 
 ## 导读
 
-Maomi.MQ 是一个消息通讯模型项目，目前只支持了 RabbitMQ。
+Maomi.MQ 是一个简化了消息队列使用方式的通讯框架，目前支持了 RabbitMQ。
 
 Maomi.MQ.RabbitMQ 是一个用于专为 RabbitMQ 设计的发布者和消费者通讯模型，大大简化了发布和消息的代码，并提供一系列简便和实用的功能，开发者可以通过框架提供的消费模型实现高性能消费、事件编排，框架还支持发布者确认机制、自定义重试机制、补偿机制、死信队列、延迟队列、连接通道复用等一系列的便利功能。开发者可以把更多的精力放到业务逻辑中，通过 Maomi.MQ.RabbitMQ 框架简化跨进程消息通讯模式，使得跨进程消息传递更加简单和可靠。
 
@@ -42,13 +42,4 @@ Maomi.MQ.RabbitMQ 是一个用于专为 RabbitMQ 设计的发布者和消费者�
 
 
 
-
-
-### 新版本改动
-
-**1.3.0**
-
-* 去掉了连接池。
-* 去掉了 IMessagePublisher 接口的 ConnectionPool 属性。
-* 增加了动态消费者
-* 增加动态订阅功能
+版本更新日志：[https://github.com/whuanle/Maomi.MQ/blob/main/devlog.md](https://github.com/whuanle/Maomi.MQ/blob/main/devlog.md)

@@ -4,6 +4,10 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
+#pragma warning disable CS1591
+#pragma warning disable SA1401
+#pragma warning disable SA1600
+
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
@@ -16,7 +20,10 @@ namespace Maomi.MQ.Default;
 /// </summary>
 public class DefaultRetryPolicyFactory : IRetryPolicyFactory
 {
-    private readonly ILogger<DefaultRetryPolicyFactory> _logger;
+    protected readonly int RetryCount = 3;
+    protected readonly int RetryBaseDelaySeconds = 2;
+
+    protected readonly ILogger<DefaultRetryPolicyFactory> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DefaultRetryPolicyFactory"/> class.
@@ -25,18 +32,21 @@ public class DefaultRetryPolicyFactory : IRetryPolicyFactory
     public DefaultRetryPolicyFactory(ILogger<DefaultRetryPolicyFactory> logger)
     {
         _logger = logger;
+
+        RetryCount = 3;
+        RetryBaseDelaySeconds = 2;
     }
 
     /// <inheritdoc/>
-    public virtual Task<AsyncRetryPolicy> CreatePolicy(string queue, long id)
+    public virtual Task<AsyncRetryPolicy> CreatePolicy(string queue, string id)
     {
         // Create a retry policy.
         // 创建重试策略.
         var retryPolicy = Policy
             .Handle<Exception>()
             .WaitAndRetryAsync(
-                retryCount: 5,
-                sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+                retryCount: RetryCount,
+                sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(RetryBaseDelaySeconds, retryAttempt)),
                 onRetry: async (exception, timeSpan, retryCount, context) =>
                 {
                     _logger.LogDebug("Retry execution event,queue [{Queue}],retry count [{RetryCount}],timespan [{TimeSpan}]", queue, retryCount, timeSpan);

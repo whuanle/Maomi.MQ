@@ -19,16 +19,16 @@ public interface IConsumerOptions
     string Queue { get; }
 
     /// <summary>
+    /// Bind the death message exchange.<br />
+    /// 绑定死信交换器.
+    /// </summary>
+    string? DeadExchange { get; }
+
+    /// <summary>
     /// Bind the death message queue.<br />
     /// 绑定死信队列.
     /// </summary>
-    string? DeadQueue { get; }
-
-    /// <summary>
-    /// Whether to put back to the queue when an exception occurs, such as a serialization error, rather than an exception occurred during consumption.
-    /// 出现异常时是否放回队列，例如序列化错误等原因导致的，而不是消费时发生异常导致的.
-    /// </summary>
-    bool ExecptionRequeue { get; }
+    string? DeadRoutingKey { get; }
 
     /// <summary>
     /// Queue message expiration time, in millimeters.<br />
@@ -54,8 +54,32 @@ public interface IConsumerOptions
     AutoQueueDeclare AutoQueueDeclare { get; }
 
     /// <summary>
-    /// Bind the exchange of type Fanout.<br />
-    /// 绑定类型为 Fanout 的交换器.
+    /// Bind the exchange.<br />
+    /// 绑定交换器.
     /// </summary>
     string? BindExchange { get; }
+
+    /// <summary>
+    /// Exchange type.<br />
+    /// 交换器类型.
+    /// </summary>
+    string? ExchangeType { get; }
+
+    /// <summary>
+    /// Bind the routing key.<br />
+    /// 绑定路由键.
+    /// </summary>
+    string? RoutingKey { get; }
+
+    /// <summary>
+    /// Creates a new object that is a copy of the current instance.
+    /// </summary>
+    /// <returns>A new object that is a copy of this instance.</returns>
+    IConsumerOptions Clone();
+
+    /// <summary>
+    /// Copy from another object.
+    /// </summary>
+    /// <param name="options"></param>
+    void CopyFrom(IConsumerOptions options);
 }

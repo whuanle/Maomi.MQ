@@ -7,11 +7,12 @@ namespace ConsumerMiddleware.Events;
 [EventTopic("web2")]
 public class TestEvent
 {
+    public int Id { get; set; }
     public string Message { get; set; }
 
     public override string ToString()
     {
-        return Message;
+        return Id.ToString();
     }
 }
 
@@ -25,23 +26,23 @@ public class TestEventMiddleware : IEventMiddleware<TestEvent>
         _bloggingContext = bloggingContext;
     }
 
-    public async Task ExecuteAsync(EventBody<TestEvent> @event, EventHandlerDelegate<TestEvent> next)
+    public async Task ExecuteAsync(MessageHeader messageHeader, TestEvent message, EventHandlerDelegate<TestEvent> next)
     {
         using (var transaction = _bloggingContext.Database.BeginTransaction())
         {
-            await next(@event, CancellationToken.None);
+            await next(messageHeader, message, CancellationToken.None);
             await transaction.CommitAsync();
         }
     }
 
-    public Task FaildAsync(Exception ex, int retryCount, EventBody<TestEvent>? message)
+    public Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, TestEvent? message)
     {
         return Task.CompletedTask;
     }
 
-    public Task<bool> FallbackAsync(EventBody<TestEvent>? message)
+    public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, TestEvent? message, Exception? ex)
     {
-        return Task.FromResult(true);
+        return Task.FromResult(ConsumerState.Ack);
     }
 }
 
@@ -55,12 +56,12 @@ public class My1EventEventHandler : IEventHandler<TestEvent>
         _bloggingContext = bloggingContext;
     }
 
-    public async Task CancelAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
+    public async Task CancelAsync(TestEvent message, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"{@event.Id} 被补偿,[1]");
+        Console.WriteLine($"{message.Message} 被补偿,[1]");
     }
 
-    public async Task ExecuteAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(TestEvent message, CancellationToken cancellationToken)
     {
         await _bloggingContext.Posts.AddAsync(new Post
         {
@@ -80,12 +81,12 @@ public class My2EventEventHandler : IEventHandler<TestEvent>
     {
         _bloggingContext = bloggingContext;
     }
-    public async Task CancelAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
+    public async Task CancelAsync(TestEvent message, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"{@event.Id} 被补偿,[2]");
+        Console.WriteLine($"{message.Id} 被补偿,[2]");
     }
 
-    public async Task ExecuteAsync(EventBody<TestEvent> @event, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(TestEvent message, CancellationToken cancellationToken)
     {
         await _bloggingContext.Posts.AddAsync(new Post
         {

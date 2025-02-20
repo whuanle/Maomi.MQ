@@ -43,6 +43,9 @@ public static class TraceProviderBuilderExtensions
         builder.AddInstrumentation(() => new Instrumentation.MaomiMQ.MaomiMQInstrumentation(options));
 
         builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.MaomiMQ);
+        builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.EventBus);
+        builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.Publisher);
+        builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.Consumer);
 
         foreach (var item in options.Sources)
         {
@@ -71,7 +74,7 @@ public static class TraceProviderBuilderExtensions
     internal static MeterProviderBuilder ConfigureMeters(this MeterProviderBuilder builder)
     {
         return builder
-            .AddMeter("MaomiMQ.Publisher")
-            .AddMeter("MaomiMQ.Consumer");
+            .AddMeter("Maomi.MQ.Publisher")
+            .AddMeter("Maomi.MQ.Consumer");
     }
 }

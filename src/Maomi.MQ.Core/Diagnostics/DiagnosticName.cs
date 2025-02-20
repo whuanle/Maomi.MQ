@@ -5,7 +5,7 @@
 // </copyright>
 
 #pragma warning disable SA1600
-#pragma warning disable CS1591 // 缺少对公共可见类型或成员的 XML 注释
+#pragma warning disable CS1591
 
 namespace Maomi.MQ.Diagnostics;
 
@@ -15,46 +15,50 @@ namespace Maomi.MQ.Diagnostics;
 public static class DiagnosticName
 {
     public const string MaomiMQ = "Maomi.MQ";
+    public const string EventBus = "Maomi.MQ.EventBus";
+    public const string Consumer = "Maomi.MQ.Consumer";
+    public const string Publisher = "Maomi.MQ.Publisher";
 
-    public static class Tag
+    public static class Listener
     {
-        public const string Status = nameof(Status);
-        public const string ACK = "ack";
-        public const string NACK = "nack";
-        public const string Requeue = nameof(Requeue);
+        public const string Publisher = "MaomiMQPublisherHandlerDiagnosticListener";
+        public const string Consumer = "MaomiMQConsumerHandlerDiagnosticListener";
     }
 
-    public static class Activity
+    public static class ActivitySource
     {
-        public const string Publisher = nameof(Publisher);
-        public const string Consumer = nameof(Consumer);
-        public const string Fallback = nameof(Fallback);
-        public const string Execute = nameof(Execute);
-        public const string Retry = nameof(Retry);
-        public const string EventBus = nameof(EventBus);
+        public const string Publisher = "Maomi.MQ.Publisher";
+        public const string Consumer = "Maomi.MQ.Consumer";
+
+        public const string Fallback = "Maomi.MQ.Fallback";
+        public const string Execute = "Maomi.MQ.Execute";
+        public const string Retry = "Maomi.MQ.Retry";
+
+        public const string EventBusExecute = "Maomi.MQ.EventBus.Execute";
+    }
+
+    public static class Meter
+    {
+        public const string Publisher = "Maomi.MQ.Publisher";
+        public const string Consumer = "Maomi.MQ.Consumer";
+
+        public const string PublisherMessageCount = "maomimq_publisher_message_count";
+        public const string PublisherMessageSent = "maomimq_publisher_message_sent";
+        public const string PublisherFaildMessageCount = "maomimq_publisher_message_faild_count";
     }
 
     public static class Event
     {
-        public const string Id = "event.id";
-        public const string Publisher = "event.publisher";
-        public const string Consumer = "event.consumer";
-        public const string CreationTime = "event.starttime";
-        public const string Queue = "event.queue";
+        public const string PublisherStart = ActivitySource.Publisher + ".Start";
+        public const string PublisherStop = ActivitySource.Publisher + ".Stop";
+        public const string PublisherExecption = ActivitySource.Publisher + ".Execption";
 
-        public const string FallbackCompleted = nameof(FallbackCompleted);
-        public const string ExecuteCompleted = nameof(ExecuteCompleted);
-        public const string RetryCompleted = nameof(RetryCompleted);
-        public const string Retry = nameof(Retry);
+        public const string ConsumerStart = ActivitySource.Consumer + ".Start";
+        public const string ConsumerStop = ActivitySource.Consumer + ".Stop";
+        public const string ConsumerExecption = ActivitySource.Consumer + ".Execption";
 
-        public const string Exception = "Exception";
-    }
-
-    public static class HandlerMediator
-    {
-        public const string Eventbus = "eventbus";
-        public const string Execute = "eventbus.execute";
-        public const string ExecuteExcetion = "eventbus.exception";
-        public const string Cancel = "eventbus.cancel";
+        public const string FallbackStart = "Maomi.MQ.Fallback" + ".Start";
+        public const string FallbackStop = "Maomi.MQ.Fallback" + ".Stop";
+        public const string FallbackExecption = "Maomi.MQ.Fallback" + ".Execption";
     }
 }

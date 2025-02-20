@@ -6,10 +6,9 @@
 		<MinVerTagPrefix>Instrumentation.MaomiMQ-</MinVerTagPrefix>
 		<Nullable>enable</Nullable>
 		<TargetFrameworks>net8.0</TargetFrameworks>
-
 		<AssemblyName>Maomi.MQ.Instrumentation</AssemblyName>
 		<IsPackable>true</IsPackable>
-		<PackageVersion>1.3.0</PackageVersion>
+		<PackageVersion>2.0.0</PackageVersion>
 		<Title>nstrumentation.MaomiMQ</Title>
 		<Description>
 			RabbitMQ Publisher and consumer communication model framework.
@@ -59,7 +58,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="OpenTelemetry.Api" Version="1.9.0" />
+		<PackageReference Include="OpenTelemetry.Api" Version="1.11.0" />
 	</ItemGroup>
 
 	<ItemGroup>

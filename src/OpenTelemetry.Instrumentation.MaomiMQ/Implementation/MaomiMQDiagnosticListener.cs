@@ -14,7 +14,7 @@ using System.Reflection;
 namespace OpenTelemetry.Instrumentation.MaomiMQ.Implementation;
 
 /// <summary>
-/// 监听 Maomi.MQ 中的 Activity，并创建对应的 EventSource.
+/// 监听 Maomi.MQ 中的 Activity，并创建对应的 EventSource，并触发 MaomiMQInstrumentationEventSource.
 /// </summary>
 internal sealed class MaomiMQDiagnosticListener : ListenerHandler
 {
@@ -50,47 +50,33 @@ internal sealed class MaomiMQDiagnosticListener : ListenerHandler
     /// <inheritdoc />
     public override void OnEventWritten(string name, object? payload)
     {
-        Activity? activity = Activity.Current;
-        Guard.ThrowIfNull(activity);
-        switch (name)
-        {
-            case DiagnosticName.Activity.Publisher + ".Start":
-            case DiagnosticName.Activity.Consumer + ".Start":
-            case DiagnosticName.Activity.Fallback + ".Start":
-            case DiagnosticName.Activity.Execute + ".Start":
-            case DiagnosticName.Activity.Retry + ".Start":
-            case DiagnosticName.Activity.EventBus + ".Start":
-                this.OnStartActivity(activity, payload);
-                break;
-            case DiagnosticName.Activity.Publisher + ".Stop":
-            case DiagnosticName.Activity.Consumer + ".Stop":
-            case DiagnosticName.Activity.Fallback + ".Stop":
-            case DiagnosticName.Activity.Execute + ".Stop":
-            case DiagnosticName.Activity.Retry + ".Stop":
-            case DiagnosticName.Activity.EventBus + ".Stop":
-                this.OnStopActivity(activity, payload);
-                break;
-            case DiagnosticName.Activity.Publisher + ".Execption":
-            case DiagnosticName.Activity.Consumer + ".Execption":
-            case DiagnosticName.Activity.Fallback + ".Execption":
-            case DiagnosticName.Activity.Execute + ".Execption":
-            case DiagnosticName.Activity.Retry + ".Execption":
-            case DiagnosticName.Activity.EventBus + ".Execption":
-                this.OnException(activity, payload);
-                break;
-        }
+        return;
+        //Activity? activity = Activity.Current;
+        //Guard.ThrowIfNull(activity);
+        //switch (name)
+        //{
+        //    case DiagnosticName.Event.PublisherStart:
+        //        this.OnStartActivity(activity, payload);
+        //        break;
+        //    case DiagnosticName.Activity.Publisher + ".Stop":
+        //        this.OnStopActivity(activity, payload);
+        //        break;
+        //    case DiagnosticName.Activity.Publisher + ".Execption":
+        //        this.OnException(activity, payload);
+        //        break;
+        //}
     }
 
     private static ActivityKind GetActivityKind(Activity activity)
     {
         return activity.OperationName switch
         {
-            DiagnosticName.Activity.Publisher => ActivityKind.Producer,
-            DiagnosticName.Activity.Consumer => ActivityKind.Consumer,
-            DiagnosticName.Activity.Fallback => ActivityKind.Consumer,
-            DiagnosticName.Activity.Execute => ActivityKind.Consumer,
-            DiagnosticName.Activity.Retry => ActivityKind.Consumer,
-            DiagnosticName.Activity.EventBus => ActivityKind.Consumer,
+            //DiagnosticName.Activity.Publisher => ActivityKind.Producer,
+            //DiagnosticName.Activity.Consumer => ActivityKind.Consumer,
+            //DiagnosticName.Activity.Fallback => ActivityKind.Consumer,
+            //DiagnosticName.Activity.Execute => ActivityKind.Consumer,
+            //DiagnosticName.Activity.Retry => ActivityKind.Consumer,
+            //DiagnosticName.Activity.EventBus => ActivityKind.Consumer,
             _ => activity.Kind,
         };
     }

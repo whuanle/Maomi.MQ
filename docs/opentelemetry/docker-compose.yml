@@ -14,6 +14,21 @@ networks:
     driver: bridge
 
 services:
+  # Valkey used by Cart service
+  valkey-cart:
+    image: ${VALKEY_IMAGE}
+    container_name: valkey-cart
+    user: valkey
+    deploy:
+      resources:
+        limits:
+          memory: 20M
+    restart: unless-stopped
+    ports:
+      - "${VALKEY_PORT}"
+    logging: *logging
+
+
   # ********************
   # Telemetry Components
   # ********************
@@ -67,17 +82,27 @@ services:
           memory: 200M
     restart: unless-stopped
     command: [ "--config=/etc/otelcol-config.yml", "--config=/etc/otelcol-config-extras.yml" ]
+    user: 0:0
     volumes:
-      - ./src/otelcollector/otelcol-config.yml:/etc/otelcol-config.yml
-      - ./src/otelcollector/otelcol-config-extras.yml:/etc/otelcol-config-extras.yml
+      - ${HOST_FILESYSTEM}:/hostfs:ro
+      - ${DOCKER_SOCK}:/var/run/docker.sock:ro
+      - ${OTEL_COLLECTOR_CONFIG}:/etc/otelcol-config.yml
+      - ${OTEL_COLLECTOR_CONFIG_EXTRAS}:/etc/otelcol-config-extras.yml
     ports:
       - "${OTEL_COLLECTOR_PORT_GRPC}"
       - "${OTEL_COLLECTOR_PORT_HTTP}"
     depends_on:
-      - jaeger
+      jaeger:
+        condition: service_started
+      opensearch:
+        condition: service_healthy
     logging: *logging
     environment:
       - ENVOY_PORT
+      - HOST_FILESYSTEM
+      - OTEL_COLLECTOR_HOST
+      - OTEL_COLLECTOR_PORT_GRPC
+      - OTEL_COLLECTOR_PORT_HTTP
 
   # Prometheus
   prometheus:
@@ -130,132 +155,10 @@ services:
         hard: 65536
     ports:
       - "9200"
+    healthcheck:
+      test: curl -s http://localhost:9200/_cluster/health | grep -E '"status":"(green|yellow)"'
+      start_period: 10s
+      interval: 5s
+      timeout: 10s
+      retries: 10
     logging: *logging
-
-  # *****
-  # Tests
-  # *****
-  # Frontend Tests
-  frontendTests:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-frontend-tests
-    container_name: frontend-tests
-    build:
-      context: ./
-      dockerfile: ./src/frontend/Dockerfile.cypress
-    profiles:
-      - tests
-    volumes:
-      - ./src/frontend/cypress/videos:/app/cypress/videos
-      - ./src/frontend/cypress/screenshots:/app/cypress/screenshots
-    environment:
-      - CYPRESS_baseUrl=http://${FRONTEND_ADDR}
-      - FRONTEND_ADDR
-      - NODE_ENV=production
-    depends_on:
-      - frontend
-
-  # Tracebased Tests
-  traceBasedTests:
-    image: ${IMAGE_NAME}:${DEMO_VERSION}-traceBasedTests
-    container_name: traceBasedTests
-    profiles:
-      - tests
-    build:
-      context: ./
-      dockerfile: ./test/tracetesting/Dockerfile
-    environment:
-      - AD_SERVICE_ADDR
-      - CART_SERVICE_ADDR
-      - CHECKOUT_SERVICE_ADDR
-      - CURRENCY_SERVICE_ADDR
-      - EMAIL_SERVICE_ADDR
-      - FRONTEND_ADDR
-      - PAYMENT_SERVICE_ADDR
-      - PRODUCT_CATALOG_SERVICE_ADDR
-      - RECOMMENDATION_SERVICE_ADDR
-      - SHIPPING_SERVICE_ADDR
-      - KAFKA_SERVICE_ADDR
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - ./test/tracetesting:/app/test/tracetesting
-      - ./pb:/app/pb
-    depends_on:
-      tracetest-server:
-        condition: service_healthy
-      # adding demo services as dependencies
-      frontend:
-        condition: service_started
-      adservice:
-        condition: service_started
-      cartservice:
-        condition: service_started
-      checkoutservice:
-        condition: service_started
-      currencyservice:
-        condition: service_started
-      emailservice:
-        condition: service_started
-      paymentservice:
-        condition: service_started
-      productcatalogservice:
-        condition: service_started
-      recommendationservice:
-        condition: service_started
-      shippingservice:
-        condition: service_started
-      quoteservice:
-        condition: service_started
-      accountingservice:
-        condition: service_started
-      frauddetectionservice:
-        condition: service_started
-      flagd:
-        condition: service_started
-
-  tracetest-server:
-    image: ${TRACETEST_IMAGE}
-    platform: linux/amd64
-    container_name: tracetest-server
-    profiles:
-      - tests
-      - odd          # Observabilty-Driven Development (ODD)
-    volumes:
-      - type: bind
-        source: ./test/tracetesting/tracetest-config.yaml
-        target: /app/tracetest.yaml
-      - type: bind
-        source: ./test/tracetesting/tracetest-provision.yaml
-        target: /app/provision.yaml
-    command: --provisioning-file /app/provision.yaml
-    ports:
-      - 11633:11633
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      tracetest-postgres:
-        condition: service_healthy
-      otelcol:
-        condition: service_started
-    healthcheck:
-      test: [ "CMD", "wget", "--spider", "localhost:11633" ]
-      interval: 1s
-      timeout: 3s
-      retries: 60
-
-  tracetest-postgres:
-    image: ${POSTGRES_IMAGE}
-    container_name: tracetest-postgres
-    profiles:
-      - tests
-      - odd          # Observabilty-Driven Development (ODD)
-    environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_USER: postgres
-    healthcheck:
-      test: pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
-      interval: 1s
-      timeout: 5s
-      retries: 60
-    ports:
-      - 5432

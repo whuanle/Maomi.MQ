@@ -1,5 +1,6 @@
 ﻿using Maomi.MQ;
 using Microsoft.AspNetCore.Mvc;
+using RabbitMQ.Client;
 using System.Text.Json;
 
 namespace QosPublisher.Controllers;
@@ -26,16 +27,19 @@ public class IndexController : ControllerBase
         List<Task> tasks = new();
         var message = string.Join(",", Enumerable.Range(0, 100));
         var data = Enumerable.Range(0, 100).ToArray();
-        for (var i = 0; i < 10; i++)
+        for (var i = 0; i < 100; i++)
         {
             var task = Task.Factory.StartNew(async () =>
             {
-                var singlePublisher = _messagePublisher.CreateSingle();
+                using var singlePublisher = _messagePublisher.CreateSingle(new CreateChannelOptions(
+            publisherConfirmationsEnabled: false,
+            publisherConfirmationTrackingEnabled: false,
+            consumerDispatchConcurrency: 1000));
 
-                for (int k = 0; k < 100000; k++)
+                for (int k = 0; k < 10000; k++)
                 {
                     var count = Interlocked.Increment(ref totalCount);
-                    await singlePublisher.PublishAsync(queue: "qos", message: new TestEvent
+                    await singlePublisher.PublishAsync(exchange: string.Empty, routingKey: "qos", message: new TestEvent
                     {
                         Id = count,
                         Message = message,

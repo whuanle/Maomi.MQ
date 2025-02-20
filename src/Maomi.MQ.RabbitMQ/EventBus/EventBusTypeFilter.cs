@@ -4,25 +4,13 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-using Maomi.MQ.Default;
-using Maomi.MQ.Hosts;
-using Maomi.MQ.Pool;
+using Maomi.MQ.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Maomi.MQ.EventBus;
-
-/// <summary>
-/// <see cref="EventTopicAttribute"/> filter.
-/// </summary>
-/// <remarks>You can modify related parameters.<br />可以修改相关参数.</remarks>
-/// <param name="eventTopicAttribute"></param>
-/// <param name="eventType"></param>
-/// <returns>Whether to register the event.<br />是否注册该事件.</returns>
-public delegate bool EventTopicInterceptor(EventTopicAttribute eventTopicAttribute, Type eventType);
 
 /// <summary>
 /// Eventbus type filter.<br />
@@ -43,7 +31,7 @@ public class EventBusTypeFilter : ITypeFilter
     }
 
     /// <inheritdoc />
-    public void Build(IServiceCollection services)
+    public IEnumerable<ConsumerType> Build(IServiceCollection services)
     {
         foreach (var item in _eventInfos)
         {
@@ -57,10 +45,7 @@ public class EventBusTypeFilter : ITypeFilter
             }
 
             // Singleton.
-            var handlerFactory = (Activator.CreateInstance(typeof(EventHandlerFactory<>).MakeGenericType(eventType), item.Value.Handlers) as IEventHandlerFactory)!;
-            services.Add(new ServiceDescriptor(
-                serviceType: typeof(IEventHandlerFactory<>).MakeGenericType(eventType),
-                instance: handlerFactory));
+            AddIEventHandlerFactory(services, eventType, item.Value.Handlers);
 
             services.Add(new ServiceDescriptor(
                 serviceType: typeof(IEventMiddleware<>).MakeGenericType(eventType),
@@ -69,10 +54,7 @@ public class EventBusTypeFilter : ITypeFilter
 
             services.AddScoped(serviceType: typeof(IHandlerMediator<>).MakeGenericType(eventType), implementationType: typeof(HandlerMediator<>).MakeGenericType(eventType));
 
-            services.AddKeyedSingleton(serviceKey: eventInfo.Queue, serviceType: typeof(IConsumerOptions), implementationInstance: eventInfo.Options);
-
             services.Add(new ServiceDescriptor(
-                serviceKey: eventInfo.Options.Queue,
                 serviceType: typeof(IConsumer<>).MakeGenericType(eventType),
                 implementationType: typeof(EventBusConsumer<>).MakeGenericType(eventType),
                 lifetime: ServiceLifetime.Scoped));
@@ -80,27 +62,18 @@ public class EventBusTypeFilter : ITypeFilter
 
         if (_eventInfos.Count == 0)
         {
-            return;
+            return Array.Empty<ConsumerType>();
         }
 
         var consumerTypes = _eventInfos.Select(x => new ConsumerType
         {
             Queue = x.Value.Options.Queue,
             Consumer = typeof(EventBusConsumer<>).MakeGenericType(x.Value.EventType),
-            Event = x.Value.EventType
+            Event = x.Value.EventType,
+            ConsumerOptions = x.Value.Options,
         }).ToList();
 
-        Func<IServiceProvider, EventBusHostService> funcFactory = (serviceProvider) =>
-        {
-            return new EventBusHostService(
-                serviceProvider,
-                serviceProvider.GetRequiredService<ServiceFactory>(),
-                serviceProvider.GetRequiredService<ConnectionPool>(),
-                serviceProvider.GetRequiredService<ILogger<ConsumerBaseHostService>>(),
-                consumerTypes);
-        };
-
-        services.TryAddEnumerable(new ServiceDescriptor(serviceType: typeof(IHostedService), factory: funcFactory, lifetime: ServiceLifetime.Singleton));
+        return consumerTypes;
     }
 
     /// <inheritdoc />
@@ -167,11 +140,13 @@ public class EventBusTypeFilter : ITypeFilter
 
         if (_eventTopicInterceptor != null)
         {
-            var isRegister = _eventTopicInterceptor.Invoke(eventTopicAttribute, type);
-            if (!isRegister)
+            var register = _eventTopicInterceptor.Invoke(eventTopicAttribute, type);
+            if (!register.IsRegister)
             {
                 return;
             }
+
+            eventTopicAttribute.CopyFrom(register.Options);
         }
 
         EventInfo eventInfo;
@@ -207,6 +182,31 @@ public class EventBusTypeFilter : ITypeFilter
         }
     }
 
+    private static readonly MethodInfo AddIEventHandlerFactoryMethod = typeof(EventBusTypeFilter).GetMethod(nameof(AddSingletonIEventHandlerFactory), BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+    private void AddSingletonIEventHandlerFactory<TMessage>(IServiceCollection services, SortedDictionary<int, Type> handlers)
+        where TMessage : class
+    {
+        services.AddSingleton<IEventHandlerFactory<TMessage>>(s =>
+        {
+            return new EventHandlerFactory<TMessage>(handlers);
+        });
+    }
+
+    private void AddIEventHandlerFactory(IServiceCollection services, Type messageType, SortedDictionary<int, Type> handlers)
+    {
+        var instanceParameter = Expression.Constant(this);
+        var servicesParameter = Expression.Constant(services);
+        var handlersParameter = Expression.Constant(handlers);
+
+        var genericMethodInfo = AddIEventHandlerFactoryMethod.MakeGenericMethod(messageType);
+
+        var methodCallExpression = Expression.Call(instanceParameter, genericMethodInfo, servicesParameter, handlersParameter);
+        var lambda = Expression.Lambda<Action>(methodCallExpression);
+        var action = lambda.Compile();
+        action();
+    }
+
     /// <summary>
     /// Event info.<br />
     /// 事件信息.
@@ -229,7 +229,7 @@ public class EventBusTypeFilter : ITypeFilter
         public Type EventType { get; internal set; } = null!;
 
         /// <summary>
-        /// <see cref="IEventMiddleware{TEvent}"/>.
+        /// <see cref="IEventMiddleware{TMessage}"/>.
         /// </summary>
         public Type Middleware { get; internal set; } = null!;
 

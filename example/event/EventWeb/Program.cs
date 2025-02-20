@@ -2,6 +2,7 @@
 using EventWeb.Events;
 using Maomi.MQ;
 using Maomi.MQ.EventBus;
+using Maomi.MQ.Filters;
 using RabbitMQ.Client;
 using System.Reflection;
 
@@ -26,7 +27,8 @@ public class Program
             options.AppName = "myapp";
             options.Rabbit = (ConnectionFactory options) =>
             {
-                options.HostName = "192.168.3.248";
+                options.HostName = Environment.GetEnvironmentVariable("RABBITMQ")!;
+                options.Port = 5672;
                 options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
             };
         }, [typeof(Program).Assembly], [new ConsumerTypeFilter(), new EventBusTypeFilter(EventTopicFilter)]);

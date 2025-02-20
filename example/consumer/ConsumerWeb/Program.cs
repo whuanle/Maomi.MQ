@@ -2,9 +2,8 @@ using ConsumerWeb.Consumer;
 using ConsumerWeb.Models;
 using Maomi.MQ;
 using Maomi.MQ.EventBus;
+using Maomi.MQ.Filters;
 using Microsoft.AspNetCore.Mvc;
-using Polly;
-using Polly.Retry;
 using RabbitMQ.Client;
 using System.Diagnostics;
 using System.Reflection;
@@ -25,15 +24,15 @@ public class Program
             options.AppName = "myapp";
             options.Rabbit = (ConnectionFactory options) =>
             {
-                options.HostName = "192.168.3.248";
+                options.HostName = Environment.GetEnvironmentVariable("RABBITMQ")!;
+                options.Port = 5672;
                 options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
             };
-        }, [typeof(Program).Assembly], [new ConsumerTypeFilter(ConsumerInterceptor), new EventBusTypeFilter(EventInterceptor)]);
+        }, [typeof(Program).Assembly], [new ConsumerTypeFilter(), new EventBusTypeFilter(EventInterceptor),]);
 
         builder.Services.AddSingleton<IRetryPolicyFactory, MyDefaultRetryPolicyFactory>();
 
         builder.Services.AddControllers();
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
@@ -54,49 +53,26 @@ public class Program
         app.Run();
     }
 
-    private static bool ConsumerInterceptor(ConsumerAttribute consumerAttribute, Type consumerType)
+    private static RegisterQueue ConsumerInterceptor(IConsumerOptions consumerOptions, Type consumerType)
     {
-        if (consumerType == typeof(DynamicConsumer))
-        {
-            consumerAttribute.Queue = consumerAttribute.Queue + "_1";
-        }
+        var newConsumerOptions = new ConsumerOptions(consumerOptions.Queue);
+        consumerOptions.CopyFrom(newConsumerOptions);
 
-        return true;
+        // 修改 newConsumerOptions 中的配置
+
+        return new RegisterQueue(true, consumerOptions);
     }
 
-    private static bool EventInterceptor(EventTopicAttribute eventTopicAttribute,Type eventType)
+    private static RegisterQueue EventInterceptor(IConsumerOptions consumerOptions, Type eventType)
     {
         if (eventType == typeof(TestEvent))
         {
-            eventTopicAttribute.Queue = eventTopicAttribute.Queue + "_1";
+            var newConsumerOptions = new ConsumerOptions(consumerOptions.Queue);
+            consumerOptions.CopyFrom(newConsumerOptions);
+            newConsumerOptions.Queue = newConsumerOptions.Queue + "_1";
+
+            return new RegisterQueue(true, newConsumerOptions);
         }
-        return true;
-    }
-}
-
-public class MyDefaultRetryPolicyFactory : IRetryPolicyFactory
-{
-    private readonly ILogger<MyDefaultRetryPolicyFactory> _logger;
-
-    public MyDefaultRetryPolicyFactory(ILogger<MyDefaultRetryPolicyFactory> logger)
-    {
-        _logger = logger;
-    }
-
-    public Task<AsyncRetryPolicy> CreatePolicy(string queue, long id)
-    {
-        // Create a retry policy.
-        // 创建重试策略.
-        var retryPolicy = Policy
-            .Handle<Exception>()
-            .WaitAndRetryAsync(
-                retryCount: 5,
-                sleepDurationProvider: retryAttempt => TimeSpan.FromMilliseconds(500),
-                onRetry: async (Exception exception, TimeSpan timeSpan, int retryCount, Context context) =>
-                {
-                    _logger.LogDebug("Retry execution event,queue [{Queue}],retry count [{RetryCount}],timespan [{TimeSpan}]", queue, retryCount, timeSpan);
-                });
-
-        return Task.FromResult(retryPolicy);
+        return new RegisterQueue(true, consumerOptions);
     }
 }

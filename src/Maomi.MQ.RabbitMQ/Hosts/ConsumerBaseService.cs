@@ -21,19 +21,42 @@ using System.Reflection;
 namespace Maomi.MQ.Hosts;
 
 /// <summary>
-/// Base consumer service.
+/// Base consumer host service.
 /// </summary>
 public abstract class ConsumerBaseService : BackgroundService
 {
-    protected readonly IServiceProvider _serviceProvider;
+    protected delegate Task<string> CreateConsumerHandler(ConsumerBaseService consumer, IChannel consummerChannel, Type consumerType, Type messageType, IConsumerOptions consumerOptions);
+
+    /// <summary>
+    /// Consumer method.
+    /// </summary>
+    protected static readonly MethodInfo ConsumerMethod = typeof(ConsumerBaseService)
+        .GetMethod(nameof(ConsumerBaseService.CreateMessageConsumer), BindingFlags.Instance | BindingFlags.NonPublic)!;
+
     protected readonly ServiceFactory _serviceFactory;
+    protected readonly IServiceProvider _serviceProvider;
     protected readonly MqOptions _mqOptions;
+    protected readonly ILogger _logger;
 
-    private readonly ILogger<ConsumerBaseService> _logger;
+    protected ConsumerBaseService(ServiceFactory serviceFactory, ILoggerFactory loggerFactory)
+    {
+        _serviceFactory = serviceFactory;
+        _serviceProvider = serviceFactory.ServiceProvider;
+        _mqOptions = _serviceFactory.Options;
 
+        _logger = loggerFactory.CreateLogger(DiagnosticName.Consumer);
+    }
+
+    /// <summary>
+    /// Create queue and bind properties, create exchange and bind RoutingKey.<br />
+    /// 创建队列和绑定属性，创建交换器和绑定 RoutingKey.
+    /// </summary>
+    /// <param name="channel"></param>
+    /// <param name="consumerOptions"></param>
+    /// <returns><see cref="Task"/>.</returns>
     protected virtual async Task InitQueueAsync(IChannel channel, IConsumerOptions consumerOptions)
     {
-        Dictionary<string, object> arguments = new();
+        Dictionary<string, object?> arguments = new();
 
         if (consumerOptions.AutoQueueDeclare == AutoQueueDeclare.Disable)
         {
@@ -44,23 +67,27 @@ public abstract class ConsumerBaseService : BackgroundService
             return;
         }
 
+        /*
+         https://www.rabbitmq.com/docs/stomp#queue-parameters
+         */
+
         if (consumerOptions.Expiration != default)
         {
             arguments.Add("x-expires", consumerOptions.Expiration);
         }
 
-        if (!string.IsNullOrEmpty(consumerOptions.DeadQueue))
+        if (!string.IsNullOrEmpty(consumerOptions.DeadRoutingKey))
         {
-            arguments.Add("x-dead-letter-exchange", string.Empty);
-            arguments.Add("x-dead-letter-routing-key", consumerOptions.DeadQueue);
+            arguments.Add("x-dead-letter-exchange", consumerOptions.DeadExchange ?? string.Empty);
+            arguments.Add("x-dead-letter-routing-key", consumerOptions.DeadRoutingKey);
         }
 
-        if (consumerOptions.RetryFaildRequeue && !string.IsNullOrEmpty(consumerOptions.DeadQueue))
+        if (consumerOptions.RetryFaildRequeue && !string.IsNullOrEmpty(consumerOptions.DeadRoutingKey))
         {
             _logger.LogWarning(
                 "Queue name [{Queue}],because (RetryFaildRequeue == true) is configured, queue [{DeadQueue}] does not take effect.",
                 consumerOptions.Queue,
-                consumerOptions.DeadQueue);
+                consumerOptions.DeadRoutingKey);
         }
 
         // Create queues based on consumers.
@@ -74,73 +101,90 @@ public abstract class ConsumerBaseService : BackgroundService
 
         if (!string.IsNullOrEmpty(consumerOptions.BindExchange))
         {
-            await channel.ExchangeDeclareAsync(consumerOptions.BindExchange, ExchangeType.Fanout);
-            await channel.QueueBindAsync(exchange: consumerOptions.BindExchange, queue: consumerOptions.Queue, routingKey: string.Empty);
+            ArgumentNullException.ThrowIfNull(consumerOptions.ExchangeType, nameof(consumerOptions.ExchangeType));
+            await channel.ExchangeDeclareAsync(consumerOptions.BindExchange, consumerOptions.ExchangeType);
+            await channel.QueueBindAsync(queue: consumerOptions.Queue, exchange: consumerOptions.BindExchange, routingKey: consumerOptions.RoutingKey ?? consumerOptions.Queue);
         }
     }
 
-    protected virtual async Task<MessageConsumer> InitConsumer(IChannel consummerChannel, ConsumerType consumerType, IConsumerOptions consumerOptions)
+    /// <summary>
+    /// Create a consumer for the queue, specify how to consume.<br />
+    /// 为队列创建消费者，指定如何进行消费.
+    /// </summary>
+    /// <typeparam name="TMessage">Message type.</typeparam>
+    /// <param name="consummerChannel"></param>
+    /// <param name="consumerType"></param>
+    /// <param name="messageType"></param>
+    /// <param name="consumerOptions"></param>
+    /// <returns>Consumer tag.</returns>
+    protected virtual async Task<string> CreateMessageConsumer<TMessage>(IChannel consummerChannel, Type consumerType, Type messageType, IConsumerOptions consumerOptions)
+    where TMessage : class
     {
         await consummerChannel.BasicQosAsync(prefetchSize: 0, prefetchCount: consumerOptions.Qos, global: false);
-        var consumer = new EventingBasicConsumer(consummerChannel);
+        var consumer = new AsyncEventingBasicConsumer(consummerChannel);
 
-        var consumerHandler = BuildConsumerHandler(consumerType.Event);
-        MessageConsumer messageConsumer = new MessageConsumer(_serviceProvider, _serviceFactory, _serviceProvider.GetRequiredService<ILogger<MessageConsumer>>(), consumerOptions);
-
-        consumer.Received += async (sender, eventArgs) =>
+        consumer.ReceivedAsync += async (sender, eventArgs) =>
         {
-            Dictionary<string, object> loggerState = new() { { DiagnosticName.Activity.Consumer, consumerType.Queue } };
-            if (eventArgs.BasicProperties.Headers?.TryGetValue(DiagnosticName.Event.Id, out var eventId) == true)
+            Dictionary<string, object> loggerState = new()
             {
-                loggerState.Add(DiagnosticName.Event.Id, eventId!);
-            }
+                { "Queue", consumerOptions.Queue },
+                { "Exchange", eventArgs.Exchange },
+                { "RoutingKey", eventArgs.RoutingKey },
+                { "ConsumerTag", eventArgs.ConsumerTag },
+                { "DeliveryTag", eventArgs.DeliveryTag },
+                { "Redelivered", eventArgs.Redelivered },
+                { "MessageId", eventArgs.BasicProperties.MessageId ?? string.Empty }
+            };
 
             using (_logger.BeginScope(loggerState))
             {
-                await consumerHandler(messageConsumer, consummerChannel, eventArgs);
+                using var scope = _serviceProvider.CreateScope();
+                var serviceProvider = scope.ServiceProvider;
+                MessageConsumer messageConsumer = new MessageConsumer(serviceProvider, consumerOptions, s =>
+                {
+                    return s.GetRequiredService(consumerType);
+                });
+
+                await messageConsumer.ConsumerAsync<TMessage>(consummerChannel, eventArgs);
             }
         };
 
-        await consummerChannel.BasicConsumeAsync(
+        consummerChannel.BasicReturnAsync += async (sender, args) =>
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var serviceProvider = scope.ServiceProvider;
+            var breakdown = serviceProvider.GetRequiredService<IBreakdown>();
+            await breakdown.BasicReturnAsync(sender, args);
+        };
+
+        var consumerTag = await consummerChannel.BasicConsumeAsync(
             queue: consumerOptions.Queue,
             autoAck: false,
             consumer: consumer);
 
-        return messageConsumer;
+        return consumerTag;
     }
-
-    /// <summary>
-    /// Consumer method.
-    /// </summary>
-    protected static readonly MethodInfo ConsumerMethod = typeof(MessageConsumer)
-        .GetMethod(nameof(MessageConsumer.ConsumerAsync), BindingFlags.Instance | BindingFlags.Public)!;
-
-    protected ConsumerBaseService(IServiceProvider serviceProvider, ServiceFactory serviceFactory)
-    {
-        _serviceProvider = serviceProvider;
-        _serviceFactory = serviceFactory;
-        _mqOptions = _serviceFactory.Options;
-        _logger = _serviceProvider.GetRequiredService<ILogger<ConsumerBaseService>>();
-    }
-
-    protected delegate Task ConsumerHandler(MessageConsumer hostService, IChannel channel, BasicDeliverEventArgs eventArgs);
 
     /// <summary>
     /// Build delegate.
     /// </summary>
-    /// <param name="eventType"></param>
+    /// <param name="messageType"></param>
     /// <returns>Delegate.</returns>
-    protected virtual ConsumerHandler BuildConsumerHandler(Type eventType)
+    protected virtual CreateConsumerHandler BuildCreateConsumerHandler(Type messageType)
     {
-        ParameterExpression consumer = Expression.Variable(typeof(MessageConsumer), "consumer");
-        ParameterExpression channel = Expression.Parameter(typeof(IChannel), "channel");
-        ParameterExpression eventArgs = Expression.Parameter(typeof(BasicDeliverEventArgs), "eventArgs");
+        ParameterExpression service = Expression.Variable(typeof(ConsumerBaseService), "service");
+        ParameterExpression channel = Expression.Parameter(typeof(IChannel), "consummerChannel");
+        ParameterExpression consumer = Expression.Parameter(typeof(Type), "consumerType");
+        ParameterExpression message = Expression.Parameter(typeof(Type), "messageType");
+        ParameterExpression consumerOptions = Expression.Parameter(typeof(IConsumerOptions), "consumerOptions");
         MethodCallExpression method = Expression.Call(
-            consumer,
-            ConsumerMethod.MakeGenericMethod(eventType),
+            service,
+            ConsumerMethod.MakeGenericMethod(messageType),
             channel,
-            eventArgs);
+            consumer,
+            message,
+            consumerOptions);
 
-        return Expression.Lambda<ConsumerHandler>(method, consumer, channel, eventArgs).Compile();
+        return Expression.Lambda<CreateConsumerHandler>(method, service, channel, consumer, message, consumerOptions).Compile();
     }
 }

@@ -22,14 +22,14 @@ public class ConnectionPool
     public ConnectionPool(MqOptions mqOptions)
     {
         _mqOptions = mqOptions;
-        _connection = Create();
+        _connection = new ConnectionObject(_mqOptions);
     }
 
     /// <summary>
     /// Gets an object from the pool if one is available, otherwise creates one.
     /// </summary>
     /// <returns><see cref="ConnectionObject"/>.</returns>
-    public ConnectionObject Get()
+    public virtual IConnectionObject Get()
     {
         return _connection;
     }
@@ -38,7 +38,7 @@ public class ConnectionPool
     /// Create <see cref="ConnectionObject"/>.
     /// </summary>
     /// <returns><see cref="ConnectionObject"/>.</returns>
-    public ConnectionObject Create()
+    public virtual IDisposeConnectionObject Create()
     {
         return new ConnectionObject(_mqOptions);
     }

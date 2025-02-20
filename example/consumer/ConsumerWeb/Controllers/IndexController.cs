@@ -31,49 +31,4 @@ public class IndexController : ControllerBase
 
         return "ok";
     }
-
-    [HttpGet("publish_dead")]
-    public async Task<string> PublisherDead()
-    {
-        for (var i = 0; i < 1; i++)
-        {
-            await _messagePublisher.PublishAsync(queue: "ConsumerWeb_dead", message: new TestEvent
-            {
-                Id = i
-            });
-        }
-
-        return "ok";
-    }
-
-    [HttpGet("publish_exchange")]
-    public async Task<string> PublisherExchange()
-    {
-        var exchange = _messagePublisher.CreateExchange();
-        for (var i = 0; i < 1; i++)
-        {
-            await exchange.PublishAsync(queue: "exchange", message: new TestEvent
-            {
-                Id = i
-            });
-        }
-
-        return "ok";
-    }
-
-    [HttpGet("publish_exchange1")]
-    public async Task<string> PublisherExchange1()
-    {
-        var exchange = _messagePublisher.CreateExchange();
-        using var single = exchange.CreateSingle();
-        for (var i = 0; i < 1; i++)
-        {
-            await single.PublishAsync(queue: "exchange", message: new TestEvent
-            {
-                Id = i
-            });
-        }
-
-        return "ok";
-    }
 }

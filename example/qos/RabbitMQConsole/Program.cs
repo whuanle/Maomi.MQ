@@ -1,35 +1,35 @@
-﻿using Maomi.MQ;
-using Maomi.MQ.Diagnostics;
+﻿using Maomi.MQ.Defaults;
 using QosPublisher.Controllers;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using System.Data.Common;
-using System.Threading.Channels;
-class Program
+
+namespace RabbitMQConsole;
+
+public class Program
 {
-    static async Task Main()
+    public static async Task Main()
     {
         ConnectionFactory connectionFactory = new ConnectionFactory
         {
-            HostName = "10.1.0.4"
+            HostName = Environment.GetEnvironmentVariable("RABBITMQ")!,
+            Port = 5672,
+            ConsumerDispatchConcurrency = 1000
         };
 
         var connection = await connectionFactory.CreateConnectionAsync();
-        var channel = await connection.CreateChannelAsync();
+        var channel = await connection.CreateChannelAsync(new CreateChannelOptions(
+            publisherConfirmationsEnabled: false,
+            publisherConfirmationTrackingEnabled: false,
+            consumerDispatchConcurrency: 1000));
+        var messageSerializer = new DefaultMessageSerializer();
 
-        var consumer = new EventingBasicConsumer(channel);
-        await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 30, global: true);
+        var consumer = new AsyncEventingBasicConsumer(channel);
+        await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 100, global: true);
 
-        consumer.Received += async (sender, eventArgs) =>
+        consumer.ReceivedAsync += async (sender, eventArgs) =>
         {
-            Dictionary<string, object> loggerState = new() { { DiagnosticName.Activity.Consumer, "Queue" } };
-            if (eventArgs.BasicProperties.Headers?.TryGetValue(DiagnosticName.Event.Id, out var eventId) == true)
-            {
-                loggerState.Add(DiagnosticName.Event.Id, eventId!);
-            }
-
-            var testEvent = System.Text.Json.JsonSerializer.Deserialize<EventBody<TestEvent>>(eventArgs.Body.Span);
-            Console.WriteLine($"start time:{DateTime.Now} {testEvent.Body.Id}");
+            var testEvent = messageSerializer.Deserialize<TestEvent>(eventArgs.Body.Span);
+            Console.WriteLine($"start time:{DateTime.Now} {testEvent.Id}");
             await Task.Delay(50);
             await channel.BasicAckAsync(eventArgs.DeliveryTag, false);
         };

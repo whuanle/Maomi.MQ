@@ -34,7 +34,7 @@ public class RedisRetryPolicyFactory : IRetryPolicyFactory
     }
 
     /// <inheritdoc />
-    public virtual async Task<AsyncRetryPolicy> CreatePolicy(string queue, long id)
+    public virtual async Task<AsyncRetryPolicy> CreatePolicy(string queue, string id)
     {
         var key = queue + "_m_" + id;
 
@@ -71,6 +71,7 @@ public class RedisRetryPolicyFactory : IRetryPolicyFactory
                 {
                     await FaildAsync(key, id, exception, timeSpan, retryCount, context);
                 });
+
         return retryPolicy;
     }
 
@@ -84,7 +85,7 @@ public class RedisRetryPolicyFactory : IRetryPolicyFactory
     /// <param name="retryCount"></param>
     /// <param name="context"></param>
     /// <returns><see cref="Task"/>.</returns>
-    protected virtual async Task FaildAsync(string key, long id, Exception ex, TimeSpan timeSpan, int retryCount, Context context)
+    protected virtual async Task FaildAsync(string key, string id, Exception ex, TimeSpan timeSpan, int retryCount, Context context)
     {
         await _redis.StringSetAsync(key, retryCount, TimeSpan.FromSeconds(5 * 60));
     }
