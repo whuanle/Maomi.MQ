@@ -17,37 +17,41 @@ public class TestEvent
 
 public class TestEventMiddleware : IEventMiddleware<TestEvent>
 {
-    public async Task ExecuteAsync(EventBody<TestEvent> message, EventHandlerDelegate<TestEvent> next)
+    public async Task ExecuteAsync(MessageHeader messageHeader,TestEvent message, EventHandlerDelegate<TestEvent> next)
     {
-        await next(message, CancellationToken.None);
+        await next(messageHeader, message, CancellationToken.None);
     }
-    public Task FaildAsync(Exception ex, int retryCount, EventBody<TestEvent>? message) => Task.CompletedTask;
-    public Task<bool> FallbackAsync(EventBody<TestEvent>? message) => Task.FromResult(true);
+    public Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, TestEvent? message) => Task.CompletedTask;
+    public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, TestEvent? message, Exception? ex) => Task.FromResult(ConsumerState.Ack);
 }
 
 [EventOrder(0)]
 public class My1EventEventHandler : IEventHandler<TestEvent>
 {
-    public async Task CancelAsync(EventBody<TestEvent> message, CancellationToken cancellationToken)
+    public Task CancelAsync(TestEvent message, CancellationToken cancellationToken)
     {
+        return Task.CompletedTask;
     }
 
-    public async Task ExecuteAsync(EventBody<TestEvent> message, CancellationToken cancellationToken)
+    public Task ExecuteAsync(TestEvent message, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"{message.Id},事件 1 已被执行");
+        Console.WriteLine($"{message.Message},事件 1 已被执行");
+        return Task.CompletedTask;
     }
 }
 
 [EventOrder(1)]
 public class My2EventEventHandler : IEventHandler<TestEvent>
 {
-    public async Task CancelAsync(EventBody<TestEvent> message, CancellationToken cancellationToken)
+    public Task CancelAsync(TestEvent message, CancellationToken cancellationToken)
     {
+        return Task.CompletedTask;
     }
 
-    public async Task ExecuteAsync(EventBody<TestEvent> message, CancellationToken cancellationToken)
+    public Task ExecuteAsync(TestEvent message, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"{message.Id},事件 2 已被执行");
+        Console.WriteLine($"{message.Message},事件 2 已被执行");
+        return Task.CompletedTask;
     }
 }
 

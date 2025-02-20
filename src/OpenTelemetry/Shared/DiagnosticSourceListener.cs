@@ -6,7 +6,7 @@ using OpenTelemetry.Internal;
 
 namespace OpenTelemetry.Instrumentation;
 
-internal sealed class DiagnosticSourceListener : ListenerHandler
+internal sealed class DiagnosticSourceListener : IObserver<KeyValuePair<string, object?>>
 {
     private readonly ListenerHandler handler;
 

@@ -22,7 +22,7 @@ public interface IBreakdown
     /// <param name="messageType"></param>
     /// <param name="consumerType"></param>
     /// <returns><see cref="Task"/>.</returns>
-    Task NotFoundConsumer(string queue, Type messageType, Type consumerType);
+    Task NotFoundConsumerAsync(string queue, Type messageType, Type consumerType);
 
     /// <summary>
     /// Handle unrouteable messages.<br />
@@ -31,5 +31,5 @@ public interface IBreakdown
     /// <param name="sender"></param>
     /// <param name="event"></param>
     /// <returns><see cref="Task"/>.</returns>
-    Task BasicReturn(object sender, BasicReturnEventArgs @event);
+    Task BasicReturnAsync(object sender, BasicReturnEventArgs @event);
 }

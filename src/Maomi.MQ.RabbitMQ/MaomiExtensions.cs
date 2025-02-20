@@ -36,10 +36,11 @@ public static partial class MaomiExtensions
         Assembly[] assemblies)
     {
         ITypeFilter[] typeFilters =
-        [
+        new ITypeFilter[]
+        {
             new ConsumerTypeFilter(),
             new EventBusTypeFilter()
-        ];
+        };
 
         return AddMaomiMQ(services, mqOptionsBuilder, assemblies, typeFilters);
     }

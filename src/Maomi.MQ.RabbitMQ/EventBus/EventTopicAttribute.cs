@@ -25,7 +25,7 @@ public class EventTopicAttribute : Attribute, IConsumerOptions
     public ushort Qos { get; set; } = 100;
 
     /// <inheritdoc />
-    public bool RetryFaildRequeue { get; set; }
+    public bool RetryFaildRequeue { get; set; } = true;
 
     /// <inheritdoc />
     public int Expiration { get; set; }
@@ -59,7 +59,7 @@ public class EventTopicAttribute : Attribute, IConsumerOptions
     /// <inheritdoc />
     public IConsumerOptions Clone()
     {
-        var newOptions = new EventTopicAttribute(string.Empty);
+        var newOptions = new EventTopicAttribute(this.Queue);
         newOptions.CopyFrom(this);
         return newOptions;
     }

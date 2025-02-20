@@ -10,10 +10,10 @@ namespace Maomi.MQ;
 /// Message identification.<br />
 /// 消息标识.
 /// </summary>
-public class MessageHeader
+public struct MessageHeader
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="MessageHeader"/> class.
+    /// Initializes a new instance of the <see cref="MessageHeader"/> struct.
     /// </summary>
     public MessageHeader()
     {
@@ -36,7 +36,7 @@ public class MessageHeader
     /// The message comes with an attribute, which for RabbitMQ is IBasicProperties.<br />
     /// 消息附带属性，对于 RabbitMQ 是 IBasicProperties.
     /// </summary>
-    public object Properties { get; init; } = default!;
+    public object? Properties { get; init; } = default!;
 
     /// <summary>
     /// The content format of the message,ex: "application/json".

@@ -5,6 +5,7 @@
 // </copyright>
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Reflection;
 
 namespace Maomi.MQ.Filters;
@@ -16,7 +17,7 @@ namespace Maomi.MQ.Filters;
 public class CustomConsumerTypeFilter : ITypeFilter
 {
     private static readonly MethodInfo AddHostedMethod = typeof(ServiceCollectionHostedServiceExtensions)
-        .GetMethod(nameof(ServiceCollectionHostedServiceExtensions.AddHostedService), BindingFlags.Static | BindingFlags.Public, [typeof(IServiceCollection)])!;
+        .GetMethod(nameof(ServiceCollectionHostedServiceExtensions.AddHostedService), BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(IServiceCollection) })!;
 
     private readonly List<(Type, IConsumerOptions)> _consumers = new();
 
@@ -41,9 +42,8 @@ public class CustomConsumerTypeFilter : ITypeFilter
             var consumerInterface = type.GetInterfaces().Where(x => x.IsGenericType)
                 .FirstOrDefault(x => x.GetGenericTypeDefinition() == typeof(IConsumer<>))!;
 
-            // Each IConsumer<T> corresponds to one queue and one ConsumerHostSrvice<T>.
-            // 每个 IConsumer<T> 对应一个队列、一个 ConsumerHostSrvice<T>.
-            services.Add(new ServiceDescriptor(serviceType: consumerInterface, implementationType: type, lifetime: ServiceLifetime.Scoped));
+            services.TryAddEnumerable(new ServiceDescriptor(serviceType: consumerInterface, implementationType: type, lifetime: ServiceLifetime.Scoped));
+            services.Add(new ServiceDescriptor(serviceType: type, implementationType: type, lifetime: ServiceLifetime.Scoped));
 
             var eventType = consumerInterface.GenericTypeArguments[0];
             var consumerType = new ConsumerType

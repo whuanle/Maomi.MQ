@@ -35,7 +35,7 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
     protected readonly MqOptions _mqOptions;
     protected readonly IMessageSerializer _messageSerializer;
     protected readonly ConnectionPool _connectionPool;
-    protected readonly ConnectionObject _connectionObject;
+    protected readonly IConnectionObject _connectionObject;
     protected readonly IIdFactory _idGen;
     protected readonly ILogger _logger;
 
@@ -135,7 +135,7 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
     }
 
     /// <inheritdoc />
-    public virtual Task PublishAsync<TMessage>(string exchange, string routingKey, TMessage message, Action<BasicProperties>? properties = null, CancellationToken cancellationToken = default)
+    public virtual Task PublishAsync<TMessage>(string exchange, string routingKey, TMessage message, Action<BasicProperties> properties, CancellationToken cancellationToken = default)
         where TMessage : class
     {
         var basicProperties = new BasicProperties()
@@ -220,9 +220,9 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
             Properties = properties
         };
 
-        InitializeMessageProperties<TMessage>(properties, messageHeader);
+        InitializeMessageProperties<TMessage>(properties, ref messageHeader);
 
-        OnStartEvent(messageHeader, exchange, reoutingKey, activity);
+        OnStartEvent(ref messageHeader, exchange, reoutingKey, activity);
 
         byte[]? body = default;
         try
@@ -243,13 +243,13 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "The message with id [{Id}] failed to send, exchange: [{Exchange}], reoutingKey: [{reoutingKey}].", messageHeader.Id, exchange, reoutingKey);
-            OnExecptionEvent(messageHeader, exchange, reoutingKey, ex, activity);
+            OnExecptionEvent(ref messageHeader, exchange, reoutingKey, ex, activity);
             throw;
         }
         finally
         {
             _meterPushMessageBytes.Record(body?.Length ?? 0);
-            OnStopEvent(messageHeader, exchange, reoutingKey, activity);
+            OnStopEvent(ref messageHeader, exchange, reoutingKey, activity);
         }
     }
 }
@@ -259,7 +259,7 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
 /// </summary>
 public partial class DefaultMessagePublisher
 {
-    protected virtual void InitializeMessageProperties<TMessage>(BasicProperties properties, MessageHeader messageHeader)
+    protected virtual void InitializeMessageProperties<TMessage>(BasicProperties properties, ref MessageHeader messageHeader)
     {
         properties.AppId = _mqOptions.AppName;
         properties.ContentEncoding = _messageSerializer.ContentEncoding;
@@ -279,7 +279,7 @@ public partial class DefaultMessagePublisher
                _diagnosticListener.IsEnabled();
     }
 
-    protected virtual void OnStartEvent(MessageHeader messageHeader, string exchange, string reoutingKey, Activity? activity)
+    protected virtual void OnStartEvent(ref MessageHeader messageHeader, string exchange, string reoutingKey, Activity? activity)
     {
         if (activity == null || !IsEnabledListener())
         {
@@ -307,7 +307,7 @@ public partial class DefaultMessagePublisher
         _diagnosticListener.Write(DiagnosticName.Event.PublisherStart, messageHeader);
     }
 
-    protected virtual void OnStopEvent(MessageHeader messageHeader, string exchange, string reoutingKey, Activity? activity)
+    protected virtual void OnStopEvent(ref MessageHeader messageHeader, string exchange, string reoutingKey, Activity? activity)
     {
         if (activity == null || !IsEnabledListener())
         {
@@ -325,7 +325,7 @@ public partial class DefaultMessagePublisher
         _diagnosticListener.Write(DiagnosticName.Event.PublisherStop, messageHeader);
     }
 
-    protected virtual void OnExecptionEvent(MessageHeader messageHeader, string exchange, string reoutingKey, Exception exception, Activity? activity)
+    protected virtual void OnExecptionEvent(ref MessageHeader messageHeader, string exchange, string reoutingKey, Exception exception, Activity? activity)
     {
         if (activity == null || !IsEnabledListener())
         {

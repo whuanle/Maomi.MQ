@@ -2,7 +2,6 @@ using Maomi.MQ;
 using Maomi.MQ.Pool;
 using Moq;
 using RabbitMQ.Client;
-using Xunit;
 
 public class ConnectionPoolTests
 {

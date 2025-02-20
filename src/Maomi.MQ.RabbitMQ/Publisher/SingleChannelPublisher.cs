@@ -8,6 +8,7 @@
 #pragma warning disable SA1401
 #pragma warning disable SA1600
 
+using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
 
 namespace Maomi.MQ;
@@ -39,7 +40,10 @@ public class SingleChannelPublisher : DefaultMessagePublisher, IMessagePublisher
 
         _channel = new Lazy<IChannel>(() =>
         {
-            return _connectionObject.Connection.CreateChannelAsync(_createChannelOptions).Result;
+            var channel = _connectionObject.Connection.CreateChannelAsync(_createChannelOptions).Result;
+            var breakdown = _serviceProvider.GetRequiredService<IBreakdown>();
+            channel.BasicReturnAsync += breakdown.BasicReturnAsync;
+            return channel;
         });
     }
 

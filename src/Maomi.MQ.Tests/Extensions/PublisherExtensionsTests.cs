@@ -1,4 +1,5 @@
 using Maomi.MQ;
+using Maomi.MQ.Default;
 using Maomi.MQ.Tests;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -44,6 +45,7 @@ public class PublisherExtensionsTests
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddMaomiMQCore();
+        services.AddScoped<IBreakdown, DefaultBreakdown>();
         services.AddSingleton(rabbitMQConnectionMock.MqOptions);
         services.AddSingleton(rabbitMQConnectionMock.ConnectionPoolMock.Object);
         services.AddScoped<IMessagePublisher, DefaultMessagePublisher>();

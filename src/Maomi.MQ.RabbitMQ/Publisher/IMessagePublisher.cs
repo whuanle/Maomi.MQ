@@ -25,19 +25,7 @@ public interface IMessagePublisher
     /// <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
     /// <param name="cancellationToken"></param>
     /// <returns><see cref="Task"/>.</returns>
-    Task PublishAsync<TMessage>(string exchange, string routingKey, TMessage message, Action<BasicProperties>? properties = null, CancellationToken cancellationToken = default)
-        where TMessage : class;
-
-    /// <summary>
-    /// Publish messagge.<br />
-    /// 发布消息.
-    /// </summary>
-    /// <typeparam name="TMessage">Event model.<br />事件模型类.</typeparam>
-    /// <param name="message">Event object.<br />事件对象.</param>
-    /// <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
-    /// <param name="cancellationToken"></param>
-    /// <returns><see cref="Task"/>.</returns>
-    Task PublishAsync<TMessage>(TMessage message, Action<BasicProperties>? properties = null, CancellationToken cancellationToken = default)
+    Task PublishAsync<TMessage>(string exchange, string routingKey, TMessage message, Action<BasicProperties> properties, CancellationToken cancellationToken = default)
         where TMessage : class;
 
     /// <summary>
@@ -52,6 +40,18 @@ public interface IMessagePublisher
     /// <param name="cancellationToken"></param>
     /// <returns><see cref="Task"/>.</returns>
     Task PublishAsync<TMessage>(string exchange, string routingKey, TMessage message, BasicProperties? properties = default, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Publish messagge.<br />
+    /// 发布消息.
+    /// </summary>
+    /// <typeparam name="TMessage">Event model.<br />事件模型类.</typeparam>
+    /// <param name="model">Event object.<br />事件对象.</param>
+    /// <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns><see cref="Task"/>.</returns>
+    Task PublishAsync<TMessage>(TMessage model, Action<BasicProperties>? properties = null, CancellationToken cancellationToken = default)
+        where TMessage : class;
 
     /// <summary>
     /// Publish messagge.<br />

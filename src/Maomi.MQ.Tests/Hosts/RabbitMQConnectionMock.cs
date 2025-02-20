@@ -1,4 +1,5 @@
-﻿using Maomi.MQ.Pool;
+﻿using Maomi.MQ.Default;
+using Maomi.MQ.Pool;
 using Moq;
 using Moq.Protected;
 using RabbitMQ.Client;

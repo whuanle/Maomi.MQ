@@ -2,14 +2,14 @@
 
 public class MyPublishAsync : BackgroundService
 {
-    private readonly IMessagePublisher _messagePublisher;
+    private readonly IServiceProvider _serviceProvider;
     private readonly string _message = string.Join(",", Enumerable.Range(0, 100));
     private readonly int[] _data = Enumerable.Range(0, 100).ToArray();
     private volatile int _count = 0;
 
-    public MyPublishAsync(IMessagePublisher messagePublisher)
+    public MyPublishAsync(IServiceProvider serviceProvider)
     {
-        _messagePublisher = messagePublisher;
+        _serviceProvider = serviceProvider;
     }
 
     public override Task StartAsync(CancellationToken cancellationToken)
@@ -20,21 +20,22 @@ public class MyPublishAsync : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        var messagePublisher = _serviceProvider.CreateScope().ServiceProvider.GetRequiredService<IMessagePublisher>();
         var func = async (int index) =>
         {
-            await _messagePublisher.PublishAsync(queue: "opentelemetry_console", message: new TestEvent
+            await messagePublisher.PublishAsync(string.Empty, "opentelemetry_console", message: new TestEvent
             {
                 Id = index,
                 Message = _message,
                 Data = _data
             });
-            await _messagePublisher.PublishAsync(queue: "opentelemetry_console2", message: new TestEvent
+            await messagePublisher.PublishAsync(string.Empty, "opentelemetry_console2", message: new TestEvent
             {
                 Id = index,
                 Message = _message,
                 Data = _data
             });
-            await _messagePublisher.PublishAsync(queue: "opentelemetry_console3", message: new TestEvent
+            await messagePublisher.PublishAsync(string.Empty, "opentelemetry_console3", message: new TestEvent
             {
                 Id = index,
                 Message = _message,
@@ -44,7 +45,7 @@ public class MyPublishAsync : BackgroundService
 
         while (true)
         {
-            for(var i = 0; i < 100; i++)
+            for (var i = 0; i < 100; i++)
             {
                 var count = Interlocked.Increment(ref _count);
 

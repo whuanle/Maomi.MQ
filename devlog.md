@@ -1,5 +1,12 @@
 
 
+### 2.1.0 版本（规划中）
+
+- [ ] 优化 RabbitMQ.Client.BasicProperties 内存占用。
+- [ ] 增加分布式事务的支持模式。
+
+
+
 ### 2.0.0
 
 - [x] RabbitMQ.Client 升级到 7.0 正式版本
@@ -20,13 +27,13 @@
 
 - [x] `IEventMiddleware.FallbackAsync()` 返回值改成枚举
 
-- [ ] 优化重构 Trace 和 Meter
+- [x] 优化重构 Trace 和 Meter
 
 - [x] 删除 IWaitReadyFactory
 
 - [x] 删除 ConfirmPublisher，改成从创建时手动配置，[Issue #1682](https://github.com/rabbitmq/rabbitmq-dotnet-client/issues/1682) 、[RabbitMQ tutorial - Reliable Publishing with Publisher Confirms](https://www.rabbitmq.com/tutorials/tutorial-seven-dotnet)
 
-- [ ] 发布消息没有绑定队列时，触发 `BasicReturn` 事件，定义一个接口服务统一处理。
+- [x] 发布消息没有绑定队列时，触发 `BasicReturn` 事件，定义一个接口服务统一处理。
 
 - [x] IConsumerOptions 增加交换器路由键。
 
@@ -50,33 +57,24 @@
 
 - [x] 支持直接使用函数式消费者，这个在动态消费者里面有部分代码了，可以结合一起使用。
 
-- [ ] 发布者发布时可以添加相关的故障重试、后台推送自动重试等机制，这样也方便失败后的后续处理。
-
-- [ ] 底层 TCP 连接错误或异常时，RabbitMQ Client 抛出错误，需要包装相关 API，自动重连、恢复。
+- [x] 底层 TCP 连接错误或异常时，RabbitMQ Client 抛出错误，需要包装相关 API，自动重连、恢复。
 
   > [.NET/C# 客户端 API 指南 | RabbitMQ 消息队列](https://rabbitmq.cn/client-libraries/dotnet-api-guide#basic-return)
   
-- [x] 找不到合适消费者 `IConsumer<TMessage>` 时，触发事件
+- [x] 找不到合适消费者 `IConsumer<TMessage>` 时，触发事件
 
 
 
-设计上以队列为核心，围绕队列而展开。
+### 1.3.0
+
+* 去掉了连接池。
+* 去掉了 IMessagePublisher 接口的 ConnectionPool 属性。
+* 增加了动态消费者
+* 增加动态订阅功能
 
 
 
-
-
-基础属性中包括：
-
-| 字段名称        | 类型   | 说明                               |
-| --------------- | ------ | ---------------------------------- |
-| mm.id           | int64  | 唯一消息id，例如分布式雪花id       |
-| mm.creationtime | int64  | 消息创建时间，使用 unix 毫秒时间戳 |
-| mm.publisher    | string | 发布者名称                         |
-
-
-
-
+### OpenTelemetry
 
 使用时使用 ActivitySource、DiagnosticListener，然后使用 DiagnosticListener.Wirte 写入事件和参数
 

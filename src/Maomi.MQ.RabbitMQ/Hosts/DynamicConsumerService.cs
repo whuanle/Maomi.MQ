@@ -27,7 +27,7 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
 {
     protected readonly IConsumerTypeProvider _consumerTypeProvider;
     protected readonly ConnectionPool _connectionPool;
-    protected readonly ConnectionObject _connectionObject;
+    protected readonly IConnectionObject _connectionObject;
 
     protected readonly ConcurrentDictionary<string, string> _consumers;
 
@@ -50,7 +50,7 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
     }
 
     /// <inheritdoc />
-    public virtual Task<string> ConsumerAsync<TMessage>(IConsumerOptions consumerOptions)
+    public virtual Task<string> EventBusAsync<TMessage>(IConsumerOptions consumerOptions)
         where TMessage : class
     {
         return ConsumerAsync<EventBusConsumer<TMessage>, TMessage>(consumerOptions);
@@ -76,7 +76,7 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
         await InitQueueAsync(consummerChannel, consumerOptions);
 
         var createConsumer = BuildCreateConsumerHandler(typeof(TMessage));
-        var consumerTag = await createConsumer(this, consummerChannel, typeof(TMessage), consumerOptions);
+        var consumerTag = await createConsumer(this, consummerChannel, typeof(TConsumer), typeof(TMessage), consumerOptions);
 
         var isAdd = _consumers.TryAdd(consumerOptions.Queue, consumerTag);
 
@@ -112,7 +112,7 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
         var consummerChannel = _connectionObject.DefaultChannel;
         await InitQueueAsync(consummerChannel, consumerOptions);
 
-        string consumerTag = await CreateDynamicMessageConsumer(consummerChannel, consumerOptions, dynamicProxyConsumer);
+        string consumerTag = await CreateDynamicMessageConsumer<TMessage>(consummerChannel, consumerOptions, dynamicProxyConsumer);
 
         var isAdd = _consumers.TryAdd(consumerOptions.Queue, consumerTag);
 

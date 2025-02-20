@@ -25,7 +25,7 @@ namespace Maomi.MQ.Hosts;
 /// </summary>
 public abstract class ConsumerBaseService : BackgroundService
 {
-    protected delegate Task<string> CreateConsumerHandler(ConsumerBaseService consumer, IChannel consummerChannel, Type messageType, IConsumerOptions consumerOptions);
+    protected delegate Task<string> CreateConsumerHandler(ConsumerBaseService consumer, IChannel consummerChannel, Type consumerType, Type messageType, IConsumerOptions consumerOptions);
 
     /// <summary>
     /// Consumer method.
@@ -103,7 +103,7 @@ public abstract class ConsumerBaseService : BackgroundService
         {
             ArgumentNullException.ThrowIfNull(consumerOptions.ExchangeType, nameof(consumerOptions.ExchangeType));
             await channel.ExchangeDeclareAsync(consumerOptions.BindExchange, consumerOptions.ExchangeType);
-            await channel.QueueBindAsync(queue: consumerOptions.Queue, exchange: consumerOptions.BindExchange,  routingKey: consumerOptions.RoutingKey ?? consumerOptions.Queue);
+            await channel.QueueBindAsync(queue: consumerOptions.Queue, exchange: consumerOptions.BindExchange, routingKey: consumerOptions.RoutingKey ?? consumerOptions.Queue);
         }
     }
 
@@ -113,10 +113,11 @@ public abstract class ConsumerBaseService : BackgroundService
     /// </summary>
     /// <typeparam name="TMessage">Message type.</typeparam>
     /// <param name="consummerChannel"></param>
+    /// <param name="consumerType"></param>
     /// <param name="messageType"></param>
     /// <param name="consumerOptions"></param>
     /// <returns>Consumer tag.</returns>
-    protected virtual async Task<string> CreateMessageConsumer<TMessage>(IChannel consummerChannel, Type messageType, IConsumerOptions consumerOptions)
+    protected virtual async Task<string> CreateMessageConsumer<TMessage>(IChannel consummerChannel, Type consumerType, Type messageType, IConsumerOptions consumerOptions)
     where TMessage : class
     {
         await consummerChannel.BasicQosAsync(prefetchSize: 0, prefetchCount: consumerOptions.Qos, global: false);
@@ -141,7 +142,7 @@ public abstract class ConsumerBaseService : BackgroundService
                 var serviceProvider = scope.ServiceProvider;
                 MessageConsumer messageConsumer = new MessageConsumer(serviceProvider, consumerOptions, s =>
                 {
-                    return s.GetService<IConsumer<TMessage>>()!;
+                    return s.GetRequiredService(consumerType);
                 });
 
                 await messageConsumer.ConsumerAsync<TMessage>(consummerChannel, eventArgs);
@@ -153,7 +154,7 @@ public abstract class ConsumerBaseService : BackgroundService
             using var scope = _serviceProvider.CreateScope();
             var serviceProvider = scope.ServiceProvider;
             var breakdown = serviceProvider.GetRequiredService<IBreakdown>();
-            await breakdown.BasicReturn(sender, args);
+            await breakdown.BasicReturnAsync(sender, args);
         };
 
         var consumerTag = await consummerChannel.BasicConsumeAsync(
@@ -173,15 +174,17 @@ public abstract class ConsumerBaseService : BackgroundService
     {
         ParameterExpression service = Expression.Variable(typeof(ConsumerBaseService), "service");
         ParameterExpression channel = Expression.Parameter(typeof(IChannel), "consummerChannel");
-        ParameterExpression type = Expression.Parameter(typeof(Type), "messageType");
+        ParameterExpression consumer = Expression.Parameter(typeof(Type), "consumerType");
+        ParameterExpression message = Expression.Parameter(typeof(Type), "messageType");
         ParameterExpression consumerOptions = Expression.Parameter(typeof(IConsumerOptions), "consumerOptions");
         MethodCallExpression method = Expression.Call(
             service,
             ConsumerMethod.MakeGenericMethod(messageType),
             channel,
-            type,
+            consumer,
+            message,
             consumerOptions);
 
-        return Expression.Lambda<CreateConsumerHandler>(method, service, channel, type, consumerOptions).Compile();
+        return Expression.Lambda<CreateConsumerHandler>(method, service, channel, consumer, message, consumerOptions).Compile();
     }
 }

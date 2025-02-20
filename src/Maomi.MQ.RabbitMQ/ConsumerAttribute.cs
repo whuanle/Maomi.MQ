@@ -26,7 +26,7 @@ public class ConsumerAttribute : Attribute, IConsumerOptions
     public ushort Qos { get; set; } = 100;
 
     /// <inheritdoc />
-    public bool RetryFaildRequeue { get; set; }
+    public bool RetryFaildRequeue { get; set; } = true;
 
     /// <inheritdoc />
     public int Expiration { get; set; }
@@ -56,7 +56,7 @@ public class ConsumerAttribute : Attribute, IConsumerOptions
     /// <inheritdoc />
     public IConsumerOptions Clone()
     {
-        var newOptions = new ConsumerAttribute(string.Empty);
+        var newOptions = new ConsumerAttribute(this.Queue);
         newOptions.CopyFrom(this);
         return newOptions;
     }

@@ -182,7 +182,7 @@ public class EventBusTypeFilter : ITypeFilter
         }
     }
 
-    private static readonly MethodInfo AddIEventHandlerFactoryMethod = typeof(EventBusTypeFilter).GetMethod("AddSingletonIEventHandlerFactory", BindingFlags.NonPublic | BindingFlags.Instance)!;
+    private static readonly MethodInfo AddIEventHandlerFactoryMethod = typeof(EventBusTypeFilter).GetMethod(nameof(AddSingletonIEventHandlerFactory), BindingFlags.NonPublic | BindingFlags.Instance)!;
 
     private void AddSingletonIEventHandlerFactory<TMessage>(IServiceCollection services, SortedDictionary<int, Type> handlers)
         where TMessage : class

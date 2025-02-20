@@ -13,6 +13,7 @@ using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 
 namespace Maomi.MQ.Hosts;
 
@@ -22,7 +23,7 @@ namespace Maomi.MQ.Hosts;
 /// </summary>
 public partial class ConsumerHostedService : ConsumerBaseService
 {
-    protected readonly ConnectionObject _connectionObject;
+    protected readonly IConnectionObject _connectionObject;
 
     protected readonly IMessageSerializer _jsonSerializer;
     protected readonly IRetryPolicyFactory _policyFactory;
@@ -56,6 +57,7 @@ public partial class ConsumerHostedService : ConsumerBaseService
 
         try
         {
+            _connectionObject.DefaultChannel.BasicReturnAsync += BasicReturnAsync;
             await WaitReadyInitQueueAsync();
             _logger.LogWarning("The consumer host has been started.");
         }
@@ -69,6 +71,14 @@ public partial class ConsumerHostedService : ConsumerBaseService
         {
             await Task.Delay(10000, stoppingToken);
         }
+    }
+
+    protected virtual async Task BasicReturnAsync(object sender, BasicReturnEventArgs @event)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var serviceProvider = scope.ServiceProvider;
+        var breakdown = serviceProvider.GetRequiredService<IBreakdown>();
+        await breakdown.BasicReturnAsync(sender, @event);
     }
 
     protected virtual async Task WaitReadyInitQueueAsync()
@@ -87,7 +97,7 @@ public partial class ConsumerHostedService : ConsumerBaseService
 
             var currentChannel = await _connectionObject.Connection.CreateChannelAsync();
             var createConsumer = BuildCreateConsumerHandler(consumerType.Event);
-            var consumerTag = await createConsumer(this, currentChannel, consumerType.Event, consumerOptions);
+            var consumerTag = await createConsumer(this, currentChannel, consumerType.Consumer, consumerType.Event, consumerOptions);
             _consumers.Add(consumerTag, currentChannel);
         }
     }

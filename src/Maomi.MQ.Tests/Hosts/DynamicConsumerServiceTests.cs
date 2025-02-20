@@ -7,6 +7,7 @@ using Maomi.MQ.Hosts;
 using Maomi.MQ.Pool;
 using Maomi.MQ.Tests;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 using Moq;
 using Moq.Protected;
 using RabbitMQ.Client;
@@ -36,7 +37,7 @@ public class DynamicConsumerServiceTests
             rabbitMQConnectionMock.ConnectionPoolMock.Object,
             new ConsumerTypeProvider() { consumerType });
 
-        await Assert.ThrowsAsync<ArgumentException>(() => dynamicConsumerService.ConsumerAsync<TestMessage>(consumerOptions.Clone()));
+        await Assert.ThrowsAsync<ArgumentException>(() => dynamicConsumerService.EventBusAsync<TestMessage>(consumerOptions.Clone()));
     }
 
     [Theory, AutoData]
@@ -54,14 +55,14 @@ public class DynamicConsumerServiceTests
         { CallBase = true };
 
         dynamicConsumerServiceMock.Protected().Setup<Task<string>>(
-            methodOrPropertyName: "CreateMessageConsumer",
+        methodOrPropertyName: "CreateMessageConsumer",
             genericTypeArguments: new Type[] { typeof(TestMessage) },
         exactParameterMatch: false,
-            args: new object[] { ItExpr.IsAny<IChannel>(), ItExpr.IsAny<Type>(), ItExpr.IsAny<IConsumerOptions>() }).Returns(Task.FromResult(mockConsumerTag));
+            args: new object[] { ItExpr.IsAny<IChannel>(), ItExpr.IsAny<Type>(), ItExpr.IsAny<Type>(), ItExpr.IsAny<IConsumerOptions>() }).Returns(Task.FromResult(mockConsumerTag));
 
         var consumerOptions = Mock.Of<IConsumerOptions>(x => x.Queue == "test-queue");
 
-        var consumerTag = await dynamicConsumerServiceMock.Object.ConsumerAsync<TestMessage>(consumerOptions);
+        var consumerTag = await dynamicConsumerServiceMock.Object.EventBusAsync<TestMessage>(consumerOptions);
 
         Assert.NotNull(consumerTag);
         Assert.Equal(mockConsumerTag, consumerTag);
@@ -135,7 +136,7 @@ public class DynamicConsumerServiceTests
 
         dynamicConsumerServiceMock.Setup(x => x.ConsumerAsync<EventBusConsumer<TestMessage>, TestMessage>(It.IsAny<IConsumerOptions>())).ReturnsAsync(mockConsumerTag);
 
-        var consumerTag = await dynamicConsumerServiceMock.Object.ConsumerAsync<TestMessage>(consumerOptions);
+        var consumerTag = await dynamicConsumerServiceMock.Object.EventBusAsync<TestMessage>(consumerOptions);
 
         Assert.Equal(mockConsumerTag, consumerTag);
         dynamicConsumerServiceMock.Verify(x => x.ConsumerAsync<EventBusConsumer<TestMessage>, TestMessage>(consumerOptions), Times.Once);

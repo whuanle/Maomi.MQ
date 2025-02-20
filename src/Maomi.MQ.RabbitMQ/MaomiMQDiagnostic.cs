@@ -16,5 +16,9 @@ public static class MaomiMQDiagnostic
     /// <summary>
     /// ActivitySource names.
     /// </summary>
-    public static readonly IReadOnlyList<string> Sources = [RabbitMQActivitySource.PublisherSourceName, RabbitMQActivitySource.SubscriberSourceName];
+    public static readonly IReadOnlyList<string> Sources = new List<string>
+    {
+        RabbitMQActivitySource.PublisherSourceName,
+        RabbitMQActivitySource.SubscriberSourceName
+    };
 }

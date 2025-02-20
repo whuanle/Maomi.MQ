@@ -23,15 +23,30 @@ public class IndexController : ControllerBase
     {
         foreach (var item in consumer.Queues)
         {
-            await _dynamicConsumer.StartAsync<MyConsumer, TestEvent>(new ConsumerOptions
-            {
-                Queue = item
-            });
+            var consumerTag = await _dynamicConsumer.ConsumerAsync<MyConsumer, TestEvent>(new ConsumerOptions(item));
         }
 
         return "ok";
     }
 
+    [HttpPost("create")]
+    public async Task<string> CreateConsumer([FromBody] ConsumerDto consumer)
+    {
+        foreach (var item in consumer.Queues)
+        {
+            var consumerTag = await _dynamicConsumer.ConsumerAsync<TestEvent>(
+                consumerOptions: new ConsumerOptions(item),
+                execute: async (header, message) =>
+                {
+                    await Task.CompletedTask;
+                },
+                faild: async (header, ex, retryCount, message) => { },
+                fallback: async (header, message, ex) => ConsumerState.Ack
+                );
+        }
+
+        return "ok";
+    }
 
     [HttpPost("stop")]
     public async Task<string> StopConsumer([FromBody] ConsumerDto consumer)

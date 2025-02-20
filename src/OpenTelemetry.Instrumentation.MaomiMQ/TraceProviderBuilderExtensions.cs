@@ -71,7 +71,7 @@ public static class TraceProviderBuilderExtensions
     internal static MeterProviderBuilder ConfigureMeters(this MeterProviderBuilder builder)
     {
         return builder
-            .AddMeter("MaomiMQ.Publisher")
-            .AddMeter("MaomiMQ.Consumer");
+            .AddMeter("Maomi.MQ.Publisher")
+            .AddMeter("Maomi.MQ.Consumer");
     }
 }

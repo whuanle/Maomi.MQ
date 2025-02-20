@@ -1,11 +1,12 @@
 ﻿using Maomi.MQ;
-using Microsoft.Extensions.Hosting;
-using System.Reflection;
 using QosPublisher.Controllers;
+using System.Reflection;
 
-class Program
+namespace QosConsole;
+
+public class Program
 {
-    static async Task Main()
+    public static async Task Main()
     {
         var host = new HostBuilder()
             .ConfigureLogging(options =>
@@ -21,8 +22,10 @@ class Program
                     options.AppName = "myapp-consumer";
                     options.Rabbit = (options) =>
                     {
-                        options.HostName = "10.1.0.4";
+                        options.HostName = Environment.GetEnvironmentVariable("RABBITMQ")!;
+                        options.Port = 5672;
                         options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
+                        options.ConsumerDispatchConcurrency = 1000;
                     };
                 }, new System.Reflection.Assembly[] { typeof(Program).Assembly });
 
@@ -34,24 +37,25 @@ class Program
 }
 
 
-[Consumer("qos", Qos = 30)]
+[Consumer("qos", Qos = 1000)]
 public class QosConsumer : IConsumer<TestEvent>
 {
     private static int Count = 0;
-    public async Task ExecuteAsync(EventBody<TestEvent> message)
+
+    public async Task ExecuteAsync(MessageHeader messageHeader, TestEvent message)
     {
         Interlocked.Increment(ref Count);
-        Console.WriteLine($"date time:{DateTime.Now},id:{message.Body.Id}, count:{Count}");
+        Console.WriteLine($"date time:{DateTime.Now},id:{message.Id}, count:{Count}");
         await Task.Delay(50);
     }
 
-    public Task FaildAsync(Exception ex, int retryCount, EventBody<TestEvent>? message)
+    public Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, TestEvent message)
     {
         return Task.CompletedTask;
     }
 
-    public Task<bool> FallbackAsync(EventBody<TestEvent>? message)
+    public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, TestEvent? message, Exception? ex)
     {
-        return Task.FromResult(true);
+        return Task.FromResult(ConsumerState.Ack);
     }
 }

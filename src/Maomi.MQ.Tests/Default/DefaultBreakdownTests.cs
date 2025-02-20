@@ -22,7 +22,7 @@ public class DefaultBreakdownTests
             It.IsAny<CancellationToken>()
             );
 
-        var result = breakdown.BasicReturn(this, eventArgs.Object);
+        var result = breakdown.BasicReturnAsync(this, eventArgs.Object);
 
         Assert.Equal(Task.CompletedTask, result);
     }
@@ -31,7 +31,7 @@ public class DefaultBreakdownTests
     public void NotFoundConsumer_ShouldCompleteTask()
     {
         var breakdown = new DefaultBreakdown();
-        var result =  breakdown.NotFoundConsumer(It.IsAny<string>(), It.IsAny<Type>(), It.IsAny<Type>());
+        var result =  breakdown.NotFoundConsumerAsync(It.IsAny<string>(), It.IsAny<Type>(), It.IsAny<Type>());
 
         Assert.Equal(Task.CompletedTask, result);
     }

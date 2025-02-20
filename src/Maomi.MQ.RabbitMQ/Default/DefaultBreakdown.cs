@@ -15,13 +15,13 @@ namespace Maomi.MQ.Default;
 public class DefaultBreakdown : IBreakdown
 {
     /// <inheritdoc />
-    public Task BasicReturn(object sender, BasicReturnEventArgs @event)
+    public Task BasicReturnAsync(object sender, BasicReturnEventArgs @event)
     {
         return Task.CompletedTask;
     }
 
     /// <inheritdoc />
-    public Task NotFoundConsumer(string queue, Type messageType, Type consumerType)
+    public Task NotFoundConsumerAsync(string queue, Type messageType, Type consumerType)
     {
         return Task.CompletedTask;
     }

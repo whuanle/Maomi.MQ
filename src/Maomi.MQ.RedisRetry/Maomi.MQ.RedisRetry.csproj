@@ -6,7 +6,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<IsPackable>true</IsPackable>
-		<PackageVersion>1.3.0</PackageVersion>
+		<PackageVersion>2.0.0</PackageVersion>
 		<Title>Maomi.MQ</Title>
 		<RootNamespace>Maomi.MQ</RootNamespace>
 		<Description>

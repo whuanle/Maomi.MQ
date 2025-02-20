@@ -7,7 +7,6 @@
 using Maomi.MQ.Default;
 using Maomi.MQ.Defaults;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace Maomi.MQ;
 

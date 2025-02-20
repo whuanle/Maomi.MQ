@@ -33,7 +33,7 @@ public interface IDynamicConsumer
     /// <typeparam name="TMessage">Message type.</typeparam>
     /// <param name="consumerOptions"></param>
     /// <returns>Return to Consumer identity.<br />返回消费者标识.</returns>
-    Task<string> ConsumerAsync<TMessage>(IConsumerOptions consumerOptions)
+    Task<string> EventBusAsync<TMessage>(IConsumerOptions consumerOptions)
         where TMessage : class;
 
     /// <summary>

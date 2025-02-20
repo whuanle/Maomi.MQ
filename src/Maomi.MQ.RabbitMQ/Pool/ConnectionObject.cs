@@ -16,10 +16,11 @@ namespace Maomi.MQ.Pool;
 /// IConnection,IChannel pool.<br />
 /// TCP 连接和通道.
 /// </summary>
-public class ConnectionObject
+public class ConnectionObject : IDisposeConnectionObject
 {
     protected Lazy<IConnection> _connection;
     protected Lazy<IChannel> _channel;
+    private bool disposedValue;
 
     /// <summary>
     /// IConnection.
@@ -41,6 +42,13 @@ public class ConnectionObject
         _channel = new Lazy<IChannel>(() => _connection.Value.CreateChannelAsync().Result);
     }
 
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="ConnectionObject"/> class.
     /// </summary>
@@ -49,5 +57,23 @@ public class ConnectionObject
     {
         _connection = connectionObject._connection;
         _channel = connectionObject._channel;
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposedValue)
+        {
+            if (disposing)
+            {
+                Connection.Dispose();
+            }
+
+            disposedValue = true;
+        }
+    }
+
+    ~ConnectionObject()
+    {
+        Dispose(disposing: false);
     }
 }

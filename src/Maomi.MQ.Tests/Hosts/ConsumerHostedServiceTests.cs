@@ -47,7 +47,7 @@ public class ConsumerHostedServiceTests
             methodOrPropertyName: "CreateMessageConsumer",
             genericTypeArguments: new Type[] {  typeof(TestEvent) },
             exactParameterMatch: false,
-            args: new object[] { ItExpr.IsAny<IChannel>(), ItExpr.IsAny<Type>(), ItExpr.IsAny<IConsumerOptions>() }).Returns(Task.FromResult("consumer-tag"));
+            args: new object[] { ItExpr.IsAny<IChannel>(), ItExpr.IsAny<Type>(), ItExpr.IsAny<Type>(), ItExpr.IsAny<IConsumerOptions>() }).Returns(Task.FromResult("consumer-tag"));
 
         await consumerHostedServiceMock.Object.MockWaitReadyInitQueueAsync();
 
@@ -85,7 +85,7 @@ public class ConsumerHostedServiceTests
             methodOrPropertyName: "CreateMessageConsumer",
             genericTypeArguments: new Type[] { typeof(TestEvent) },
             exactParameterMatch: false,
-            args: new object[] { ItExpr.IsAny<IChannel>(), ItExpr.IsAny<Type>(), ItExpr.IsAny<IConsumerOptions>() }).Returns(Task.FromResult("consumer-tag"));
+            args: new object[] { ItExpr.IsAny<IChannel>(), ItExpr.IsAny<Type>(), ItExpr.IsAny<Type>(), ItExpr.IsAny<IConsumerOptions>() }).Returns(Task.FromResult("consumer-tag"));
 
 
         await consumerHostedServiceMock.Object.MockWaitReadyInitQueueAsync();

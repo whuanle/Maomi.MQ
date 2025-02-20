@@ -93,10 +93,10 @@ public class MessageConsumer
         if (consumer == null)
         {
             var breakdown = _serviceProvider.GetRequiredService<IBreakdown>();
-            await breakdown.NotFoundConsumer(_consumerOptions.Queue, typeof(TMessage), typeof(IConsumer<TMessage>));
+            await breakdown.NotFoundConsumerAsync(_consumerOptions.Queue, typeof(TMessage), typeof(IConsumer<TMessage>));
 
             var ex = new ArgumentNullException(nameof(consumer), "The consumer instance cannot be null.");
-            OnExceptionEvent(messageHeader, ex, activity);
+            OnExceptionEvent(ref messageHeader, ex, activity);
             throw ex;
         }
 
@@ -113,7 +113,7 @@ public class MessageConsumer
         }
         catch (Exception ex)
         {
-            OnExceptionEvent(messageHeader, ex, activity);
+            OnExceptionEvent(ref messageHeader, ex, activity);
             fallbackState = await FallbackAsync(eventArgs, consumer, messageHeader, eventBody, ex);
             goto Fallback;
         }
@@ -175,7 +175,7 @@ public class MessageConsumer
             await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: _consumerOptions.RetryFaildRequeue);
         }
 
-        OnEndEvent(messageHeader, activity);
+        OnEndEvent(ref messageHeader, activity);
     }
 
     protected virtual async Task<ConsumerState> ExecuteAndRetryAsync<TMessage>(BasicDeliverEventArgs eventArgs, IConsumer<TMessage> consumer, MessageHeader messageHeader, TMessage eventBody, int retryCount)
@@ -231,7 +231,7 @@ public class MessageConsumer
         where TMessage : class
     {
         var fallbackActivity = _activitySource.StartActivity(DiagnosticName.ActivitySource.Fallback, ActivityKind.Internal);
-        OnFallbackStartEvent(messageHeader, eventArgs, _consumerOptions.Queue, fallbackActivity);
+        OnFallbackStartEvent(ref messageHeader, eventArgs, _consumerOptions.Queue, fallbackActivity);
         ConsumerState fallbackState = ConsumerState.Ack;
 
         try
@@ -249,12 +249,12 @@ public class MessageConsumer
                 messageHeader.Id,
                 eventArgs.DeliveryTag);
 
-            OnFallbackExceptionEvent(messageHeader, fallbackEx, fallbackActivity);
+            OnFallbackExceptionEvent(ref messageHeader, fallbackEx, fallbackActivity);
             return ConsumerState.Exception;
         }
         finally
         {
-            OnFallbackEndEvent(messageHeader, fallbackState, fallbackActivity);
+            OnFallbackEndEvent(ref messageHeader, fallbackState, fallbackActivity);
         }
     }
 
@@ -292,7 +292,7 @@ public class MessageConsumer
         _diagnosticListener.Write(DiagnosticName.Event.ConsumerStart, messageHeader);
     }
 
-    protected virtual void OnEndEvent(MessageHeader messageHeader, Activity? activity)
+    protected virtual void OnEndEvent(ref MessageHeader messageHeader, Activity? activity)
     {
         if (activity == null || !IsEnabledListener())
         {
@@ -304,7 +304,7 @@ public class MessageConsumer
         _diagnosticListener.Write(DiagnosticName.Event.ConsumerStop, messageHeader);
     }
 
-    protected virtual void OnExceptionEvent(MessageHeader messageHeader, Exception ex, Activity? activity)
+    protected virtual void OnExceptionEvent(ref MessageHeader messageHeader, Exception ex, Activity? activity)
     {
         if (activity == null || !IsEnabledListener())
         {
@@ -317,7 +317,7 @@ public class MessageConsumer
         _diagnosticListener.Write(DiagnosticName.Event.ConsumerExecption, messageHeader);
     }
 
-    protected virtual void OnFallbackStartEvent(MessageHeader messageHeader, BasicDeliverEventArgs eventArgs, string queue, Activity? activity)
+    protected virtual void OnFallbackStartEvent(ref MessageHeader messageHeader, BasicDeliverEventArgs eventArgs, string queue, Activity? activity)
     {
         if (activity == null || !IsEnabledListener())
         {
@@ -327,7 +327,7 @@ public class MessageConsumer
         activity.Start();
     }
 
-    protected virtual void OnFallbackEndEvent(MessageHeader messageHeader, ConsumerState fallbackState, Activity? activity)
+    protected virtual void OnFallbackEndEvent(ref MessageHeader messageHeader, ConsumerState fallbackState, Activity? activity)
     {
         if (activity == null || !IsEnabledListener())
         {
@@ -338,7 +338,7 @@ public class MessageConsumer
         activity.Stop();
     }
 
-    protected virtual void OnFallbackExceptionEvent(MessageHeader messageHeader, Exception ex, Activity? activity)
+    protected virtual void OnFallbackExceptionEvent(ref MessageHeader messageHeader, Exception ex, Activity? activity)
     {
         if (activity == null || !IsEnabledListener())
         {
