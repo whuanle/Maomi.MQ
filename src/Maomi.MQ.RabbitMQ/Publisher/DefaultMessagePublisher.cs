@@ -8,6 +8,7 @@
 #pragma warning disable SA1600
 #pragma warning disable CS1591
 
+using Maomi.MQ.Default;
 using Maomi.MQ.Diagnostics;
 using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
@@ -208,13 +209,19 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
             };
         }
 
+        var messageSerializer = _messageSerializer;
+        if (messageSerializer is IMessageSerializerFactory serializerFactory)
+        {
+            messageSerializer = serializerFactory.GetMessageSerializer(typeof(TMessage));
+        }
+
         MessageHeader messageHeader = new MessageHeader
         {
             Id = _idGen.NextId().ToString(),
             Timestamp = DateTimeOffset.Now,
             AppId = _mqOptions.AppName,
-            ContentEncoding = _messageSerializer.ContentEncoding,
-            ContentType = _messageSerializer.ContentType,
+            ContentEncoding = messageSerializer.ContentEncoding,
+            ContentType = messageSerializer.ContentType,
             Type = typeof(TMessage).FullName!,
             UserId = properties.UserId ?? string.Empty,
             Properties = properties
@@ -261,9 +268,15 @@ public partial class DefaultMessagePublisher
 {
     protected virtual void InitializeMessageProperties<TMessage>(BasicProperties properties, ref MessageHeader messageHeader)
     {
+        var messageSerializer = _messageSerializer;
+        if (messageSerializer is IMessageSerializerFactory serializerFactory)
+        {
+            messageSerializer = serializerFactory.GetMessageSerializer(typeof(TMessage));
+        }
+
         properties.AppId = _mqOptions.AppName;
-        properties.ContentEncoding = _messageSerializer.ContentEncoding;
-        properties.ContentType = _messageSerializer.ContentType;
+        properties.ContentEncoding = messageSerializer.ContentEncoding;
+        properties.ContentType = messageSerializer.ContentType;
         properties.MessageId = messageHeader.Id.ToString();
         properties.Timestamp = new AmqpTimestamp(messageHeader.Timestamp.ToUnixTimeMilliseconds());
         properties.Type = typeof(TMessage).FullName;

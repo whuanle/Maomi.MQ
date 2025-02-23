@@ -105,7 +105,13 @@ public class MessageConsumer
 
         try
         {
-            eventBody = _messageSerializer.Deserialize<TMessage>(eventArgs.Body.Span)!;
+            var messageSerializer = _messageSerializer;
+            if (messageSerializer is IMessageSerializerFactory serializerFactory)
+            {
+                messageSerializer = serializerFactory.GetMessageDeserializer(typeof(TMessage), messageHeader);
+            }
+
+            eventBody = messageSerializer.Deserialize<TMessage>(eventArgs.Body.Span)!;
             if (eventBody == null)
             {
                 ArgumentNullException.ThrowIfNull(eventBody, "The message body cannot be null.");
