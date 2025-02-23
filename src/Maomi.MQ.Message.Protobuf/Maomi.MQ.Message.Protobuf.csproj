@@ -8,9 +8,11 @@
 		<IsPackable>true</IsPackable>
 		<PackageVersion>2.0.1</PackageVersion>
 		<Title>Maomi.MQ</Title>
+		<RootNamespace>Maomi.MQ</RootNamespace>
 		<Description>RabbitMQ Publisher and consumer communication model framework.
-RabbitMQ 发布者和消费者通讯模型框架。</Description>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+RabbitMQ 发布者和消费者通讯模型框架。
+		</Description>
+		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageIcon>package.png</PackageIcon>
@@ -19,7 +21,8 @@ RabbitMQ 发布者和消费者通讯模型框架。</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryType>git</RepositoryType>
 		<PackageReleaseNotes>RabbitMQ Publisher and consumer communication model framework.
-RabbitMQ 发布者和消费者通讯模型框架。</PackageReleaseNotes>
+RabbitMQ 发布者和消费者通讯模型框架。
+		</PackageReleaseNotes>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
@@ -42,14 +45,39 @@ RabbitMQ 发布者和消费者通讯模型框架。</PackageReleaseNotes>
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Google.Protobuf" Version="3.30.0-rc1" />
+		<PackageReference Include="Polly" Version="8.5.1" />
+		<PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
+		<PackageReference Include="Yitter.IdGenerator" Version="1.0.14" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 	</ItemGroup>
+	
+	<ItemGroup Condition="'$(TargetFramework)' == 'net7.0'">
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
+	</ItemGroup>
+	
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
+	</ItemGroup>
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Maomi.MQ.Core\Maomi.MQ.Core.csproj" />
-	  <ProjectReference Include="..\Maomi.MQ.RabbitMQ\Maomi.MQ.RabbitMQ.csproj" />
 	</ItemGroup>
+
 </Project>

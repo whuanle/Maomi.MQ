@@ -34,5 +34,7 @@ public class RabbitMQConnectionMock
         ConnectionObjectMock = new Mock<ConnectionObject>(MqOptions);
 
         ConnectionPoolMock = new Mock<ConnectionPool>(MqOptions);
+
+        ConnectionPoolMock.Setup(x => x.Get()).Returns(ConnectionObjectMock.Object);
     }
 }
