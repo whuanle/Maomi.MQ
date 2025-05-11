@@ -16,9 +16,6 @@ namespace Maomi.MQ.Filters;
 /// </summary>
 public class ConsumerTypeFilter : ITypeFilter
 {
-    private static readonly MethodInfo AddHostedMethod = typeof(ServiceCollectionHostedServiceExtensions)
-        .GetMethod(nameof(ServiceCollectionHostedServiceExtensions.AddHostedService), BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(IServiceCollection) })!;
-
     private readonly HashSet<ConsumerType> _consumers = new();
 
     private readonly ConsumerInterceptor? _consumerInterceptor;
@@ -29,7 +26,6 @@ public class ConsumerTypeFilter : ITypeFilter
     /// <param name="consumerInterceptor">Filter.</param>
     public ConsumerTypeFilter(ConsumerInterceptor? consumerInterceptor = null)
     {
-        ArgumentNullException.ThrowIfNull(AddHostedMethod);
         _consumerInterceptor = consumerInterceptor;
     }
 

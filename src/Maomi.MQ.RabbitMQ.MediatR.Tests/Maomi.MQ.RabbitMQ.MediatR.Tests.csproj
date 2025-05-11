@@ -1,12 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFramework>net9.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-
 		<IsPackable>false</IsPackable>
-		<IsTestProject>true</IsTestProject>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -21,7 +19,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Maomi.MQ.RabbitMQ\Maomi.MQ.RabbitMQ.csproj" />
+		<ProjectReference Include="..\Maomi.MQ.RabbitMQ.MediatR\Maomi.MQ.RabbitMQ.MediatR.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
