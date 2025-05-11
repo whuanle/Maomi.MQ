@@ -39,3 +39,4 @@ Maomi.MQ.RabbitMQ 是一个用于专为 RabbitMQ 设计的发布者和消费者�
 * [重试](https://mmq.whuanle.cn/5.retry.html)
 * [死信队列](https://mmq.whuanle.cn/6.dead_queue.html)
 * [可观测性](https://mmq.whuanle.cn/7.opentelemetry.html)
+* [支持 MediatR、FastEndpoints](https://mmq.whuanle.cn/8.other_support.html) 

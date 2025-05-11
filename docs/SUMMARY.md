@@ -11,4 +11,5 @@
 * [重试](5.retry.md)
 * [死信队列](6.dead_queue.md)
 * [可观测性](7.opentelemetry.md)
+* [MediatR、FastEndpoints 支持](8.other_support.md) 
 

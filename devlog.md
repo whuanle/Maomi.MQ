@@ -12,6 +12,7 @@
 - [x] 增加对 Protobuf 的支持
 - [x] 增加多序列化器同时使用的支持
 - [x] 修复部分单元测试错误
+- [x] 增加了对 MediatR、FastEndpoints 的支持
 
 
 

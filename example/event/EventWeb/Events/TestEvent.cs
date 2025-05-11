@@ -70,12 +70,15 @@ public class DynamicTestEvent
 [EventOrder(0)]
 public class DynamicEventEventHandler : IEventHandler<DynamicTestEvent>
 {
-    public async Task CancelAsync(EventBody<DynamicTestEvent> message, CancellationToken cancellationToken)
+    public Task CancelAsync(DynamicTestEvent message, CancellationToken cancellationToken)
     {
+        Console.WriteLine($"{message.Message},事件 1 已被取消");
+        return Task.CompletedTask;
     }
 
-    public async Task ExecuteAsync(EventBody<DynamicTestEvent> message, CancellationToken cancellationToken)
+    public Task ExecuteAsync(DynamicTestEvent message, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"{message.Id},事件 1 已被执行");
+        Console.WriteLine($"{message.Message},事件 1 已被执行");
+        return Task.CompletedTask;
     }
 }
