@@ -17,7 +17,6 @@ builder.Services.AddFastEndpoints(options =>
 
 });
 
-
 builder.Services.AddMaomiMQ((MqOptionsBuilder options) =>
 {
     options.WorkId = 1;
@@ -25,7 +24,7 @@ builder.Services.AddMaomiMQ((MqOptionsBuilder options) =>
     options.AppName = "myapp";
     options.Rabbit = (ConnectionFactory options) =>
     {
-        options.HostName = "192.168.50.199";//Environment.GetEnvironmentVariable("RABBITMQ")!;
+        options.HostName = Environment.GetEnvironmentVariable("RABBITMQ")!;
         options.Port = 5672;
         options.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
     };

@@ -27,3 +27,4 @@
   * [Retry](https://mmq.whuanle.cn/5.retry.html)  
   * [Dead Letter Queue](https://mmq.whuanle.cn/6.dead_queue.html)  
   * [Observability](https://mmq.whuanle.cn/7.opentelemetry.html)
+  * [Support MediatR/FastEndpoints](https://mmq.whuanle.cn/8.other_support.html) 

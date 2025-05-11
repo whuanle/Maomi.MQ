@@ -1,3 +1,4 @@
+using Maomi.MQ;
 using Maomi.MQ.EventBus;
 using Maomi.MQ.MediatR;
 using MediatR;

@@ -20,7 +20,6 @@ builder.Services.AddMediatR(options =>
 
     options.RegisterGenericHandlers = true;
 });
-
 builder.Services.AddMaomiMQ((MqOptionsBuilder options) =>
 {
     options.WorkId = 1;
