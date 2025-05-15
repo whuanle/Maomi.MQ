@@ -89,7 +89,16 @@ public class MessageConsumer
 
         OnStartEvent(messageHeader, eventArgs, _consumerOptions.Queue, activity);
 
-        var consumer = _consumerInstance(_serviceProvider) as IConsumer<TMessage>;
+        IConsumer<TMessage> consumer = default!;
+        try
+        {
+            consumer = (_consumerInstance(_serviceProvider) as IConsumer<TMessage>)!;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An exception occurred when obtaining the consumer instance {0}.", $"IConsumer<{typeof(TMessage).Name}>");
+        }
+
         if (consumer == null)
         {
             var breakdown = _serviceProvider.GetRequiredService<IBreakdown>();
