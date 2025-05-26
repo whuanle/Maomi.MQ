@@ -116,8 +116,8 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
     }
 
     /// <inheritdoc />
-    public virtual Task PublishAsync<TMessage>(TMessage message, Action<BasicProperties>? properties = null, CancellationToken cancellationToken = default)
-        where TMessage : class
+    public virtual Task AutoPublishAsync<TModel>(TModel model, Action<BasicProperties>? properties = null, CancellationToken cancellationToken = default)
+        where TModel : class
     {
         var basicProperties = new BasicProperties()
         {
@@ -129,10 +129,10 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
             properties.Invoke(basicProperties);
         }
 
-        var consumerOptions = _consumerTypeProvider.Value.First(x => x.Event == typeof(TMessage)).ConsumerOptions;
+        var consumerOptions = _consumerTypeProvider.Value.First(x => x.Event == typeof(TModel)).ConsumerOptions;
         consumerOptions = _routingProvider.Value.Get(consumerOptions);
 
-        return CustomPublishAsync(consumerOptions.BindExchange ?? string.Empty, consumerOptions.RoutingKey ?? consumerOptions.Queue, message, basicProperties, cancellationToken);
+        return CustomPublishAsync(consumerOptions.BindExchange ?? string.Empty, consumerOptions.RoutingKey ?? consumerOptions.Queue, model, basicProperties, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -167,7 +167,7 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
     }
 
     /// <inheritdoc />
-    public virtual Task PublishAsync<TMessage>(TMessage message, BasicProperties? properties = default, CancellationToken cancellationToken = default)
+    public virtual Task PublishModelAsync<TMessage>(TMessage message, BasicProperties? properties = default, CancellationToken cancellationToken = default)
     {
         if (properties == null)
         {

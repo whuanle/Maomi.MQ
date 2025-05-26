@@ -18,8 +18,8 @@ public class IndexController : ControllerBase
         _dynamicConsumer = dynamicConsumer;
     }
 
-    [HttpPost("create")]
-    public async Task<string> CreateConsumer([FromBody] ConsumerDto consumer)
+    [HttpPost("create1")]
+    public async Task<string> Create1Consumer([FromBody] ConsumerDto consumer)
     {
         foreach (var item in consumer.Queues)
         {
@@ -29,8 +29,8 @@ public class IndexController : ControllerBase
         return "ok";
     }
 
-    [HttpPost("create")]
-    public async Task<string> CreateConsumer([FromBody] ConsumerDto consumer)
+    [HttpPost("create2")]
+    public async Task<string> Create2Consumer([FromBody] ConsumerDto consumer)
     {
         foreach (var item in consumer.Queues)
         {
@@ -69,7 +69,7 @@ public class IndexController : ControllerBase
             {
                 for (var i = 0; i < 10_0000; i++)
                 {
-                    await _messagePublisher.PublishAsync(queue: item, message: new TestEvent
+                    await _messagePublisher.PublishAsync(string.Empty, item, message: new TestEvent
                     {
                         Id = i,
                     });

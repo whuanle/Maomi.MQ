@@ -22,7 +22,7 @@ public class IndexController : ControllerBase
     {
         for (var i = 0; i < 100; i++)
         {
-            await _messagePublisher.PublishAsync("EventWeb", new TestEvent
+            await _messagePublisher.PublishAsync(string.Empty, "EventWeb", new TestEvent
             {
                 Message = i.ToString()
             });

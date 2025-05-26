@@ -160,24 +160,32 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
 
         consumer.ReceivedAsync += async (sender, eventArgs) =>
         {
-            Dictionary<string, object> loggerState = new()
+            try
             {
-                { "Queue", consumerOptions.Queue },
-                { "Exchange", eventArgs.Exchange },
-                { "RoutingKey", eventArgs.RoutingKey },
-                { "ConsumerTag", eventArgs.ConsumerTag },
-                { "DeliveryTag", eventArgs.DeliveryTag },
-                { "Redelivered", eventArgs.Redelivered },
-                { "MessageId", eventArgs.BasicProperties.MessageId ?? string.Empty }
-            };
+                Dictionary<string, object> loggerState = new()
+                {
+                    { "Queue", consumerOptions.Queue },
+                    { "Exchange", eventArgs.Exchange },
+                    { "RoutingKey", eventArgs.RoutingKey },
+                    { "ConsumerTag", eventArgs.ConsumerTag },
+                    { "DeliveryTag", eventArgs.DeliveryTag },
+                    { "Redelivered", eventArgs.Redelivered },
+                    { "MessageId", eventArgs.BasicProperties.MessageId ?? string.Empty }
+                };
 
-            using (_logger.BeginScope(loggerState))
+                using (_logger.BeginScope(loggerState))
+                {
+                    using var scope = _serviceProvider.CreateScope();
+                    var serviceProvider = scope.ServiceProvider;
+
+                    MessageConsumer messageConsumer = new MessageConsumer(serviceProvider, consumerOptions, s => proxyConsumer);
+                    await messageConsumer.ConsumerAsync<TMessage>(consummerChannel, eventArgs);
+                }
+            }
+            catch (Exception ex)
             {
-                using var scope = _serviceProvider.CreateScope();
-                var serviceProvider = scope.ServiceProvider;
-
-                MessageConsumer messageConsumer = new MessageConsumer(serviceProvider, consumerOptions, s => proxyConsumer);
-                await messageConsumer.ConsumerAsync<TMessage>(consummerChannel, eventArgs);
+                _logger.LogError(ex, "An error occurred while declaring the queue.Consumer services have been withdrawn.");
+                throw;
             }
         };
 

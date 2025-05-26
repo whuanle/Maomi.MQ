@@ -29,6 +29,6 @@ public class FastEndpointMQEventBusHandler<TEvent> : FastEndpoints.IEventHandler
     /// <inheritdoc/>
     public Task HandleAsync(FeMQEvent<TEvent> eventModel, CancellationToken ct)
     {
-        return _messagePublisher.PublishAsync<TEvent>(model: eventModel.Event);
+        return _messagePublisher.AutoPublishAsync<TEvent>(message: eventModel.Event);
     }
 }

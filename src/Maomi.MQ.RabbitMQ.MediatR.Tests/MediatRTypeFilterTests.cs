@@ -16,9 +16,9 @@ public class MediatRTypeFilterTests
         var invalidMiddleware = typeof(string);
 
         // Act & Assert
-        var exception = Assert.Throws<TypeLoadException>(() =>
+        var ex = Assert.Throws<TypeLoadException>(() =>
             new MediatrTypeFilter(eventMiddleware: invalidMiddleware));
-        Assert.Contains("is not a valid event middleware", exception.Message);
+        Assert.Contains("is not a valid event middleware", ex.Message);
     }
 
     [Fact]
@@ -28,7 +28,9 @@ public class MediatRTypeFilterTests
         var filter = new MediatrTypeFilter();
 
         // Assert
-        Assert.Equal(typeof(DefaultMediatrEventMiddleware<>), filter.GetType().GetField("_eventMiddleware", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(filter));
+        var field = filter.GetType().GetField("_eventMiddleware", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        Assert.NotNull(field);
+        Assert.Equal(typeof(DefaultMediatrEventMiddleware<>), field.GetValue(filter));
     }
 
     [Fact]
@@ -60,7 +62,7 @@ public class MediatRTypeFilterTests
     }
 
     [Fact]
-    public void Filter_ShouldRegisterConsumer_WhenValidType()
+    public void Filter_ShouldRegisterConsumerAndMiddleware_WhenValidType()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -91,10 +93,18 @@ public class MediatRTypeFilterTests
         // Assert
         Assert.Single(consumers);
         Assert.Equal("TestQueue", consumers.First().Queue);
+        Assert.Equal(typeof(ValidConsumerRequest), consumers.First().Event);
     }
 
     private class NoConsumerAttributeRequest : IRequest { }
 
-    [Consumer("TestQueue")]
+
+    private class TestHandler : IRequestHandler<ValidConsumerRequest>
+    {
+        public Task Handle(ValidConsumerRequest request, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+
+    [MediarCommand("TestQueue")]
     private class ValidConsumerRequest : IRequest { }
 }

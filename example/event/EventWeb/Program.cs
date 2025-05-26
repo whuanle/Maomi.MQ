@@ -50,13 +50,17 @@ public class Program
     }
 
 
-    private static bool EventTopicFilter(EventTopicAttribute eventTopicAttribute, Type eventType)
+    private static RegisterQueue EventTopicFilter(IConsumerOptions consumerOptions, Type eventType)
     {
         if (eventType == typeof(DynamicTestEvent))
         {
-            eventTopicAttribute.Queue = eventTopicAttribute.Queue + "_1";
+            ConsumerOptions options = new ConsumerOptions("aaa");
+            options.CopyFrom(consumerOptions);
+            options.Queue = options.Queue + "_1";
+
+            return new RegisterQueue(true, consumerOptions);
         }
 
-        return true;
+        return new RegisterQueue(true, consumerOptions);
     }
 }

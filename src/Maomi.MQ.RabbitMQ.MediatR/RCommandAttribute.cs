@@ -13,7 +13,6 @@ namespace Maomi.MQ.MediatR;
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
 public class RCommandAttribute : MediarCommandAttribute
 {
-
     /// <summary>
     /// Initializes a new instance of the <see cref="RCommandAttribute"/> class.
     /// </summary>

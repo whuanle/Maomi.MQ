@@ -29,7 +29,7 @@ public class IndexController : ControllerBase
             }
         });
 
-        await _messagePublisher.PublishAsync(model: new MyCommand
+        await _messagePublisher.AutoPublishAsync(message: new MyCommand
         {
             Name = "abcd"
         });

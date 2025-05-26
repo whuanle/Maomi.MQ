@@ -15,6 +15,7 @@ public class MyConsumer : IConsumer<TestEvent>
         Console.WriteLine($"执行 {message.Id} 第几次：{_retryCount} {DateTime.Now}");
         _retryCount++;
         //await Task.Delay(1000);
+        await Task.CompletedTask;
     }
 
     // 每次失败时被执行
@@ -29,7 +30,7 @@ public class MyConsumer : IConsumer<TestEvent>
 
     public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, TestEvent? message, Exception? ex)
     {
-        Console.WriteLine($"执行 {message.Id} 补偿 {DateTime.Now}");
+        Console.WriteLine($"执行 {message!.Id} 补偿 {DateTime.Now}");
         return Task.FromResult(ConsumerState.Ack);
     }
 }

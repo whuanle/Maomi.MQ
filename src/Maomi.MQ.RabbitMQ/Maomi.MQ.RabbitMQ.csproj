@@ -6,7 +6,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<IsPackable>true</IsPackable>
-		<PackageVersion>2.0.1</PackageVersion>
+		<PackageVersion>2.1.0</PackageVersion>
 		<Title>Maomi.MQ</Title>
 		<RootNamespace>Maomi.MQ</RootNamespace>
 		<Description>RabbitMQ Publisher and consumer communication model framework.
@@ -45,7 +45,7 @@ RabbitMQ 发布者和消费者通讯模型框架。
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="RabbitMQ.Client" Version="7.0.0" />
+		<PackageReference Include="RabbitMQ.Client" Version="7.1.2" />
 	</ItemGroup>
 
 	<ItemGroup>

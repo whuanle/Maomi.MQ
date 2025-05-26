@@ -49,7 +49,7 @@ public class DefaultRetryPolicyFactory : IRetryPolicyFactory
                 sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(RetryBaseDelaySeconds, retryAttempt)),
                 onRetry: async (exception, timeSpan, retryCount, context) =>
                 {
-                    _logger.LogDebug("Retry execution event,queue [{Queue}],retry count [{RetryCount}],timespan [{TimeSpan}]", queue, retryCount, timeSpan);
+                    _logger.LogWarning("Retry execution event,queue [{Queue}],retry count [{RetryCount}],timespan [{TimeSpan}]", queue, retryCount, timeSpan);
                     await FaildAsync(queue, exception, timeSpan, retryCount, context);
                 });
 
@@ -57,7 +57,7 @@ public class DefaultRetryPolicyFactory : IRetryPolicyFactory
     }
 
     /// <summary>
-    /// Executed when retry fails.
+    /// Executed when retry fails.You can record the retry history here.
     /// </summary>
     /// <param name="queue"></param>
     /// <param name="ex"></param>

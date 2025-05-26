@@ -25,7 +25,7 @@ public class IndexController : ControllerBase
         {
             s_hatsSold.Add(1000);
 
-            await _messagePublisher.PublishAsync(queue: "ActivitySourceApi", message: new TestEvent
+            await _messagePublisher.PublishAsync(string.Empty, "ActivitySourceApi", message: new TestEvent
             {
                 Id = i
             });

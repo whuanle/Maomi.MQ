@@ -125,27 +125,35 @@ public abstract class ConsumerBaseService : BackgroundService
 
         consumer.ReceivedAsync += async (sender, eventArgs) =>
         {
-            Dictionary<string, object> loggerState = new()
+            try
             {
-                { "Queue", consumerOptions.Queue },
-                { "Exchange", eventArgs.Exchange },
-                { "RoutingKey", eventArgs.RoutingKey },
-                { "ConsumerTag", eventArgs.ConsumerTag },
-                { "DeliveryTag", eventArgs.DeliveryTag },
-                { "Redelivered", eventArgs.Redelivered },
-                { "MessageId", eventArgs.BasicProperties.MessageId ?? string.Empty }
-            };
-
-            using (_logger.BeginScope(loggerState))
-            {
-                using var scope = _serviceProvider.CreateScope();
-                var serviceProvider = scope.ServiceProvider;
-                MessageConsumer messageConsumer = new MessageConsumer(serviceProvider, consumerOptions, s =>
+                Dictionary<string, object> loggerState = new()
                 {
-                    return s.GetRequiredService(consumerType);
-                });
+                    { "Queue", consumerOptions.Queue },
+                    { "Exchange", eventArgs.Exchange },
+                    { "RoutingKey", eventArgs.RoutingKey },
+                    { "ConsumerTag", eventArgs.ConsumerTag },
+                    { "DeliveryTag", eventArgs.DeliveryTag },
+                    { "Redelivered", eventArgs.Redelivered },
+                    { "MessageId", eventArgs.BasicProperties.MessageId ?? string.Empty }
+                };
 
-                await messageConsumer.ConsumerAsync<TMessage>(consummerChannel, eventArgs);
+                using (_logger.BeginScope(loggerState))
+                {
+                    using var scope = _serviceProvider.CreateScope();
+                    var serviceProvider = scope.ServiceProvider;
+                    MessageConsumer messageConsumer = new MessageConsumer(serviceProvider, consumerOptions, s =>
+                    {
+                        // IConsumer<TMessage>
+                        return s.GetRequiredService(consumerType);
+                    });
+
+                    await messageConsumer.ConsumerAsync<TMessage>(consummerChannel, eventArgs);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Consumer service is abnormal.{@ConsumerOptions}", consumerOptions);
             }
         };
 

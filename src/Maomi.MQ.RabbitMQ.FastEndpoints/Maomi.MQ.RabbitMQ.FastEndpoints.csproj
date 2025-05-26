@@ -6,7 +6,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<IsPackable>true</IsPackable>
-		<PackageVersion>2.0.1</PackageVersion>
+		<PackageVersion>2.1.0</PackageVersion>
 		<Title>Maomi.MQ.FastEndpoints</Title>
 		<RootNamespace>Maomi.MQ</RootNamespace>
 		<Description>
@@ -47,7 +47,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="FastEndpoints" Version="6.1.0-beta.13" />
+		<PackageReference Include="FastEndpoints" Version="6.2.0-beta.3" />
 	</ItemGroup>
 
 	<ItemGroup>

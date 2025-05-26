@@ -20,7 +20,7 @@ public class IndexController : ControllerBase
     {
         for (var i = 0; i < 1; i++)
         {
-            await _messagePublisher.PublishAsync(queue: "RetryWeb", message: new TestEvent
+            await _messagePublisher.PublishAsync(string.Empty, "RetryWeb", message: new TestEvent
             {
                 Id = i
             });

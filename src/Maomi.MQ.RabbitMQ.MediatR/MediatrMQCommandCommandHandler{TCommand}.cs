@@ -29,6 +29,6 @@ public class MediatrMQCommandCommandHandler<TCommand> : IRequestHandler<MediatrM
     /// <inheritdoc/>
     public Task Handle(MediatrMQCommand<TCommand> request, CancellationToken cancellationToken)
     {
-        return _messagePublisher.PublishAsync<TCommand>(model: request.Message);
+        return _messagePublisher.AutoPublishAsync<TCommand>(message: request.Message);
     }
 }

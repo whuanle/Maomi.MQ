@@ -37,7 +37,7 @@ public class IndexController : ControllerBase
         // 如果在本项目中 TestMessageEvent 只指定了一个消费者，那么通过 TestMessageEvent 自动寻找对应的配置
         for (var i = 0; i < 100; i++)
         {
-            await _messagePublisher.PublishAsync(model: new TestMessageEvent
+            await _messagePublisher.AutoPublishAsync(message: new TestMessageEvent
             {
                 Id = i
             });

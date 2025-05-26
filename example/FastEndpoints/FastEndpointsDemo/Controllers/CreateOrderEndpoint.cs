@@ -28,7 +28,7 @@ public class CreateOrderEndpoint : Endpoint<SendMQ, string>
         });
 
         // Send event message, 2
-        await _messagePublisher.PublishAsync(model: new OrderCreatedEvent
+        await _messagePublisher.AutoPublishAsync(message: new OrderCreatedEvent
         {
             OrderID = "001",
             CustomerName = req.Name,
@@ -44,7 +44,7 @@ public class CreateOrderEndpoint : Endpoint<SendMQ, string>
         }
         .ExecuteAsync();
 
-        await _messagePublisher.PublishAsync(model: new OrderCreatedCommand
+        await _messagePublisher.AutoPublishAsync(message: new OrderCreatedCommand
         {
             OrderID = "001",
             CustomerName = req.Name,
