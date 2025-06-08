@@ -6,7 +6,6 @@
 
 using Maomi.MQ.EventBus;
 using MediatR;
-using System.Windows.Input;
 
 namespace Maomi.MQ.MediatR;
 

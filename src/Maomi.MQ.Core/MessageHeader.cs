@@ -33,10 +33,10 @@ public struct MessageHeader
     public DateTimeOffset Timestamp { get; init; } = default!;
 
     /// <summary>
-    /// The message comes with an attribute, which for RabbitMQ is IBasicProperties.<br />
-    /// 消息附带属性，对于 RabbitMQ 是 IBasicProperties.
+    /// The message comes with an attribute, which for RabbitMQ is IReadOnlyBasicProperties.<br />
+    /// 消息附带属性，对于 RabbitMQ 是 IReadOnlyBasicProperties.
     /// </summary>
-    public object? Properties { get; init; } = default!;
+    public object Properties { get; init; } = new object();
 
     /// <summary>
     /// The content format of the message,ex: "application/json".
@@ -62,4 +62,14 @@ public struct MessageHeader
     /// The message is sent by which application.<br />
     /// </summary>
     public string AppId { get; init; } = default!;
+
+    /// <summary>
+    /// The exchange the message was originally published to.
+    /// </summary>
+    public string? Exchange { get; init; } = default!;
+
+    /// <summary>
+    /// The routing key used when the message was originally published.
+    /// </summary>
+    public string? RoutingKey { get; init; } = default!;
 }

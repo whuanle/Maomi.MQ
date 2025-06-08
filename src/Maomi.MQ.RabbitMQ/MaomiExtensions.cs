@@ -86,7 +86,9 @@ public static partial class MaomiExtensions
 
         services.AddSingleton<ConnectionPool>();
 
-        services.AddScoped<IMessagePublisher, DefaultMessagePublisher>();
+        services.AddScoped<DefaultMessagePublisher>();
+        services.AddScoped<IMessagePublisher>(s => s.GetRequiredService<DefaultMessagePublisher>());
+        services.AddScoped<IChannelMessagePublisher, DefaultMessagePublisher>(s => s.GetRequiredService<DefaultMessagePublisher>());
 
         foreach (var assembly in assemblies)
         {

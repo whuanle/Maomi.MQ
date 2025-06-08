@@ -224,11 +224,58 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
             ContentType = messageSerializer.ContentType,
             Type = typeof(TMessage).FullName!,
             UserId = properties.UserId ?? string.Empty,
+            Exchange = exchange,
+            RoutingKey = reoutingKey,
             Properties = properties
         };
 
         InitializeMessageProperties<TMessage>(properties, ref messageHeader);
 
+        OnStartEvent(ref messageHeader, exchange, reoutingKey, activity);
+
+        byte[]? body = default;
+        try
+        {
+            body = _messageSerializer.Serializer(message);
+            await channel.BasicPublishAsync(
+                exchange: exchange,
+                routingKey: reoutingKey,
+                basicProperties: properties,
+                body: body,
+                mandatory: true,
+                cancellationToken: cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "The message with id [{Id}] failed to send, exchange: [{Exchange}], reoutingKey: [{reoutingKey}].", messageHeader.Id, exchange, reoutingKey);
+            OnExecptionEvent(ref messageHeader, exchange, reoutingKey, ex, activity);
+            throw;
+        }
+        finally
+        {
+            _meterPushMessageBytes.Record(body?.Length ?? 0);
+            OnStopEvent(ref messageHeader, exchange, reoutingKey, activity);
+        }
+    }
+
+    /// <inheritdoc />
+    public virtual async Task PublishChannelAsync(IChannel channel, string exchange, string reoutingKey, MessageHeader messageHeader, byte[] message, BasicProperties properties, CancellationToken cancellationToken = default)
+    {
+        using Activity? activity = _activitySource.StartActivity(DiagnosticName.ActivitySource.Publisher, ActivityKind.Producer);
+
+        if (properties == null)
+        {
+            properties = new BasicProperties()
+            {
+                DeliveryMode = DeliveryModes.Persistent
+            };
+        }
+
+        properties.Headers = properties.Headers ?? new Dictionary<string, object?>();
         OnStartEvent(ref messageHeader, exchange, reoutingKey, activity);
 
         byte[]? body = default;

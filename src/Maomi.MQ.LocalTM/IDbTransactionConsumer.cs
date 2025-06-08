@@ -1,16 +1,16 @@
-﻿// <copyright file="IConsumer.cs" company="Maomi">
+﻿// <copyright file="IDbTransactionConsumer.cs" company="Maomi">
 // Copyright (c) Maomi. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-namespace Maomi.MQ;
+namespace Maomi.MQ.Transaction;
 
 /// <summary>
-/// Consumer abstract interface.
+/// IDbTransactionConsumer interface.
 /// </summary>
 /// <typeparam name="TMessage">Event model.</typeparam>
-public interface IConsumer<TMessage> : IBasicMessageHandler<TMessage>
+public interface IDbTransactionConsumer<TMessage> : IBasicMessageHandler<TMessage>
     where TMessage : class
 {
 }
