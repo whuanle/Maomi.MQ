@@ -8,7 +8,6 @@
 #pragma warning disable SA1600
 #pragma warning disable CS1591
 
-using Maomi.MQ.Default;
 using Maomi.MQ.Diagnostics;
 using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Reflection;
 
 namespace Maomi.MQ;
 
@@ -34,13 +34,11 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
 
     protected readonly IServiceProvider _serviceProvider;
     protected readonly MqOptions _mqOptions;
-    protected readonly IMessageSerializer _messageSerializer;
     protected readonly ConnectionPool _connectionPool;
     protected readonly IConnectionObject _connectionObject;
-    protected readonly IIdFactory _idGen;
+    protected readonly IIdProvider _idGen;
     protected readonly ILogger _logger;
 
-    protected readonly Lazy<IConsumerTypeProvider> _consumerTypeProvider;
     protected readonly Lazy<IRoutingProvider> _routingProvider;
 
     /// <summary>
@@ -48,28 +46,24 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
     /// </summary>
     /// <param name="serviceProvider"></param>
     /// <param name="mqOptions"></param>
-    /// <param name="messageSerializer"></param>
     /// <param name="connectionPool"></param>
     /// <param name="idGen"></param>
     /// <param name="loggerFactory"></param>
     public DefaultMessagePublisher(
         IServiceProvider serviceProvider,
         MqOptions mqOptions,
-        IMessageSerializer messageSerializer,
         ConnectionPool connectionPool,
-        IIdFactory idGen,
+        IIdProvider idGen,
         ILoggerFactory loggerFactory)
     {
         _serviceProvider = serviceProvider;
         _mqOptions = mqOptions;
-        _messageSerializer = messageSerializer;
         _connectionPool = connectionPool;
         _connectionObject = _connectionPool.Get();
 
         _idGen = idGen;
-        _logger = loggerFactory.CreateLogger(DiagnosticName.Publisher);
+        _logger = loggerFactory.CreateLogger<DefaultMessagePublisher>();
 
-        _consumerTypeProvider = new Lazy<IConsumerTypeProvider>(() => _serviceProvider.GetRequiredService<IConsumerTypeProvider>());
         _routingProvider = new Lazy<IRoutingProvider>(() => _serviceProvider.GetRequiredService<IRoutingProvider>());
 
         var tags = new Dictionary<string, object?>()
@@ -100,10 +94,8 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
     protected DefaultMessagePublisher(DefaultMessagePublisher publisher)
     {
         _serviceProvider = publisher._serviceProvider;
-        _consumerTypeProvider = publisher._consumerTypeProvider;
         _routingProvider = publisher._routingProvider;
         _mqOptions = publisher._mqOptions;
-        _messageSerializer = publisher._messageSerializer;
         _connectionPool = publisher._connectionPool;
         _connectionObject = publisher._connectionObject;
         _idGen = publisher._idGen;
@@ -116,8 +108,8 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
     }
 
     /// <inheritdoc />
-    public virtual Task AutoPublishAsync<TModel>(TModel model, Action<BasicProperties>? properties = null, CancellationToken cancellationToken = default)
-        where TModel : class
+    public virtual Task AutoPublishAsync<TMessage>(TMessage message, Action<BasicProperties>? properties = null, CancellationToken cancellationToken = default)
+        where TMessage : class
     {
         var basicProperties = new BasicProperties()
         {
@@ -129,10 +121,15 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
             properties.Invoke(basicProperties);
         }
 
-        var consumerOptions = _consumerTypeProvider.Value.First(x => x.Event == typeof(TModel)).ConsumerOptions;
-        consumerOptions = _routingProvider.Value.Get(consumerOptions);
+        IQueueNameOptions? queueName = message.GetType().GetCustomAttribute<QueueNameAttribute>();
+        if (queueName == null)
+        {
+            throw new InvalidOperationException($"The message type [{typeof(TMessage).FullName}] does not have the [{nameof(QueueNameAttribute)}] attribute.");
+        }
 
-        return CustomPublishAsync(consumerOptions.BindExchange ?? string.Empty, consumerOptions.RoutingKey ?? consumerOptions.Queue, model, basicProperties, cancellationToken);
+        queueName = _routingProvider.Value.Get(queueName);
+
+        return CustomPublishAsync(queueName.Exchange ?? string.Empty, queueName.RoutingKey, message, basicProperties, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -167,22 +164,6 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
     }
 
     /// <inheritdoc />
-    public virtual Task PublishModelAsync<TMessage>(TMessage message, BasicProperties? properties = default, CancellationToken cancellationToken = default)
-    {
-        if (properties == null)
-        {
-            properties = new BasicProperties()
-            {
-                DeliveryMode = DeliveryModes.Persistent
-            };
-        }
-
-        var consumerOptions = _consumerTypeProvider.Value.First(x => x.Event == typeof(TMessage)).ConsumerOptions;
-        consumerOptions = _routingProvider.Value.Get(consumerOptions);
-        return CustomPublishAsync(consumerOptions.BindExchange ?? string.Empty, consumerOptions.RoutingKey ?? consumerOptions.Queue, message, properties);
-    }
-
-    /// <inheritdoc />
     public virtual async Task CustomPublishAsync<TMessage>(string exchange, string routingKey, TMessage message, BasicProperties? properties = default, CancellationToken cancellationToken = default)
     {
         if (properties == null)
@@ -209,10 +190,19 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
             };
         }
 
-        var messageSerializer = _messageSerializer;
-        if (messageSerializer is IMessageSerializerFactory serializerFactory)
+        IMessageSerializer? messageSerializer = default;
+        foreach (var item in _mqOptions.MessageSerializers)
         {
-            messageSerializer = serializerFactory.GetMessageSerializer(typeof(TMessage));
+            if (item.SerializerVerify(message))
+            {
+                messageSerializer = item;
+                break;
+            }
+        }
+
+        if (messageSerializer == null)
+        {
+            throw new InvalidOperationException($"No suitable message serializer found for message type [{typeof(TMessage).FullName}].");
         }
 
         MessageHeader messageHeader = new MessageHeader
@@ -220,10 +210,8 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
             Id = _idGen.NextId().ToString(),
             Timestamp = DateTimeOffset.Now,
             AppId = _mqOptions.AppName,
-            ContentEncoding = messageSerializer.ContentEncoding,
             ContentType = messageSerializer.ContentType,
             Type = typeof(TMessage).FullName!,
-            UserId = properties.UserId ?? string.Empty,
             Exchange = exchange,
             RoutingKey = reoutingKey,
             Properties = properties
@@ -236,7 +224,7 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
         byte[]? body = default;
         try
         {
-            body = _messageSerializer.Serializer(message);
+            body = messageSerializer.Serializer(message);
             await channel.BasicPublishAsync(
                 exchange: exchange,
                 routingKey: reoutingKey,
@@ -278,15 +266,13 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
         properties.Headers = properties.Headers ?? new Dictionary<string, object?>();
         OnStartEvent(ref messageHeader, exchange, reoutingKey, activity);
 
-        byte[]? body = default;
         try
         {
-            body = _messageSerializer.Serializer(message);
             await channel.BasicPublishAsync(
                 exchange: exchange,
                 routingKey: reoutingKey,
                 basicProperties: properties,
-                body: body,
+                body: message,
                 mandatory: true,
                 cancellationToken: cancellationToken);
         }
@@ -302,7 +288,7 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
         }
         finally
         {
-            _meterPushMessageBytes.Record(body?.Length ?? 0);
+            _meterPushMessageBytes.Record(message?.Length ?? 0);
             OnStopEvent(ref messageHeader, exchange, reoutingKey, activity);
         }
     }
@@ -315,14 +301,22 @@ public partial class DefaultMessagePublisher
 {
     protected virtual void InitializeMessageProperties<TMessage>(BasicProperties properties, ref MessageHeader messageHeader)
     {
-        var messageSerializer = _messageSerializer;
-        if (messageSerializer is IMessageSerializerFactory serializerFactory)
+        IMessageSerializer? messageSerializer = default;
+        foreach (var item in _mqOptions.MessageSerializers)
         {
-            messageSerializer = serializerFactory.GetMessageSerializer(typeof(TMessage));
+            if (item.SerializerVerify<TMessage>())
+            {
+                messageSerializer = item;
+                break;
+            }
+        }
+
+        if (messageSerializer == null)
+        {
+            throw new InvalidOperationException($"No suitable message serializer found for message type [{typeof(TMessage).FullName}].");
         }
 
         properties.AppId = _mqOptions.AppName;
-        properties.ContentEncoding = messageSerializer.ContentEncoding;
         properties.ContentType = messageSerializer.ContentType;
         properties.MessageId = messageHeader.Id.ToString();
         properties.Timestamp = new AmqpTimestamp(messageHeader.Timestamp.ToUnixTimeMilliseconds());
@@ -349,10 +343,8 @@ public partial class DefaultMessagePublisher
         activity.AddTag("Id", messageHeader.Id);
         activity.AddTag("Timestamp", messageHeader.Timestamp);
         activity.AddTag("AppId", messageHeader.AppId);
-        activity.AddTag("ContentEncoding", messageHeader.ContentEncoding);
         activity.AddTag("ContentType", messageHeader.ContentType);
         activity.AddTag("Type", messageHeader.Type);
-        activity.AddTag("UserId", messageHeader.UserId);
         activity.AddTag("Exchange", exchange);
         activity.AddTag("RoutingKey", reoutingKey);
 

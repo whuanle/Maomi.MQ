@@ -21,7 +21,7 @@ public class Program
             publisherConfirmationsEnabled: false,
             publisherConfirmationTrackingEnabled: false,
             consumerDispatchConcurrency: 1000));
-        var messageSerializer = new DefaultMessageSerializer();
+        var messageSerializer = new DefaultJsonMessageSerializer();
 
         var consumer = new AsyncEventingBasicConsumer(channel);
         await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 100, global: true);

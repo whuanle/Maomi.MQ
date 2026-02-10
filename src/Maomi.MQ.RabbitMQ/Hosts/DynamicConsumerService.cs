@@ -178,8 +178,8 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
                     using var scope = _serviceProvider.CreateScope();
                     var serviceProvider = scope.ServiceProvider;
 
-                    MessageConsumer messageConsumer = new MessageConsumer(serviceProvider, consumerOptions, s => proxyConsumer);
-                    await messageConsumer.ConsumerAsync<TMessage>(consummerChannel, eventArgs);
+                    MessageConsumer<TMessage> messageConsumer = new MessageConsumer<TMessage>(serviceProvider, consumerOptions, s => proxyConsumer);
+                    await messageConsumer.ConsumerAsync(consummerChannel, eventArgs);
                 }
             }
             catch (Exception ex)
@@ -200,12 +200,5 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         return Task.CompletedTask;
-    }
-
-    private class ConsumerTag
-    {
-        public string Tag { get; init; } = default!;
-
-        public MessageConsumer MessageConsumer { get; init; } = default!;
     }
 }

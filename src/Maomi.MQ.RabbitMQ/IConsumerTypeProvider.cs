@@ -4,6 +4,8 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
+using Maomi.MQ.Consumer;
+
 namespace Maomi.MQ;
 
 /// <summary>

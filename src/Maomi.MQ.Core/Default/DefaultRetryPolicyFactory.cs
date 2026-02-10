@@ -16,7 +16,7 @@ namespace Maomi.MQ.Default;
 
 /// <summary>
 /// Default retry policy.<br />
-/// 默认的策略提供器.
+/// 默认的重试策略提供器.
 /// </summary>
 public class DefaultRetryPolicyFactory : IRetryPolicyFactory
 {
@@ -49,7 +49,6 @@ public class DefaultRetryPolicyFactory : IRetryPolicyFactory
                 sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(RetryBaseDelaySeconds, retryAttempt)),
                 onRetry: async (exception, timeSpan, retryCount, context) =>
                 {
-                    _logger.LogWarning("Retry execution event,queue [{Queue}],retry count [{RetryCount}],timespan [{TimeSpan}]", queue, retryCount, timeSpan);
                     await FaildAsync(queue, exception, timeSpan, retryCount, context);
                 });
 
@@ -67,6 +66,8 @@ public class DefaultRetryPolicyFactory : IRetryPolicyFactory
     /// <returns><see cref="Task"/>.</returns>
     public virtual Task FaildAsync(string queue, Exception ex, TimeSpan timeSpan, int retryCount, Context context)
     {
+        _logger.LogWarning("Retry execution event,queue [{Queue}],retry count [{RetryCount}],timespan [{TimeSpan}]", queue, retryCount, timeSpan);
+
         return Task.CompletedTask;
     }
 }

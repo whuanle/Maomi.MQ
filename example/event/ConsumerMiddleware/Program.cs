@@ -1,5 +1,6 @@
 using ConsumerMiddleware.Events;
 using Maomi.MQ;
+using Maomi.MQ.Models;
 using Microsoft.EntityFrameworkCore;
 using RabbitMQ.Client;
 using System.Reflection;

@@ -38,7 +38,7 @@ public class MediarCommandAttribute : Attribute, IConsumerOptions
     public string? BindExchange { get; set; }
 
     /// <inheritdoc />
-    public string? ExchangeType { get; set; }
+    public ExchangeType ExchangeType { get; set; }
 
     /// <inheritdoc />
     public string? RoutingKey { get; set; }
@@ -74,5 +74,19 @@ public class MediarCommandAttribute : Attribute, IConsumerOptions
         this.BindExchange = options.BindExchange;
         this.ExchangeType = options.ExchangeType;
         this.RoutingKey = options.RoutingKey;
+    }
+
+    /// <inheritdoc/>
+    public bool Equals(IConsumerOptions? other)
+    {
+        if (other == null)
+        {
+            return false;
+        }
+
+        return this.Queue == other.Queue
+            && this.BindExchange == other.BindExchange
+            && this.ExchangeType == other.ExchangeType
+            && this.RoutingKey == other.RoutingKey;
     }
 }

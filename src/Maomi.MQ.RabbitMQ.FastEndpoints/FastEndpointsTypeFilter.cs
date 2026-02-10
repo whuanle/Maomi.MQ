@@ -5,6 +5,7 @@
 // </copyright>
 
 using FastEndpoints;
+using Maomi.MQ.Consumer;
 using Maomi.MQ.EventBus;
 using Maomi.MQ.Filters;
 using Microsoft.Extensions.DependencyInjection;

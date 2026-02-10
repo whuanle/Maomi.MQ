@@ -4,7 +4,7 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-namespace Maomi.MQ;
+namespace Maomi.MQ.Attributes;
 
 /// <summary>
 /// Consumer.<br />
@@ -38,10 +38,13 @@ public class ConsumerAttribute : Attribute, IConsumerOptions
     public string? BindExchange { get; set; }
 
     /// <inheritdoc />
-    public string? ExchangeType { get; set; }
+    public ExchangeType ExchangeType { get; set; }
 
     /// <inheritdoc />
     public string? RoutingKey { get; set; }
+
+    /// <inheritdoc/>
+    public bool? IsBroadcast { get; set; } = false;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConsumerAttribute"/> class.
@@ -74,5 +77,20 @@ public class ConsumerAttribute : Attribute, IConsumerOptions
         this.BindExchange = options.BindExchange;
         this.ExchangeType = options.ExchangeType;
         this.RoutingKey = options.RoutingKey;
+        this.IsBroadcast = options.IsBroadcast;
+    }
+
+    /// <inheritdoc/>
+    public bool Equals(IConsumerOptions? other)
+    {
+        if (other == null)
+        {
+            return false;
+        }
+
+        return this.Queue == other.Queue
+            && this.BindExchange == other.BindExchange
+            && this.ExchangeType == other.ExchangeType
+            && this.RoutingKey == other.RoutingKey;
     }
 }

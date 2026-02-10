@@ -12,13 +12,13 @@ namespace Maomi.MQ.Default;
 /// Snowflake id generator.<br />
 /// 雪花 id 生成器.
 /// </summary>
-public class DefaultIdFactory : IIdFactory
+public class DefaultIdProvider : IIdProvider
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="DefaultIdFactory"/> class.
+    /// Initializes a new instance of the <see cref="DefaultIdProvider"/> class.
     /// </summary>
     /// <param name="workId"></param>
-    public DefaultIdFactory(ushort workId)
+    public DefaultIdProvider(ushort workId)
     {
         var options = new IdGeneratorOptions(workId) { SeqBitLength = 10 };
         YitIdHelper.SetIdGenerator(options);

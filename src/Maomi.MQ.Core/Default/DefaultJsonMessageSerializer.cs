@@ -1,4 +1,4 @@
-﻿// <copyright file="DefaultMessageSerializer.cs" company="Maomi">
+﻿// <copyright file="DefaultJsonMessageSerializer.cs" company="Maomi">
 // Copyright (c) Maomi. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/Maomi.MQ
@@ -9,9 +9,9 @@ using System.Text.Json;
 namespace Maomi.MQ.Defaults;
 
 /// <summary>
-/// Default serializer.
+/// Default json serializer.
 /// </summary>
-public class DefaultMessageSerializer : IMessageSerializer
+public class DefaultJsonMessageSerializer : IMessageSerializer
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new JsonSerializerOptions
     {
@@ -20,9 +20,6 @@ public class DefaultMessageSerializer : IMessageSerializer
         IgnoreReadOnlyProperties = true,
         ReadCommentHandling = JsonCommentHandling.Skip,
     };
-
-    /// <inheritdoc />
-    public string ContentEncoding => "UTF-8";
 
     /// <inheritdoc />
     public string ContentType => "application/json";
@@ -37,5 +34,17 @@ public class DefaultMessageSerializer : IMessageSerializer
     public byte[] Serializer<TObject>(TObject obj)
     {
         return System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(obj);
+    }
+
+    /// <inheritdoc/>
+    public bool SerializerVerify<TObject>(TObject obj)
+    {
+        return true;
+    }
+
+    /// <inheritdoc/>
+    public bool SerializerVerify<TObject>()
+    {
+        return true;
     }
 }

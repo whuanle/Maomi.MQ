@@ -4,19 +4,17 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-using Maomi.MQ.EventBus;
-
 namespace Maomi.MQ;
 
-/// <inheritdoc cref="IConsumer{TMessage}.ExecuteAsync(Maomi.MQ.MessageHeader, TMessage)"/>.
+#pragma warning disable CS1591 // 缺少对公共可见类型或成员的 XML 注释
+#pragma warning disable SA1600 // Elements should be documented
+
 public delegate Task ConsumerExecuteAsync<TMessage>(MessageHeader messageHeader, TMessage message)
     where TMessage : class;
 
-/// <inheritdoc cref="IConsumer{TMessage}.FaildAsync(MessageHeader, Exception, int, TMessage)"/>.
 public delegate Task ConsumerFaildAsync<TMessage>(MessageHeader messageHeader, Exception ex, int retryCount, TMessage message)
     where TMessage : class;
 
-/// <inheritdoc cref="IConsumer{TMessage}.FallbackAsync(MessageHeader, TMessage, Exception?)"/>.
 public delegate Task<ConsumerState> ConsumerFallbackAsync<TMessage>(MessageHeader messageHeader, TMessage? message, Exception? ex)
     where TMessage : class;
 
@@ -32,19 +30,10 @@ public delegate Task<ConsumerState> ConsumerFallbackAsync<TMessage>(MessageHeade
 public delegate Task EventHandlerDelegate<TMessage>(MessageHeader messageHeader, TMessage message, CancellationToken cancellationToken);
 
 /// <summary>
-/// <see cref="EventTopicAttribute"/> filter.
-/// </summary>
-/// <remarks>You can modify related parameters.<br />可以修改相关参数.</remarks>
-/// <param name="consumerOptions"></param>
-/// <param name="eventType"></param>
-/// <returns>Whether to register the event.<br />是否注册该事件.</returns>
-public delegate RegisterQueue EventTopicInterceptor(IConsumerOptions consumerOptions, Type eventType);
-
-/// <summary>
 /// <see cref="ConsumerInterceptor"/> filter.
 /// </summary>
 /// <remarks>You can modify related parameters.<br />可以修改相关参数.</remarks>
 /// <param name="consumerOptions"></param>
 /// <param name="consumerType"></param>
 /// <returns>Whether to register the consumer.<br />是否注册该消费者.</returns>
-public delegate RegisterQueue ConsumerInterceptor(IConsumerOptions consumerOptions, Type consumerType);
+public delegate (bool IsRegister, IConsumerOptions ConsumerOptions) ConsumerInterceptor(IConsumerOptions consumerOptions, Type consumerType);

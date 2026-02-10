@@ -2,6 +2,7 @@ using FastEndpoints;
 using Maomi.MQ;
 using Maomi.MQ.EventBus;
 using Maomi.MQ.Filters;
+using Maomi.MQ.Models;
 using Polly;
 using RabbitMQ.Client;
 using System.Reflection;

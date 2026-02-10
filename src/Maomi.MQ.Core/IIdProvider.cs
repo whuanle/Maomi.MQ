@@ -1,4 +1,4 @@
-﻿// <copyright file="IIdFactory.cs" company="Maomi">
+﻿// <copyright file="IIdProvider.cs" company="Maomi">
 // Copyright (c) Maomi. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/Maomi.MQ
@@ -10,7 +10,7 @@ namespace Maomi.MQ;
 /// Snowflake id generator.<br />
 /// 雪花 id 生成器.
 /// </summary>
-public interface IIdFactory
+public interface IIdProvider
 {
     /// <summary>
     /// Get snowflake id.<br />

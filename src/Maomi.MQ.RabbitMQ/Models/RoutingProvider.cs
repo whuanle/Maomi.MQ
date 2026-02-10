@@ -4,7 +4,7 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-namespace Maomi.MQ;
+namespace Maomi.MQ.Models;
 
 /// <summary>
 /// Check exchange, routingKey, and queue.
@@ -14,6 +14,12 @@ public class RoutingProvider : IRoutingProvider
     /// <inheritdoc />
     public IConsumerOptions Get(IConsumerOptions consumerOptions)
     {
-        return consumerOptions.Clone();
+        return consumerOptions;
+    }
+
+    /// <inheritdoc/>
+    public IQueueNameOptions Get(IQueueNameOptions queueNameOptions)
+    {
+        return queueNameOptions;
     }
 }

@@ -4,10 +4,13 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
+using Maomi.MQ.Consumer;
 using Maomi.MQ.Default;
+using Maomi.MQ.Defaults;
 using Maomi.MQ.EventBus;
 using Maomi.MQ.Filters;
 using Maomi.MQ.Hosts;
+using Maomi.MQ.Models;
 using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -69,18 +72,26 @@ public static partial class MaomiExtensions
         ArgumentNullException.ThrowIfNull(optionsBuilder.Rabbit);
         optionsBuilder.Rabbit.Invoke(connectionFactory);
 
+        List<IMessageSerializer> serializers = new()
+        {
+            new DefaultJsonMessageSerializer()
+        };
+
+        optionsBuilder.MessageSerializers?.Invoke(serializers);
+
         services.AddSingleton<MqOptions>(new MqOptions
         {
             AppName = optionsBuilder.AppName,
             WorkId = optionsBuilder.WorkId,
             AutoQueueDeclare = optionsBuilder.AutoQueueDeclare,
-            ConnectionFactory = connectionFactory
+            ConnectionFactory = connectionFactory,
+            MessageSerializers = serializers
         });
 
-        services.AddMaomiMQCore();
+        services.AddMaomiMQCore((ushort)optionsBuilder.WorkId);
+
         services.AddScoped<IBreakdown, DefaultBreakdown>();
         services.AddSingleton<IRoutingProvider, RoutingProvider>();
-        services.AddSingleton<IIdFactory>(new DefaultIdFactory((ushort)optionsBuilder.WorkId));
         services.AddSingleton<ServiceFactory>();
         services.AddSingleton<IDynamicConsumer, DynamicConsumerService>();
 
@@ -114,6 +125,7 @@ public static partial class MaomiExtensions
         Func<IServiceProvider, ConsumerHostedService> funcFactory = (serviceProvider) =>
         {
             return new ConsumerHostedService(
+                serviceProvider.GetRequiredService<IHostApplicationLifetime>(),
                 serviceProvider.GetRequiredService<ServiceFactory>(),
                 serviceProvider.GetRequiredService<ConnectionPool>(),
                 consumerTypes);

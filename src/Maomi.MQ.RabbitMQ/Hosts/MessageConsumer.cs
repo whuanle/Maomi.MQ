@@ -22,9 +22,11 @@ using System.Diagnostics.Metrics;
 namespace Maomi.MQ.Hosts;
 
 /// <summary>
-/// Consumer.
+/// The consumer server responsible for handling MQ messages.
 /// </summary>
-public class MessageConsumer
+/// <typeparam name="TMessage">TMessage.</typeparam>
+public class MessageConsumer<TMessage>
+    where TMessage : class
 {
     protected static readonly DiagnosticListener _diagnosticListener = new DiagnosticListener(DiagnosticName.Listener.Consumer);
     protected static readonly ActivitySource _activitySource = new ActivitySource(DiagnosticName.ActivitySource.Consumer);
@@ -37,14 +39,13 @@ public class MessageConsumer
 
     protected readonly IServiceProvider _serviceProvider;
     protected readonly MqOptions _mqOptions;
-    protected readonly IMessageSerializer _messageSerializer;
     protected readonly IRetryPolicyFactory _policyFactory;
     protected readonly IConsumerOptions _consumerOptions;
     protected readonly Func<IServiceProvider, object> _consumerInstance;
     protected readonly ILogger _logger;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="MessageConsumer"/> class.
+    /// Initializes a new instance of the <see cref="MessageConsumer{TMessage}"/> class.
     /// </summary>
     /// <param name="serviceProvider"></param>
     /// <param name="consumerOptions"></param>
@@ -58,11 +59,10 @@ public class MessageConsumer
         _serviceProvider = serviceProvider;
         _mqOptions = serviceFactory.Options;
 
-        _messageSerializer = serviceFactory.Serializer;
         _policyFactory = serviceFactory.RetryPolicyFactory;
         _consumerOptions = consumerOptions;
         _consumerInstance = consumerInstance;
-        _logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger(DiagnosticName.Consumer);
+        _logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<MessageConsumer<TMessage>>();
 
         _tags = new TagList
         {
@@ -80,12 +80,11 @@ public class MessageConsumer
         _messageSize = _meter.CreateHistogram<long>("maomimq_consumer_message_received", "Byte", "The size of the received message", _tags);
     }
 
-    public virtual async Task ConsumerAsync<TMessage>(IChannel channel, BasicDeliverEventArgs eventArgs)
-        where TMessage : class
+    public virtual async Task ConsumerAsync(IChannel channel, BasicDeliverEventArgs eventArgs)
     {
         using Activity? activity = _activitySource.StartActivity(DiagnosticName.ActivitySource.Consumer, ActivityKind.Consumer);
 
-        MessageHeader messageHeader = eventArgs.BasicProperties.GetMessageHeader();
+        MessageHeader messageHeader = eventArgs.GetMessageHeader();
 
         OnStartEvent(messageHeader, eventArgs, _consumerOptions.Queue, activity);
 
@@ -114,10 +113,19 @@ public class MessageConsumer
 
         try
         {
-            var messageSerializer = _messageSerializer;
-            if (messageSerializer is IMessageSerializerFactory serializerFactory)
+            IMessageSerializer? messageSerializer = default;
+            foreach (var serializer in _mqOptions.MessageSerializers)
             {
-                messageSerializer = serializerFactory.GetMessageDeserializer(typeof(TMessage), messageHeader);
+                if (serializer.ContentType == messageHeader.ContentType)
+                {
+                    messageSerializer = serializer;
+                    break;
+                }
+            }
+
+            if (messageSerializer == null)
+            {
+                throw new InvalidOperationException($"No suitable message serializer was found for content type '{messageHeader.ContentType}'.");
             }
 
             eventBody = messageSerializer.Deserialize<TMessage>(eventArgs.Body.Span)!;
@@ -193,8 +201,7 @@ public class MessageConsumer
         OnEndEvent(ref messageHeader, activity);
     }
 
-    protected virtual async Task<ConsumerState> ExecuteAndRetryAsync<TMessage>(BasicDeliverEventArgs eventArgs, IConsumer<TMessage> consumer, MessageHeader messageHeader, TMessage eventBody, int retryCount)
-        where TMessage : class
+    protected virtual async Task<ConsumerState> ExecuteAndRetryAsync(BasicDeliverEventArgs eventArgs, IConsumer<TMessage> consumer, MessageHeader messageHeader, TMessage eventBody, int retryCount)
     {
         using Activity? executekActivity = _activitySource.StartActivity(DiagnosticName.ActivitySource.Execute, ActivityKind.Internal);
 
@@ -240,8 +247,7 @@ public class MessageConsumer
         return ConsumerState.Ack;
     }
 
-    protected virtual async Task<ConsumerState> FallbackAsync<TMessage>(BasicDeliverEventArgs eventArgs, IConsumer<TMessage> consumer, MessageHeader messageHeader, TMessage? eventBody, Exception? ex)
-        where TMessage : class
+    protected virtual async Task<ConsumerState> FallbackAsync(BasicDeliverEventArgs eventArgs, IConsumer<TMessage> consumer, MessageHeader messageHeader, TMessage? eventBody, Exception? ex)
     {
         var fallbackActivity = _activitySource.StartActivity(DiagnosticName.ActivitySource.Fallback, ActivityKind.Internal);
         OnFallbackStartEvent(ref messageHeader, eventArgs, _consumerOptions.Queue, fallbackActivity);
@@ -289,10 +295,8 @@ public class MessageConsumer
         activity.AddTag("Id", messageHeader.Id);
         activity.AddTag("Timestamp", messageHeader.Timestamp);
         activity.AddTag("AppId", messageHeader.AppId);
-        activity.AddTag("ContentEncoding", messageHeader.ContentEncoding);
         activity.AddTag("ContentType", messageHeader.ContentType);
         activity.AddTag("Type", messageHeader.Type);
-        activity.AddTag("UserId", messageHeader.UserId);
         activity.AddTag("Exchange", eventArgs.Exchange);
         activity.AddTag("RoutingKey", eventArgs.RoutingKey);
         activity.AddTag("Queue", queue);

@@ -4,7 +4,7 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-namespace Maomi.MQ;
+namespace Maomi.MQ.Consumer;
 
 /// <summary>
 /// Consumer options.<br />
@@ -37,25 +37,18 @@ public class ConsumerOptions : IConsumerOptions
     public string? BindExchange { get; set; }
 
     /// <inheritdoc />
-    public string? ExchangeType { get; set; }
+    public ExchangeType ExchangeType { get; set; }
 
     /// <inheritdoc />
     public string? RoutingKey { get; set; }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ConsumerOptions"/> class.
-    /// </summary>
-    /// <param name="queue">Queue name.</param>
-    public ConsumerOptions(string queue)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(queue, nameof(queue));
-        Queue = queue;
-    }
+    /// <inheritdoc />
+    public bool? IsBroadcast { get; set; }
 
     /// <inheritdoc />
     public IConsumerOptions Clone()
     {
-        var newOptions = new ConsumerOptions(this.Queue);
+        var newOptions = new ConsumerOptions();
         newOptions.CopyFrom(this);
         return newOptions;
     }
@@ -73,5 +66,19 @@ public class ConsumerOptions : IConsumerOptions
         this.BindExchange = options.BindExchange;
         this.ExchangeType = options.ExchangeType;
         this.RoutingKey = options.RoutingKey;
+    }
+
+    /// <inheritdoc/>
+    public bool Equals(IConsumerOptions? other)
+    {
+        if (other == null)
+        {
+            return false;
+        }
+
+        return this.Queue == other.Queue
+            && this.BindExchange == other.BindExchange
+            && this.ExchangeType == other.ExchangeType
+            && this.RoutingKey == other.RoutingKey;
     }
 }

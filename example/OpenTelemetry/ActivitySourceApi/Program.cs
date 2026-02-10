@@ -7,6 +7,7 @@ using OpenTelemetry.Exporter;
 using RabbitMQ.Client;
 using System.Reflection;
 using OpenTelemetry;
+using Maomi.MQ.Models;
 
 namespace ActivitySourceApi;
 

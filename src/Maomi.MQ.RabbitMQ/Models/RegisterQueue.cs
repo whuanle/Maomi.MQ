@@ -4,7 +4,7 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-namespace Maomi.MQ.EventBus;
+namespace Maomi.MQ.Models;
 
 /// <summary>
 /// Information about the registration queue.<br />

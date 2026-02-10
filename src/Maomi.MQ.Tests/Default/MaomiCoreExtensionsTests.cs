@@ -18,12 +18,12 @@ public class MaomiCoreExtensionsTests
         var serviceProvider = services.BuildServiceProvider();
 
         Assert.NotNull(serviceProvider.GetService<IMessageSerializer>());
-        Assert.IsType<DefaultMessageSerializer>(serviceProvider.GetService<IMessageSerializer>());
+        Assert.IsType<DefaultJsonMessageSerializer>(serviceProvider.GetService<IMessageSerializer>());
 
         Assert.NotNull(serviceProvider.GetService<IRetryPolicyFactory>());
         Assert.IsType<DefaultRetryPolicyFactory>(serviceProvider.GetService<IRetryPolicyFactory>());
 
-        Assert.NotNull(serviceProvider.GetService<IIdFactory>());
-        Assert.IsType<DefaultIdFactory>(serviceProvider.GetService<IIdFactory>());
+        Assert.NotNull(serviceProvider.GetService<IIdProvider>());
+        Assert.IsType<DefaultIdProvider>(serviceProvider.GetService<IIdProvider>());
     }
 }

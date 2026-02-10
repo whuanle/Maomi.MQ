@@ -30,7 +30,7 @@ public abstract class ConsumerBaseService : BackgroundService
     /// <summary>
     /// Consumer method.
     /// </summary>
-    protected static readonly MethodInfo ConsumerMethod = typeof(ConsumerBaseService)
+    protected static readonly MethodInfo CreateMessageConsumerMethod = typeof(ConsumerBaseService)
         .GetMethod(nameof(ConsumerBaseService.CreateMessageConsumer), BindingFlags.Instance | BindingFlags.NonPublic)!;
 
     protected readonly ServiceFactory _serviceFactory;
@@ -92,17 +92,29 @@ public abstract class ConsumerBaseService : BackgroundService
 
         // Create queues based on consumers.
         // 根据消费者创建队列.
-        await channel.QueueDeclareAsync(
-            queue: consumerOptions.Queue,
-            durable: true,
-            exclusive: false,
-            autoDelete: false,
-            arguments: arguments);
+        if (consumerOptions.IsBroadcast.GetValueOrDefault() == false)
+        {
+            await channel.QueueDeclareAsync(
+                queue: consumerOptions.Queue,
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
+                arguments: arguments);
+        }
+        else
+        {
+            // 广播消费者，队列设置为非持久、独占、自动删除，避免消费者之间互相干扰
+            await channel.QueueDeclareAsync(
+                queue: consumerOptions.Queue,
+                durable: false,
+                exclusive: true,
+                autoDelete: true,
+                arguments: arguments);
+        }
 
         if (!string.IsNullOrEmpty(consumerOptions.BindExchange))
         {
-            ArgumentNullException.ThrowIfNull(consumerOptions.ExchangeType, nameof(consumerOptions.ExchangeType));
-            await channel.ExchangeDeclareAsync(consumerOptions.BindExchange, consumerOptions.ExchangeType);
+            await channel.ExchangeDeclareAsync(consumerOptions.BindExchange, consumerOptions.ExchangeType.ToString().ToLowerInvariant());
             await channel.QueueBindAsync(queue: consumerOptions.Queue, exchange: consumerOptions.BindExchange, routingKey: consumerOptions.RoutingKey ?? consumerOptions.Queue);
         }
     }
@@ -142,13 +154,13 @@ public abstract class ConsumerBaseService : BackgroundService
                 {
                     using var scope = _serviceProvider.CreateScope();
                     var serviceProvider = scope.ServiceProvider;
-                    MessageConsumer messageConsumer = new MessageConsumer(serviceProvider, consumerOptions, s =>
+                    MessageConsumer<TMessage> messageConsumer = new MessageConsumer<TMessage>(serviceProvider, consumerOptions, s =>
                     {
                         // IConsumer<TMessage>
                         return s.GetRequiredService(consumerType);
                     });
 
-                    await messageConsumer.ConsumerAsync<TMessage>(consummerChannel, eventArgs);
+                    await messageConsumer.ConsumerAsync(consummerChannel, eventArgs);
                 }
             }
             catch (Exception ex)
@@ -187,7 +199,7 @@ public abstract class ConsumerBaseService : BackgroundService
         ParameterExpression consumerOptions = Expression.Parameter(typeof(IConsumerOptions), "consumerOptions");
         MethodCallExpression method = Expression.Call(
             service,
-            ConsumerMethod.MakeGenericMethod(messageType),
+            CreateMessageConsumerMethod.MakeGenericMethod(messageType),
             channel,
             consumer,
             message,

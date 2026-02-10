@@ -37,7 +37,7 @@ public class Program
                 }
                 else
                 {
-                    return new DefaultMessageSerializer();
+                    return new DefaultJsonMessageSerializer();
                 }
             }, (type, messageHeader) =>
             {
@@ -47,7 +47,7 @@ public class Program
                 }
                 else
                 {
-                    return new DefaultMessageSerializer();
+                    return new DefaultJsonMessageSerializer();
                 }
             });
         });

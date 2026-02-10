@@ -1,7 +1,9 @@
 using AutoFixture;
+using Maomi.MQ.Consumer;
 using Maomi.MQ.Default;
 using Maomi.MQ.Filters;
 using Maomi.MQ.Hosts;
+using Maomi.MQ.Models;
 using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;

@@ -4,6 +4,8 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
+using Maomi.MQ.Attributes;
+using Maomi.MQ.Consumer;
 using Maomi.MQ.Filters;
 using Maomi.MQ.Transaction.Database;
 using Maomi.MQ.Transaction.Default;

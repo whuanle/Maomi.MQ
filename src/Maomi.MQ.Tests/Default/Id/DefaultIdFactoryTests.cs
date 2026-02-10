@@ -14,7 +14,7 @@ public class DefaultIdFactoryTests
         var services = MaomiHostHelper.BuildEmpty();
 
         var ioc = services.BuildServiceProvider();
-        var idFactory = ioc.GetRequiredService<IIdFactory>();
+        var idFactory = ioc.GetRequiredService<IIdProvider>();
         var id = idFactory.NextId();
 
         Assert.True(id > 0);
@@ -23,7 +23,7 @@ public class DefaultIdFactoryTests
     [Fact]
     public void NextId_ShouldReturnUniqueIds()
     {
-        var factory = new DefaultIdFactory(1);
+        var factory = new DefaultIdProvider(1);
 
         var id1 = factory.NextId();
         var id2 = factory.NextId();
@@ -34,7 +34,7 @@ public class DefaultIdFactoryTests
     [Fact]
     public void NextId_ShouldReturnPositiveId()
     {
-        var factory = new DefaultIdFactory(1);
+        var factory = new DefaultIdProvider(1);
 
         var id = factory.NextId();
 
@@ -44,7 +44,7 @@ public class DefaultIdFactoryTests
     [Fact]
     public async Task NextId_ShouldReturnUniqueIdsInParallel()
     {
-        var factory = new DefaultIdFactory(1);
+        var factory = new DefaultIdProvider(1);
         var ids = new ConcurrentBag<long>();
         var tasks = Enumerable.Range(0, 10000).Select(_ => Task.Run(() => ids.Add(factory.NextId()))).ToArray();
 
@@ -57,8 +57,8 @@ public class DefaultIdFactoryTests
     [Fact]
     public async Task NextId_ShouldReturnUniqueIdsInParallel_DifferentWorkId()
     {
-        var factory1 = new DefaultIdFactory(1);
-        var factory2 = new DefaultIdFactory(2);
+        var factory1 = new DefaultIdProvider(1);
+        var factory2 = new DefaultIdProvider(2);
 
         var ids = new ConcurrentBag<long>();
         var tasks1 = Enumerable.Range(0, 10000).Select(_ => Task.Run(() => ids.Add(factory1.NextId()))).ToArray();

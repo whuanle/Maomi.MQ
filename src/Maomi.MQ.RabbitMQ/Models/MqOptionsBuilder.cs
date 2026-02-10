@@ -7,7 +7,7 @@
 using RabbitMQ.Client;
 using System.Reflection;
 
-namespace Maomi.MQ;
+namespace Maomi.MQ.Models;
 
 /// <summary>
 /// Build options.
@@ -34,4 +34,10 @@ public class MqOptionsBuilder
     /// RabbitMQ connection factory.
     /// </summary>
     public Action<ConnectionFactory> Rabbit { get; set; } = null!;
+
+    /// <summary>
+    /// Message serializers.<br />
+    /// 消息序列化器，每个 ContentType 对应一个序列化器.
+    /// </summary>
+    public Action<List<IMessageSerializer>>? MessageSerializers { get; init; }
 }

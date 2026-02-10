@@ -1,9 +1,10 @@
 using AutoFixture;
 using AutoFixture.Xunit2;
-using Maomi.MQ;
+using Maomi.MQ.Consumer;
 using Maomi.MQ.Default;
 using Maomi.MQ.EventBus;
 using Maomi.MQ.Hosts;
+using Maomi.MQ.Models;
 using Maomi.MQ.Pool;
 using Maomi.MQ.Tests;
 using Microsoft.Extensions.DependencyInjection;

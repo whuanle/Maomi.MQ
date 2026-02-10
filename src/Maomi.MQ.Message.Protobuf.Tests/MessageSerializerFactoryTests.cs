@@ -23,7 +23,7 @@ public class MessageSerializerFactoryTests
         }
         else
         {
-            return new DefaultMessageSerializer();
+            return new DefaultJsonMessageSerializer();
         }
     }
 
@@ -35,7 +35,7 @@ public class MessageSerializerFactoryTests
         }
         else
         {
-            return new DefaultMessageSerializer();
+            return new DefaultJsonMessageSerializer();
         }
     }
 

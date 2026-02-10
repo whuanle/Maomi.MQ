@@ -45,11 +45,16 @@ public class CustomConsumerTypeFilterTests
         public bool RetryFaildRequeue { get; set; }
         public AutoQueueDeclare AutoQueueDeclare { get; set; }
         public string? BindExchange { get; set; }
-        public string? ExchangeType { get; set; }
+        public ExchangeType ExchangeType { get; set; }
         public string? RoutingKey { get; set; }
 
         public IConsumerOptions Clone() => (IConsumerOptions)MemberwiseClone();
         public void CopyFrom(IConsumerOptions options) => throw new NotImplementedException();
+
+        public bool Equals(IConsumerOptions? other)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     private class TestConsumer : IConsumer<TestMessage>

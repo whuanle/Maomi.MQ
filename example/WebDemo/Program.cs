@@ -1,4 +1,5 @@
 using Maomi.MQ;
+using Maomi.MQ.Models;
 using RabbitMQ.Client;
 using System.Reflection;
 

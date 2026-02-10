@@ -4,7 +4,7 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-namespace Maomi.MQ.EventBus;
+namespace Maomi.MQ.Attributes;
 
 /// <summary>
 /// Identifies the order of event handler.<br />

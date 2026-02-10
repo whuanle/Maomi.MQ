@@ -20,12 +20,12 @@ public static class MaomiCoreExtensions
     /// 添加基础服务.
     /// </summary>
     /// <param name="services"></param>
+    /// <param name="workId"></param>
     /// <returns><see cref="IServiceCollection"/>.</returns>
-    public static IServiceCollection AddMaomiMQCore(this IServiceCollection services)
+    public static IServiceCollection AddMaomiMQCore(this IServiceCollection services, ushort? workId)
     {
-        services.AddSingleton<IMessageSerializer, DefaultMessageSerializer>();
         services.AddSingleton<IRetryPolicyFactory, DefaultRetryPolicyFactory>();
-        services.AddSingleton<IIdFactory>(new DefaultIdFactory(0));
+        services.AddSingleton<IIdProvider>(new DefaultIdProvider(workId ?? 0));
         return services;
     }
 }

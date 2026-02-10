@@ -4,10 +4,11 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-namespace Maomi.MQ;
+namespace Maomi.MQ.Consumer;
 
 /// <summary>
-/// Consumer info.
+/// All consumers should be recorded under the "ConsumerType" category.<br />
+/// 所有消费者都应该被记录到 ConsumerType.
 /// </summary>
 public class ConsumerType : IComparable<ConsumerType>
 {

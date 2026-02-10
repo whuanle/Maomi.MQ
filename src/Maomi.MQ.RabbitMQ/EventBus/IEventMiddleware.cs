@@ -11,6 +11,7 @@ namespace Maomi.MQ.EventBus;
 /// </summary>
 /// <typeparam name="TMessage">事件模型.</typeparam>
 public interface IEventMiddleware<TMessage>
+    where TMessage : class
 {
     /// <summary>
     /// The received message is processed when it has been deserialized correctly.<br />

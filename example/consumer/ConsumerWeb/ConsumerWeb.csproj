@@ -10,8 +10,4 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.2" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Maomi.MQ\Maomi.MQ.csproj" />
-  </ItemGroup>
-
 </Project>

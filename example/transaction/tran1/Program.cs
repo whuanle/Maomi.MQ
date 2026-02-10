@@ -1,4 +1,5 @@
 using Maomi.MQ;
+using Maomi.MQ.Models;
 using Maomi.MQ.Transaction.Database;
 using Microsoft.EntityFrameworkCore;
 using MySqlConnector;

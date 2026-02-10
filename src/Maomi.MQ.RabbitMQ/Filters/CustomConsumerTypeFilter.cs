@@ -4,6 +4,7 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
+using Maomi.MQ.Consumer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Reflection;
@@ -11,8 +12,8 @@ using System.Reflection;
 namespace Maomi.MQ.Filters;
 
 /// <summary>
-/// Dynamic consumer type filter.<br />
-/// 消费者类型过滤器.
+/// Fully customizable consumers and configurations.<br />
+/// 完全自定义消费者和配置.
 /// </summary>
 public class CustomConsumerTypeFilter : ITypeFilter
 {
@@ -42,7 +43,6 @@ public class CustomConsumerTypeFilter : ITypeFilter
             var consumerInterface = type.GetInterfaces().Where(x => x.IsGenericType)
                 .FirstOrDefault(x => x.GetGenericTypeDefinition() == typeof(IConsumer<>))!;
 
-            services.TryAddEnumerable(new ServiceDescriptor(serviceType: consumerInterface, implementationType: type, lifetime: ServiceLifetime.Scoped));
             services.Add(new ServiceDescriptor(serviceType: type, implementationType: type, lifetime: ServiceLifetime.Scoped));
 
             var eventType = consumerInterface.GenericTypeArguments[0];

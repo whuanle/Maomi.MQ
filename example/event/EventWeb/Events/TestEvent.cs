@@ -1,9 +1,10 @@
 ﻿using Maomi.MQ;
+using Maomi.MQ.Attributes;
 using Maomi.MQ.EventBus;
 
 namespace EventWeb.Events;
 
-[EventTopic("EventWeb")]
+[QueueName("EventWeb")]
 public class TestEvent
 {
     public string Message { get; set; }
@@ -14,7 +15,7 @@ public class TestEvent
     }
 }
 
-
+[Consumer("")]
 public class TestEventMiddleware : IEventMiddleware<TestEvent>
 {
     public async Task ExecuteAsync(MessageHeader messageHeader,TestEvent message, EventHandlerDelegate<TestEvent> next)
@@ -56,7 +57,7 @@ public class My2EventEventHandler : IEventHandler<TestEvent>
 }
 
 
-[EventTopic("EventWeb_dynamic")]
+[QueueName("EventWeb_dynamic")]
 public class DynamicTestEvent
 {
     public string Message { get; set; }

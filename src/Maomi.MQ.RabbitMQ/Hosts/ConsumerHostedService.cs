@@ -8,9 +8,11 @@
 #pragma warning disable SA1600
 #pragma warning disable CS1591
 
+using Maomi.MQ.Consumer;
 using Maomi.MQ.Default;
 using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -23,9 +25,10 @@ namespace Maomi.MQ.Hosts;
 /// </summary>
 public partial class ConsumerHostedService : ConsumerBaseService
 {
+    protected readonly IHostApplicationLifetime _hostApplicationLifetime;
+
     protected readonly IConnectionObject _connectionObject;
 
-    protected readonly IMessageSerializer _jsonSerializer;
     protected readonly IRetryPolicyFactory _policyFactory;
 
     protected readonly IReadOnlyList<ConsumerType> _consumerTypes;
@@ -34,18 +37,21 @@ public partial class ConsumerHostedService : ConsumerBaseService
     /// <summary>
     /// Initializes a new instance of the <see cref="ConsumerHostedService"/> class.
     /// </summary>
+    /// <param name="hostApplicationLifetime"></param>
     /// <param name="serviceFactory"></param>
     /// <param name="connectionPool"></param>
     /// <param name="consumerTypes"></param>
     public ConsumerHostedService(
+        IHostApplicationLifetime hostApplicationLifetime,
         ServiceFactory serviceFactory,
         ConnectionPool connectionPool,
         IReadOnlyList<ConsumerType> consumerTypes)
         : base(serviceFactory, serviceFactory.ServiceProvider.GetRequiredService<ILoggerFactory>())
     {
+        _hostApplicationLifetime = hostApplicationLifetime;
+
         _connectionObject = connectionPool.Get();
 
-        _jsonSerializer = serviceFactory.Serializer;
         _policyFactory = serviceFactory.RetryPolicyFactory;
         _consumerTypes = consumerTypes;
     }
@@ -53,6 +59,14 @@ public partial class ConsumerHostedService : ConsumerBaseService
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        var applicationStartedTask = WaitForHostStartedAsync(stoppingToken);
+        await applicationStartedTask;
+
+        if (stoppingToken.IsCancellationRequested)
+        {
+            return;
+        }
+
         _logger.LogWarning("Detects queue information and initializes it.");
 
         try
@@ -83,10 +97,21 @@ public partial class ConsumerHostedService : ConsumerBaseService
 
     protected virtual async Task WaitReadyInitQueueAsync()
     {
+        var idGen = _serviceProvider.GetRequiredService<IIdProvider>();
+
         foreach (var consumerType in _consumerTypes)
         {
             var routingProvider = _serviceProvider.GetRequiredService<IRoutingProvider>();
             var consumerOptions = routingProvider.Get(consumerType.ConsumerOptions);
+
+            if (consumerOptions.IsBroadcast == true)
+            {
+                // 复制属性并修改 Queue 名称，避免广播消费者之间互相干扰
+                var newConsumerOptions = new ConsumerOptions();
+                newConsumerOptions.CopyFrom(consumerOptions);
+                newConsumerOptions.Queue = consumerOptions.Queue + "_" + idGen.NextId();
+                consumerOptions = newConsumerOptions;
+            }
 
             await InitQueueAsync(_connectionObject.DefaultChannel, consumerOptions);
 
@@ -100,5 +125,23 @@ public partial class ConsumerHostedService : ConsumerBaseService
             var consumerTag = await createConsumer(this, currentChannel, consumerType.Consumer, consumerType.Event, consumerOptions);
             _consumers.Add(consumerTag, currentChannel);
         }
+    }
+
+    // 避免阻塞 Web 启动，在 ASP.NET Core 启动完毕后才会启动此后台服务
+    private Task<bool> WaitForHostStartedAsync(CancellationToken cancellationToken)
+    {
+        var tcs = new TaskCompletionSource<bool>();
+
+        _hostApplicationLifetime.ApplicationStarted.Register(() =>
+        {
+            tcs.TrySetResult(true);
+        });
+
+        cancellationToken.Register(() =>
+        {
+            tcs.TrySetCanceled();
+        });
+
+        return tcs.Task;
     }
 }

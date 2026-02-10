@@ -8,7 +8,7 @@ public class ServiceFactoryTests
     private readonly Mock<IServiceProvider> _serviceProviderMock;
     private readonly Mock<IMessageSerializer> _serializerMock;
     private readonly Mock<IRetryPolicyFactory> _retryPolicyFactoryMock;
-    private readonly Mock<IIdFactory> _idFactoryMock;
+    private readonly Mock<IIdProvider> _idFactoryMock;
     private readonly MqOptions _options;
 
     public ServiceFactoryTests()
@@ -16,7 +16,7 @@ public class ServiceFactoryTests
         _serviceProviderMock = new Mock<IServiceProvider>();
         _serializerMock = new Mock<IMessageSerializer>();
         _retryPolicyFactoryMock = new Mock<IRetryPolicyFactory>();
-        _idFactoryMock = new Mock<IIdFactory>();
+        _idFactoryMock = new Mock<IIdProvider>();
         _options = new MqOptions();
     }
 

@@ -4,13 +4,15 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
-using Maomi.MQ.Filters;
+using Maomi.MQ.Attributes;
+using Maomi.MQ.Consumer;
+using Maomi.MQ.EventBus;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Maomi.MQ.EventBus;
+namespace Maomi.MQ.Filters;
 
 /// <summary>
 /// Eventbus type filter.<br />
@@ -19,15 +21,109 @@ namespace Maomi.MQ.EventBus;
 public class EventBusTypeFilter : ITypeFilter
 {
     private readonly Dictionary<Type, EventInfo> _eventInfos = new();
-    private readonly EventTopicInterceptor? _eventTopicInterceptor;
+    private readonly ConsumerInterceptor? _eventTopicInterceptor;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EventBusTypeFilter"/> class.
     /// </summary>
     /// <param name="consumerInterceptor"></param>
-    public EventBusTypeFilter(EventTopicInterceptor? consumerInterceptor = null)
+    public EventBusTypeFilter(ConsumerInterceptor? consumerInterceptor = null)
     {
         _eventTopicInterceptor = consumerInterceptor;
+    }
+
+    /// <inheritdoc />
+    public void Filter(IServiceCollection services, Type type)
+    {
+        /*
+           Filter the following types:
+           IEventMiddleware<T>
+           IEventHandler<T>
+         */
+
+        if (!type.IsClass)
+        {
+            return;
+        }
+
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(DefaultEventMiddleware<>))
+        {
+            return;
+        }
+
+        Type? eventType = null;
+        IConsumerOptions? consumerOptions = null;
+        var middlewareInterface = type.GetInterfaces().Where(x => x.IsGenericType)
+                .FirstOrDefault(x => x.GetGenericTypeDefinition() == typeof(IEventMiddleware<>));
+
+        if (middlewareInterface != null)
+        {
+            eventType = middlewareInterface.GenericTypeArguments[0];
+            services.AddScoped(type);
+
+            consumerOptions = type.GetCustomAttribute<ConsumerAttribute>();
+            if (consumerOptions == null)
+            {
+                return;
+            }
+
+            if (_eventTopicInterceptor != null)
+            {
+                var register = _eventTopicInterceptor.Invoke(consumerOptions, type);
+                if (!register.IsRegister)
+                {
+                    return;
+                }
+
+                consumerOptions.CopyFrom(register.ConsumerOptions);
+            }
+        }
+
+        var handlerInterface = type.GetInterfaces().Where(x => x.IsGenericType)
+                .FirstOrDefault(x => x.GetGenericTypeDefinition() == typeof(IEventHandler<>));
+
+        if (handlerInterface != null)
+        {
+            eventType = handlerInterface.GenericTypeArguments[0];
+            services.AddScoped(type);
+        }
+
+        if (eventType == null)
+        {
+            return;
+        }
+
+        EventInfo eventInfo;
+
+        if (!_eventInfos.TryGetValue(eventType, out eventInfo!))
+        {
+            eventInfo = new EventInfo()
+            {
+                EventType = eventType
+            };
+            _eventInfos.Add(eventType, eventInfo);
+        }
+
+        if (middlewareInterface != null)
+        {
+            eventInfo.Middleware = type;
+            eventInfo.Queue = consumerOptions!.Queue;
+            eventInfo.Options = consumerOptions;
+        }
+
+        if (handlerInterface != null)
+        {
+            var eventOrder = type.GetCustomAttribute<EventOrderAttribute>();
+            if (eventOrder == null)
+            {
+                throw new ArgumentNullException($"{type.Name} type is not configured with the [EventOrder] attribute.");
+            }
+
+            if (!eventInfo.Handlers.TryAdd(eventOrder.Order, type))
+            {
+                throw new ArgumentException($"The Order values of {eventInfo.Handlers[eventOrder.Order].Name} and {type.Name} are repeated, with Order = {eventOrder.Order}.");
+            }
+        }
     }
 
     /// <inheritdoc />
@@ -38,10 +134,9 @@ public class EventBusTypeFilter : ITypeFilter
             var eventType = item.Key;
             var eventInfo = item.Value;
 
-            // If there is no IEventMiddleware<T> interface implemented for an event, the default DefaultEventMiddleware<T> is used.
             if (eventInfo.Middleware == null)
             {
-                eventInfo.Middleware = typeof(DefaultEventMiddleware<>).MakeGenericType(eventType);
+                continue;
             }
 
             // Singleton.
@@ -74,112 +169,6 @@ public class EventBusTypeFilter : ITypeFilter
         }).ToList();
 
         return consumerTypes;
-    }
-
-    /// <inheritdoc />
-    public void Filter(IServiceCollection services, Type type)
-    {
-        /*
-           Filter the following types:
-           IEventMiddleware<T>
-           IEventHandler<T>
-         */
-
-        if (!type.IsClass)
-        {
-            return;
-        }
-
-        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(DefaultEventMiddleware<>))
-        {
-            return;
-        }
-
-        Type? eventType = null;
-
-        var middlewareInterface = type.GetInterfaces().Where(x => x.IsGenericType)
-                .FirstOrDefault(x => x.GetGenericTypeDefinition() == typeof(IEventMiddleware<>));
-
-        if (middlewareInterface != null)
-        {
-            eventType = middlewareInterface.GenericTypeArguments[0];
-        }
-
-        var handlerInterface = type.GetInterfaces().Where(x => x.IsGenericType)
-                .FirstOrDefault(x => x.GetGenericTypeDefinition() == typeof(IEventHandler<>));
-
-        if (handlerInterface != null)
-        {
-            eventType = handlerInterface.GenericTypeArguments[0];
-        }
-
-        // IEventMiddleware<T> and IEventHandler<T> are not found.
-        if (eventType == null)
-        {
-            if (type.GetCustomAttribute<EventTopicAttribute>() != null)
-            {
-                eventType = type;
-            }
-            else
-            {
-                return;
-            }
-        }
-
-        var eventTopicAttribute = eventType.GetCustomAttribute<EventTopicAttribute>();
-        if (eventTopicAttribute == null)
-        {
-            return;
-        }
-
-        if (handlerInterface != null)
-        {
-            // type: IEventHandler`1
-            services.AddScoped(type);
-        }
-
-        if (_eventTopicInterceptor != null)
-        {
-            var register = _eventTopicInterceptor.Invoke(eventTopicAttribute, type);
-            if (!register.IsRegister)
-            {
-                return;
-            }
-
-            eventTopicAttribute.CopyFrom(register.Options);
-        }
-
-        EventInfo eventInfo;
-
-        if (!_eventInfos.TryGetValue(eventType, out eventInfo!))
-        {
-            eventInfo = new EventInfo
-            {
-                Queue = eventTopicAttribute.Queue,
-                Options = eventTopicAttribute,
-                EventType = eventType,
-            };
-            _eventInfos.Add(eventType, eventInfo);
-        }
-
-        if (middlewareInterface != null)
-        {
-            eventInfo.Middleware = type;
-        }
-
-        if (handlerInterface != null)
-        {
-            var eventOrder = type.GetCustomAttribute<EventOrderAttribute>();
-            if (eventOrder == null)
-            {
-                throw new ArgumentNullException($"{type.Name} type is not configured with the [EventOrder] attribute.");
-            }
-
-            if (!eventInfo.Handlers.TryAdd(eventOrder.Order, type))
-            {
-                throw new ArgumentException($"The Order values of {eventInfo.Handlers[eventOrder.Order].Name} and {type.Name} are repeated, with Order = {eventOrder.Order}.");
-            }
-        }
     }
 
     private static readonly MethodInfo AddIEventHandlerFactoryMethod = typeof(EventBusTypeFilter).GetMethod(nameof(AddSingletonIEventHandlerFactory), BindingFlags.NonPublic | BindingFlags.Instance)!;
