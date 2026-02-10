@@ -15,7 +15,7 @@ public interface IQueueNameOptions
     /// Queue name or routing key name.<br />
     /// 队列名称或路由键名称.
     /// </summary>
-    string RoutingKey { get; set; }
+    string RoutingKey { get; }
 
     /// <summary>
     /// Exchange.<br />

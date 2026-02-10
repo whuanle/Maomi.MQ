@@ -14,7 +14,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System.Diagnostics;
-using System.Diagnostics.Metrics;
 using System.Reflection;
 
 namespace Maomi.MQ;
@@ -24,20 +23,13 @@ namespace Maomi.MQ;
 /// </summary>
 public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessagePublisher
 {
-    protected static readonly DiagnosticListener _diagnosticListener = new DiagnosticListener(DiagnosticName.Listener.Publisher);
-    protected static readonly ActivitySource _activitySource = new ActivitySource(DiagnosticName.ActivitySource.Publisher);
-
-    protected readonly Meter _meter;
-    protected readonly Counter<int> _meterPushMessageCount;
-    protected readonly Counter<int> _meterPushFaildMessageCount;
-    protected readonly Histogram<long> _meterPushMessageBytes;
-
     protected readonly IServiceProvider _serviceProvider;
     protected readonly MqOptions _mqOptions;
     protected readonly ConnectionPool _connectionPool;
     protected readonly IConnectionObject _connectionObject;
     protected readonly IIdProvider _idGen;
     protected readonly ILogger _logger;
+    protected readonly IPublisherDiagnostics _publisherDiagnostics;
 
     protected readonly Lazy<IRoutingProvider> _routingProvider;
 
@@ -64,27 +56,9 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
         _idGen = idGen;
         _logger = loggerFactory.CreateLogger<DefaultMessagePublisher>();
 
+        _publisherDiagnostics = serviceProvider.GetRequiredService<IPublisherDiagnostics>();
+
         _routingProvider = new Lazy<IRoutingProvider>(() => _serviceProvider.GetRequiredService<IRoutingProvider>());
-
-        var tags = new Dictionary<string, object?>()
-        {
-            { nameof(MessageHeader.AppId), _mqOptions.AppName }
-        };
-
-        var meterFactory = serviceProvider.GetService<IMeterFactory>();
-
-        _meter = meterFactory != null ? meterFactory.Create(DiagnosticName.Meter.Publisher) : SharedMeter.Publisher;
-        _meterPushMessageCount = _meter.CreateCounter<int>(
-            DiagnosticName.Meter.PublisherMessageCount,
-            unit: "{request}",
-            description: "The total number of messages published.",
-            tags);
-        _meterPushFaildMessageCount = _meter.CreateCounter<int>(
-            DiagnosticName.Meter.PublisherFaildMessageCount,
-            unit: "{request}",
-            "Total number of failed messages sent",
-            tags);
-        _meterPushMessageBytes = _meter.CreateHistogram<long>(DiagnosticName.Meter.PublisherMessageSent, "Byte", "The size of the received message", tags);
     }
 
     /// <summary>
@@ -100,11 +74,7 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
         _connectionObject = publisher._connectionObject;
         _idGen = publisher._idGen;
         _logger = publisher._logger;
-
-        _meter = publisher._meter;
-        _meterPushMessageCount = publisher._meterPushMessageCount;
-        _meterPushFaildMessageCount = publisher._meterPushFaildMessageCount;
-        _meterPushMessageBytes = publisher._meterPushMessageBytes;
+        _publisherDiagnostics = publisher._publisherDiagnostics;
     }
 
     /// <inheritdoc />
@@ -178,10 +148,8 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
     }
 
     /// <inheritdoc />
-    public virtual async Task PublishChannelAsync<TMessage>(IChannel channel, string exchange, string reoutingKey, TMessage message, BasicProperties properties, CancellationToken cancellationToken = default)
+    public virtual async Task PublishChannelAsync<TMessage>(IChannel channel, string exchange, string routingKey, TMessage message, BasicProperties properties, CancellationToken cancellationToken = default)
     {
-        using Activity? activity = _activitySource.StartActivity(DiagnosticName.ActivitySource.Publisher, ActivityKind.Producer);
-
         if (properties == null)
         {
             properties = new BasicProperties()
@@ -213,13 +181,13 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
             ContentType = messageSerializer.ContentType,
             Type = typeof(TMessage).FullName!,
             Exchange = exchange,
-            RoutingKey = reoutingKey,
+            RoutingKey = routingKey,
             Properties = properties
         };
 
         InitializeMessageProperties<TMessage>(properties, ref messageHeader);
 
-        OnStartEvent(ref messageHeader, exchange, reoutingKey, activity);
+        using Activity? activity = _publisherDiagnostics.Start(messageHeader, exchange, routingKey);
 
         byte[]? body = default;
         try
@@ -227,7 +195,7 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
             body = messageSerializer.Serializer(message);
             await channel.BasicPublishAsync(
                 exchange: exchange,
-                routingKey: reoutingKey,
+                routingKey: routingKey,
                 basicProperties: properties,
                 body: body,
                 mandatory: true,
@@ -239,22 +207,20 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "The message with id [{Id}] failed to send, exchange: [{Exchange}], reoutingKey: [{reoutingKey}].", messageHeader.Id, exchange, reoutingKey);
-            OnExecptionEvent(ref messageHeader, exchange, reoutingKey, ex, activity);
+            _logger.LogWarning(ex, "The message with id [{Id}] failed to send, exchange: [{Exchange}], routingKey: [{RoutingKey}].", messageHeader.Id, exchange, routingKey);
+            _publisherDiagnostics.Exception(messageHeader, exchange, routingKey, ex, activity);
             throw;
         }
         finally
         {
-            _meterPushMessageBytes.Record(body?.Length ?? 0);
-            OnStopEvent(ref messageHeader, exchange, reoutingKey, activity);
+            _publisherDiagnostics.RecordMessageSize(messageHeader, exchange, routingKey, body?.Length ?? 0, activity);
+            _publisherDiagnostics.Stop(messageHeader, exchange, routingKey, activity);
         }
     }
 
     /// <inheritdoc />
-    public virtual async Task PublishChannelAsync(IChannel channel, string exchange, string reoutingKey, MessageHeader messageHeader, byte[] message, BasicProperties properties, CancellationToken cancellationToken = default)
+    public virtual async Task PublishChannelAsync(IChannel channel, string exchange, string routingKey, MessageHeader messageHeader, byte[] message, BasicProperties properties, CancellationToken cancellationToken = default)
     {
-        using Activity? activity = _activitySource.StartActivity(DiagnosticName.ActivitySource.Publisher, ActivityKind.Producer);
-
         if (properties == null)
         {
             properties = new BasicProperties()
@@ -264,13 +230,13 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
         }
 
         properties.Headers = properties.Headers ?? new Dictionary<string, object?>();
-        OnStartEvent(ref messageHeader, exchange, reoutingKey, activity);
+        using Activity? activity = _publisherDiagnostics.Start(messageHeader, exchange, routingKey);
 
         try
         {
             await channel.BasicPublishAsync(
                 exchange: exchange,
-                routingKey: reoutingKey,
+                routingKey: routingKey,
                 basicProperties: properties,
                 body: message,
                 mandatory: true,
@@ -282,23 +248,17 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "The message with id [{Id}] failed to send, exchange: [{Exchange}], reoutingKey: [{reoutingKey}].", messageHeader.Id, exchange, reoutingKey);
-            OnExecptionEvent(ref messageHeader, exchange, reoutingKey, ex, activity);
+            _logger.LogWarning(ex, "The message with id [{Id}] failed to send, exchange: [{Exchange}], routingKey: [{RoutingKey}].", messageHeader.Id, exchange, routingKey);
+            _publisherDiagnostics.Exception(messageHeader, exchange, routingKey, ex, activity);
             throw;
         }
         finally
         {
-            _meterPushMessageBytes.Record(message?.Length ?? 0);
-            OnStopEvent(ref messageHeader, exchange, reoutingKey, activity);
+            _publisherDiagnostics.RecordMessageSize(messageHeader, exchange, routingKey, message?.Length ?? 0, activity);
+            _publisherDiagnostics.Stop(messageHeader, exchange, routingKey, activity);
         }
     }
-}
 
-/// <summary>
-/// <inheritdoc />
-/// </summary>
-public partial class DefaultMessagePublisher
-{
     protected virtual void InitializeMessageProperties<TMessage>(BasicProperties properties, ref MessageHeader messageHeader)
     {
         IMessageSerializer? messageSerializer = default;
@@ -323,78 +283,5 @@ public partial class DefaultMessagePublisher
         properties.Type = typeof(TMessage).FullName;
 
         properties.Headers = properties.Headers ?? new Dictionary<string, object?>();
-    }
-
-    protected bool IsEnabledListener()
-    {
-        // check if there is a parent Activity or if someone listens to "<Maomi.MQ.Publisher>" ActivitySource or "MaomiMQPublisherHandlerDiagnosticListener" DiagnosticListener.
-        return Activity.Current != null ||
-               _activitySource.HasListeners() ||
-               _diagnosticListener.IsEnabled();
-    }
-
-    protected virtual void OnStartEvent(ref MessageHeader messageHeader, string exchange, string reoutingKey, Activity? activity)
-    {
-        if (activity == null || !IsEnabledListener())
-        {
-            return;
-        }
-
-        activity.AddTag("Id", messageHeader.Id);
-        activity.AddTag("Timestamp", messageHeader.Timestamp);
-        activity.AddTag("AppId", messageHeader.AppId);
-        activity.AddTag("ContentType", messageHeader.ContentType);
-        activity.AddTag("Type", messageHeader.Type);
-        activity.AddTag("Exchange", exchange);
-        activity.AddTag("RoutingKey", reoutingKey);
-
-        TagList tagList = default;
-        tagList.Add(nameof(MessageHeader.AppId), messageHeader.AppId);
-        tagList.Add("Exchange", exchange);
-        tagList.Add("RoutingKey", reoutingKey);
-
-        _meterPushMessageCount.Add(1, tagList);
-        _diagnosticListener.Write(DiagnosticName.Event.PublisherStart, messageHeader);
-    }
-
-    protected virtual void OnStopEvent(ref MessageHeader messageHeader, string exchange, string reoutingKey, Activity? activity)
-    {
-        if (activity == null || !IsEnabledListener())
-        {
-            return;
-        }
-
-        activity.SetStatus(ActivityStatusCode.Ok);
-        activity.Stop();
-
-        TagList tagList = default;
-        tagList.Add(nameof(MessageHeader.AppId), messageHeader.AppId);
-        tagList.Add("Exchange", exchange);
-        tagList.Add("RoutingKey", reoutingKey);
-
-        _diagnosticListener.Write(DiagnosticName.Event.PublisherStop, messageHeader);
-    }
-
-    protected virtual void OnExecptionEvent(ref MessageHeader messageHeader, string exchange, string reoutingKey, Exception exception, Activity? activity)
-    {
-        if (activity == null || !IsEnabledListener())
-        {
-            return;
-        }
-
-        TagList tagList = default;
-        tagList.Add(nameof(MessageHeader.AppId), messageHeader.AppId);
-        tagList.Add("Exchange", exchange);
-        tagList.Add("RoutingKey", reoutingKey);
-
-#if NET9_0_OR_GREATER
-        activity.AddException(exception, tagList);
-#else
-        DiagnosticsExtensions.AddException(activity, exception, tagList);
-#endif
-        activity.SetStatus(ActivityStatusCode.Error);
-        _meterPushFaildMessageCount.Add(1, tagList);
-
-        _diagnosticListener.Write(DiagnosticName.Event.PublisherExecption, exception);
     }
 }

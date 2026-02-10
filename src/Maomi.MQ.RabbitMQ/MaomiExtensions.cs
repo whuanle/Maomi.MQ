@@ -7,6 +7,7 @@
 using Maomi.MQ.Consumer;
 using Maomi.MQ.Default;
 using Maomi.MQ.Defaults;
+using Maomi.MQ.Diagnostics;
 using Maomi.MQ.EventBus;
 using Maomi.MQ.Filters;
 using Maomi.MQ.Hosts;
@@ -96,6 +97,9 @@ public static partial class MaomiExtensions
         services.AddSingleton<IDynamicConsumer, DynamicConsumerService>();
 
         services.AddSingleton<ConnectionPool>();
+
+        services.AddSingleton<IConsumerDiagnostics, ConsumerDiagnostics>();
+        services.AddSingleton<IPublisherDiagnostics, PublisherDiagnostics>();
 
         services.AddScoped<DefaultMessagePublisher>();
         services.AddScoped<IMessagePublisher>(s => s.GetRequiredService<DefaultMessagePublisher>());

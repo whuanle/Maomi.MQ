@@ -37,11 +37,11 @@ public class QueueNameAttribute : Attribute, IQueueNameOptions
     /// Exchange.<br />
     /// 绑定交换器.
     /// </summary>
-    public string? Exchange { get; set; }
+    public string? Exchange { get; }
 
     /// <summary>
     /// Queue name or routing key name.<br />
     /// 队列名称或路由键名称.
     /// </summary>
-    public string RoutingKey { get; set; }
+    public string RoutingKey { get; }
 }

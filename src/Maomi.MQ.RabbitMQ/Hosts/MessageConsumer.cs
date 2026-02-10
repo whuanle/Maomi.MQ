@@ -17,7 +17,6 @@ using Polly.Retry;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Diagnostics;
-using System.Diagnostics.Metrics;
 
 namespace Maomi.MQ.Hosts;
 
@@ -28,21 +27,13 @@ namespace Maomi.MQ.Hosts;
 public class MessageConsumer<TMessage>
     where TMessage : class
 {
-    protected static readonly DiagnosticListener _diagnosticListener = new DiagnosticListener(DiagnosticName.Listener.Consumer);
-    protected static readonly ActivitySource _activitySource = new ActivitySource(DiagnosticName.ActivitySource.Consumer);
-
-    protected readonly Meter _meter;
-    protected readonly Counter<int> _pullMessageCount;
-    protected readonly Counter<int> _messageFaildCount;
-    protected readonly Histogram<long> _messageSize;
-    protected readonly TagList _tags;
-
     protected readonly IServiceProvider _serviceProvider;
     protected readonly MqOptions _mqOptions;
     protected readonly IRetryPolicyFactory _policyFactory;
     protected readonly IConsumerOptions _consumerOptions;
     protected readonly Func<IServiceProvider, object> _consumerInstance;
     protected readonly ILogger _logger;
+    protected readonly IConsumerDiagnostics _consumerDiagnostics;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MessageConsumer{TMessage}"/> class.
@@ -60,33 +51,17 @@ public class MessageConsumer<TMessage>
         _mqOptions = serviceFactory.Options;
 
         _policyFactory = serviceFactory.RetryPolicyFactory;
+        _consumerDiagnostics = serviceFactory.ConsumerDiagnostics;
+
         _consumerOptions = consumerOptions;
         _consumerInstance = consumerInstance;
         _logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<MessageConsumer<TMessage>>();
-
-        _tags = new TagList
-        {
-            { "AppId", _mqOptions.AppName },
-            { "Queue", consumerOptions.Queue },
-            { "Exchange", consumerOptions.BindExchange },
-            { "RoutingKey", consumerOptions.RoutingKey },
-        };
-
-        var meterFactory = _serviceProvider.GetService<IMeterFactory>();
-        _meter = meterFactory != null ? meterFactory.Create(DiagnosticName.Meter.Consumer) : SharedMeter.Consumer;
-
-        _pullMessageCount = _meter.CreateCounter<int>("maomimq_consumer_message_pull_count", "{request}", "The number of messages pushed or pulled by the server", _tags);
-        _messageFaildCount = _meter.CreateCounter<int>("maomimq_consumer_message_faild_count", "{request}", "The total number of retries for processing messages", _tags);
-        _messageSize = _meter.CreateHistogram<long>("maomimq_consumer_message_received", "Byte", "The size of the received message", _tags);
     }
 
     public virtual async Task ConsumerAsync(IChannel channel, BasicDeliverEventArgs eventArgs)
     {
-        using Activity? activity = _activitySource.StartActivity(DiagnosticName.ActivitySource.Consumer, ActivityKind.Consumer);
-
         MessageHeader messageHeader = eventArgs.GetMessageHeader();
-
-        OnStartEvent(messageHeader, eventArgs, _consumerOptions.Queue, activity);
+        using Activity? activity = _consumerDiagnostics.StartConsume(messageHeader, eventArgs, _consumerOptions);
 
         IConsumer<TMessage> consumer = default!;
         try
@@ -104,7 +79,7 @@ public class MessageConsumer<TMessage>
             await breakdown.NotFoundConsumerAsync(_consumerOptions.Queue, typeof(TMessage), typeof(IConsumer<TMessage>));
 
             var ex = new ArgumentNullException(nameof(consumer), "The consumer instance cannot be null.");
-            OnExceptionEvent(ref messageHeader, ex, activity);
+            _consumerDiagnostics.ExceptionConsume(messageHeader, ex, activity);
             throw ex;
         }
 
@@ -136,7 +111,7 @@ public class MessageConsumer<TMessage>
         }
         catch (Exception ex)
         {
-            OnExceptionEvent(ref messageHeader, ex, activity);
+            _consumerDiagnostics.ExceptionConsume(messageHeader, ex, activity);
             fallbackState = await FallbackAsync(eventArgs, consumer, messageHeader, eventBody, ex);
             goto Fallback;
         }
@@ -147,7 +122,7 @@ public class MessageConsumer<TMessage>
             .Handle<Exception>()
             .FallbackAsync(async (c) =>
             {
-                return await FallbackAsync(eventArgs, consumer, messageHeader, eventBody, null);
+                return await FallbackAsync(eventArgs, consumer, messageHeader, eventBody, null, c);
             });
 
         int retryCount = 0;
@@ -198,32 +173,32 @@ public class MessageConsumer<TMessage>
             await channel.BasicNackAsync(deliveryTag: eventArgs.DeliveryTag, multiple: false, requeue: _consumerOptions.RetryFaildRequeue);
         }
 
-        OnEndEvent(ref messageHeader, activity);
+        _consumerDiagnostics.StopConsume(messageHeader, activity);
     }
 
     protected virtual async Task<ConsumerState> ExecuteAndRetryAsync(BasicDeliverEventArgs eventArgs, IConsumer<TMessage> consumer, MessageHeader messageHeader, TMessage eventBody, int retryCount)
     {
-        using Activity? executekActivity = _activitySource.StartActivity(DiagnosticName.ActivitySource.Execute, ActivityKind.Internal);
+        using Activity? executeActivity = _consumerDiagnostics.StartExecute(messageHeader);
 
         try
         {
             await consumer.ExecuteAsync(messageHeader, eventBody);
-            executekActivity?.Stop();
+            _consumerDiagnostics.StopExecute(messageHeader, executeActivity);
         }
         catch (Exception ex)
         {
-            _messageFaildCount.Add(1);
-            executekActivity?.AddException(ex);
-            executekActivity?.Stop();
+            _consumerDiagnostics.RecordFail(messageHeader, _consumerOptions);
+            _consumerDiagnostics.ExceptionExecute(messageHeader, ex, executeActivity);
+            _consumerDiagnostics.StopExecute(messageHeader, executeActivity);
 
-            using Activity? retrykActivity = _activitySource.StartActivity(DiagnosticName.ActivitySource.Retry, ActivityKind.Internal);
+            using Activity? retryActivity = _consumerDiagnostics.StartRetry(messageHeader);
 
             // Each retry.
             // 每次失败时执行.
             try
             {
                 await consumer.FaildAsync(messageHeader, ex, retryCount, eventBody);
-                retrykActivity?.Stop();
+                _consumerDiagnostics.StopRetry(messageHeader, retryActivity);
             }
             catch (Exception faildEx)
             {
@@ -235,8 +210,8 @@ public class MessageConsumer<TMessage>
                     messageHeader.Id,
                     eventArgs.DeliveryTag);
 
-                retrykActivity?.AddException(faildEx);
-                retrykActivity?.Stop();
+                _consumerDiagnostics.ExceptionRetry(messageHeader, faildEx, retryActivity);
+                _consumerDiagnostics.StopRetry(messageHeader, retryActivity);
 
                 throw;
             }
@@ -247,10 +222,9 @@ public class MessageConsumer<TMessage>
         return ConsumerState.Ack;
     }
 
-    protected virtual async Task<ConsumerState> FallbackAsync(BasicDeliverEventArgs eventArgs, IConsumer<TMessage> consumer, MessageHeader messageHeader, TMessage? eventBody, Exception? ex)
+    protected virtual async Task<ConsumerState> FallbackAsync(BasicDeliverEventArgs eventArgs, IConsumer<TMessage> consumer, MessageHeader messageHeader, TMessage? eventBody, Exception? ex,CancellationToken cancellationToken = default)
     {
-        var fallbackActivity = _activitySource.StartActivity(DiagnosticName.ActivitySource.Fallback, ActivityKind.Internal);
-        OnFallbackStartEvent(ref messageHeader, eventArgs, _consumerOptions.Queue, fallbackActivity);
+        var fallbackActivity = _consumerDiagnostics.StartFallback(messageHeader);
         ConsumerState fallbackState = ConsumerState.Ack;
 
         try
@@ -268,97 +242,12 @@ public class MessageConsumer<TMessage>
                 messageHeader.Id,
                 eventArgs.DeliveryTag);
 
-            OnFallbackExceptionEvent(ref messageHeader, fallbackEx, fallbackActivity);
+            _consumerDiagnostics.ExceptionFallback(messageHeader, fallbackEx, fallbackActivity);
             return ConsumerState.Exception;
         }
         finally
         {
-            OnFallbackEndEvent(ref messageHeader, fallbackState, fallbackActivity);
+            _consumerDiagnostics.StopFallback(messageHeader, fallbackState, fallbackActivity);
         }
-    }
-
-    protected bool IsEnabledListener()
-    {
-        // check if there is a parent Activity or if someone listens to "<Maomi.MQ.Publisher>" ActivitySource or "MaomiMQPublisherHandlerDiagnosticListener" DiagnosticListener.
-        return Activity.Current != null ||
-               _activitySource.HasListeners() ||
-               _diagnosticListener.IsEnabled();
-    }
-
-    protected virtual void OnStartEvent(MessageHeader messageHeader, BasicDeliverEventArgs eventArgs, string queue, Activity? activity)
-    {
-        if (activity == null || !IsEnabledListener())
-        {
-            return;
-        }
-
-        activity.AddTag("Id", messageHeader.Id);
-        activity.AddTag("Timestamp", messageHeader.Timestamp);
-        activity.AddTag("AppId", messageHeader.AppId);
-        activity.AddTag("ContentType", messageHeader.ContentType);
-        activity.AddTag("Type", messageHeader.Type);
-        activity.AddTag("Exchange", eventArgs.Exchange);
-        activity.AddTag("RoutingKey", eventArgs.RoutingKey);
-        activity.AddTag("Queue", queue);
-
-        _pullMessageCount.Add(1, _tags);
-        _messageFaildCount.Add(0, _tags);
-        _messageSize.Record(eventArgs.Body.Length);
-
-        _diagnosticListener.Write(DiagnosticName.Event.ConsumerStart, messageHeader);
-    }
-
-    protected virtual void OnEndEvent(ref MessageHeader messageHeader, Activity? activity)
-    {
-        if (activity == null || !IsEnabledListener())
-        {
-            return;
-        }
-
-        activity.Stop();
-
-        _diagnosticListener.Write(DiagnosticName.Event.ConsumerStop, messageHeader);
-    }
-
-    protected virtual void OnExceptionEvent(ref MessageHeader messageHeader, Exception ex, Activity? activity)
-    {
-        if (activity == null || !IsEnabledListener())
-        {
-            return;
-        }
-
-        activity.AddException(ex);
-        activity.Stop();
-
-        _diagnosticListener.Write(DiagnosticName.Event.ConsumerExecption, messageHeader);
-    }
-
-    protected virtual void OnFallbackStartEvent(ref MessageHeader messageHeader, BasicDeliverEventArgs eventArgs, string queue, Activity? activity)
-    {
-        if (activity == null || !IsEnabledListener())
-        {
-            return;
-        }
-    }
-
-    protected virtual void OnFallbackEndEvent(ref MessageHeader messageHeader, ConsumerState fallbackState, Activity? activity)
-    {
-        if (activity == null || !IsEnabledListener())
-        {
-            return;
-        }
-
-        activity.AddTag("state", fallbackState);
-        activity.Stop();
-    }
-
-    protected virtual void OnFallbackExceptionEvent(ref MessageHeader messageHeader, Exception ex, Activity? activity)
-    {
-        if (activity == null || !IsEnabledListener())
-        {
-            return;
-        }
-
-        activity.AddException(ex);
     }
 }

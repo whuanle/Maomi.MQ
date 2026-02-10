@@ -42,9 +42,9 @@ public interface IDynamicConsumer
     /// </summary>
     /// <typeparam name="TMessage">Message type.</typeparam>
     /// <param name="consumerOptions"></param>
-    /// <param name="execute"><see cref="IConsumer{TMessage}.ExecuteAsync(MessageHeader, TMessage)"/>.</param>
-    /// <param name="faild"><see cref="IConsumer{TMessage}.FaildAsync(MessageHeader, Exception, int, TMessage)"/>.</param>
-    /// <param name="fallback"><see cref="IConsumer{TMessage}.FallbackAsync(MessageHeader, TMessage, Exception?)" />.</param>
+    /// <param name="execute">execute.</param>
+    /// <param name="faild">Callback invoked when message consumption fails.<br />消息消费失败时调用的回调.</param>
+    /// <param name="fallback">fallback.</param>
     /// <returns>Return to Consumer identity.<br />返回消费者标识.</returns>
     Task<string> ConsumerAsync<TMessage>(
             IConsumerOptions consumerOptions,

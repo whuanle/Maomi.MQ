@@ -17,7 +17,7 @@ public class EventOrderAttribute : Attribute
     /// Order.<Br />
     /// 事件执行序号.
     /// </summary>
-    public int Order { get; set; } = 0;
+    public int Order { get; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EventOrderAttribute"/> class.

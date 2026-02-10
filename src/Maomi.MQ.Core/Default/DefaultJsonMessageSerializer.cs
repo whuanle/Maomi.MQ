@@ -5,6 +5,7 @@
 // </copyright>
 
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Maomi.MQ.Defaults;
 
@@ -13,13 +14,20 @@ namespace Maomi.MQ.Defaults;
 /// </summary>
 public class DefaultJsonMessageSerializer : IMessageSerializer
 {
-    private static readonly JsonSerializerOptions JsonSerializerOptions = new JsonSerializerOptions
+    private static readonly JsonSerializerOptions JsonSerializerOptions = CreateSerializerOptions();
+
+    private static JsonSerializerOptions CreateSerializerOptions()
     {
-        PropertyNameCaseInsensitive = true,
-        AllowTrailingCommas = false,
-        IgnoreReadOnlyProperties = true,
-        ReadCommentHandling = JsonCommentHandling.Skip,
-    };
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            AllowTrailingCommas = false,
+            IgnoreReadOnlyProperties = true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+        };
+
+        return options;
+    }
 
     /// <inheritdoc />
     public string ContentType => "application/json";
@@ -33,7 +41,7 @@ public class DefaultJsonMessageSerializer : IMessageSerializer
     /// <inheritdoc />
     public byte[] Serializer<TObject>(TObject obj)
     {
-        return System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(obj);
+        return System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(obj, JsonSerializerOptions);
     }
 
     /// <inheritdoc/>

@@ -13,7 +13,7 @@ namespace Maomi.MQ.Consumer;
 public class ConsumerOptions : IConsumerOptions
 {
     /// <inheritdoc />
-    public string Queue { get; set; }
+    public string Queue { get; set; } = default!;
 
     /// <inheritdoc />
     public string? DeadExchange { get; set; }
