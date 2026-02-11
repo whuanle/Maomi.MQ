@@ -193,7 +193,7 @@ public class DefaultMessagePublisherTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => publisher.PublishAsync("ex", "route", new MessageA()));
     }
 
-    [QueueName("exchange-a", "route-a")]
+    [RouterKey("exchange-a", "route-a")]
     private sealed class MessageWithQueueName
     {
         public int Value { get; set; }

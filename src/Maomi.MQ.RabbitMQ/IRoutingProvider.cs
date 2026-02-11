@@ -24,5 +24,5 @@ public interface IRoutingProvider
     /// </summary>
     /// <param name="queueNameOptions"></param>
     /// <returns><see cref="IConsumerOptions"/>.</returns>
-    IQueueNameOptions Get(IQueueNameOptions queueNameOptions);
+    IRouterKeyOptions Get(IRouterKeyOptions queueNameOptions);
 }

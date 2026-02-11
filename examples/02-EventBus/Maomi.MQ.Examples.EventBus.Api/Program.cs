@@ -43,7 +43,7 @@ if (app.Environment.IsDevelopment())
 app.MapControllers();
 app.Run();
 
-[QueueName("example.eventbus")]
+[RouterKey("example.eventbus")]
 public sealed class OrderCreatedEvent
 {
     public Guid OrderId { get; set; } = Guid.NewGuid();

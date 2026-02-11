@@ -42,7 +42,7 @@ if (app.Environment.IsDevelopment())
 app.MapControllers();
 app.Run();
 
-[QueueName("example.retry.main")]
+[RouterKey("example.retry.main")]
 public sealed class RetryMessage
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -52,7 +52,7 @@ public sealed class RetryMessage
     public bool ForceFail { get; set; } = true;
 }
 
-[QueueName("example.retry.dead")]
+[RouterKey("example.retry.dead")]
 public sealed class RetryDeadMessage
 {
     public Guid Id { get; set; }

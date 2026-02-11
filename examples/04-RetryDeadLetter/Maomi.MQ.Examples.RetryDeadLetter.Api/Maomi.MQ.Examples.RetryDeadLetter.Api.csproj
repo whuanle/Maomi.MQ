@@ -12,7 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Maomi.MQ.RabbitMQ\Maomi.MQ.RabbitMQ.csproj" />
-    <ProjectReference Include="..\..\..\..\src\Maomi.MQ.RedisRetry\Maomi.MQ.RedisRetry.csproj" />
+    <ProjectReference Include="..\..\..\src\Maomi.MQ.RedisRetry\Maomi.MQ.RedisRetry.csproj" />
   </ItemGroup>
 
 </Project>

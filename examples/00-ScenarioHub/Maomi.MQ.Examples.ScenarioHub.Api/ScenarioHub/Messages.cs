@@ -4,7 +4,7 @@ using ProtoBuf;
 
 namespace Maomi.MQ.Samples.ScenarioHub;
 
-[QueueName("scenario.quickstart")]
+[RouterKey("scenario.quickstart")]
 public sealed class QuickStartMessage
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -14,7 +14,7 @@ public sealed class QuickStartMessage
     public DateTimeOffset At { get; set; } = DateTimeOffset.UtcNow;
 }
 
-[QueueName("scenario.eventbus.order")]
+[RouterKey("scenario.eventbus.order")]
 public sealed class OrderCreatedEvent
 {
     public Guid OrderId { get; set; } = Guid.NewGuid();
@@ -24,7 +24,7 @@ public sealed class OrderCreatedEvent
     public string Customer { get; set; } = string.Empty;
 }
 
-[QueueName("scenario.dynamic.default")]
+[RouterKey("scenario.dynamic.default")]
 public sealed class DynamicMessage
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -32,7 +32,7 @@ public sealed class DynamicMessage
     public string Text { get; set; } = string.Empty;
 }
 
-[QueueName("scenario.retry.main")]
+[RouterKey("scenario.retry.main")]
 public sealed class RetryMessage
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -42,7 +42,7 @@ public sealed class RetryMessage
     public bool ForceFail { get; set; } = true;
 }
 
-[QueueName("scenario.retry.dead")]
+[RouterKey("scenario.retry.dead")]
 public sealed class RetryDeadMessage
 {
     public Guid Id { get; set; }
@@ -53,7 +53,7 @@ public sealed class RetryDeadMessage
 }
 
 [ProtoContract]
-[QueueName("scenario.protobuf.person")]
+[RouterKey("scenario.protobuf.person")]
 public sealed class PersonMessage
 {
     [ProtoMember(1)]
@@ -66,7 +66,7 @@ public sealed class PersonMessage
     public int Age { get; set; }
 }
 
-[QueueName("scenario.batch.metrics")]
+[RouterKey("scenario.batch.metrics")]
 public sealed class MetricMessage
 {
     public Guid Id { get; set; } = Guid.NewGuid();

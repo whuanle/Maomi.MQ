@@ -75,7 +75,7 @@ public interface IConsumerOptions : IEquatable<IConsumerOptions>
     /// Broadcast mode.<br />
     /// 广播模式.
     /// </summary>
-    public bool? IsBroadcast { get; }
+    bool IsBroadcast { get; }
 
     /// <summary>
     /// Creates a new object that is a copy of the current instance.

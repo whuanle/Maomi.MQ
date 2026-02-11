@@ -44,7 +44,7 @@ if (app.Environment.IsDevelopment())
 app.MapControllers();
 app.Run();
 
-[QueueName("example.dynamic.default")]
+[RouterKey("example.dynamic.default")]
 public sealed class DynamicMessage
 {
     public Guid Id { get; set; } = Guid.NewGuid();

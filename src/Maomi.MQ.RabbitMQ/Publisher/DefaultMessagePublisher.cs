@@ -34,7 +34,7 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
 
     protected readonly Lazy<IRoutingProvider> _routingProvider;
 
-    private readonly ConcurrentDictionary<Type, IQueueNameOptions> _queueNameOptionsCache;
+    private readonly ConcurrentDictionary<Type, IRouterKeyOptions> _queueNameOptionsCache;
     private readonly ConcurrentDictionary<Type, IMessageSerializer> _messageSerializerCache;
 
     /// <summary>
@@ -63,7 +63,7 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
         _publisherDiagnostics = serviceProvider.GetRequiredService<IPublisherDiagnostics>();
 
         _routingProvider = new Lazy<IRoutingProvider>(() => _serviceProvider.GetRequiredService<IRoutingProvider>());
-        _queueNameOptionsCache = new ConcurrentDictionary<Type, IQueueNameOptions>();
+        _queueNameOptionsCache = new ConcurrentDictionary<Type, IRouterKeyOptions>();
         _messageSerializerCache = new ConcurrentDictionary<Type, IMessageSerializer>();
     }
 
@@ -265,17 +265,17 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
         properties.Headers = properties.Headers ?? new Dictionary<string, object?>();
     }
 
-    private IQueueNameOptions ResolveQueueNameOptions(Type messageType)
+    private IRouterKeyOptions ResolveQueueNameOptions(Type messageType)
     {
         if (_queueNameOptionsCache.TryGetValue(messageType, out var queueNameOptions))
         {
             return queueNameOptions;
         }
 
-        IQueueNameOptions? queueName = messageType.GetCustomAttribute<QueueNameAttribute>();
+        IRouterKeyOptions? queueName = messageType.GetCustomAttribute<RouterKeyAttribute>();
         if (queueName == null)
         {
-            throw new InvalidOperationException($"The message type [{messageType.FullName}] does not have the [{nameof(QueueNameAttribute)}] attribute.");
+            throw new InvalidOperationException($"The message type [{messageType.FullName}] does not have the [{nameof(RouterKeyAttribute)}] attribute.");
         }
 
         _queueNameOptionsCache.TryAdd(messageType, queueName);

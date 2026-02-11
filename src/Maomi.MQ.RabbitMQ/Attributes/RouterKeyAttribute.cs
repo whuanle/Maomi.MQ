@@ -1,4 +1,4 @@
-﻿// <copyright file="QueueNameAttribute.cs" company="Maomi">
+﻿// <copyright file="RouterKeyAttribute.cs" company="Maomi">
 // Copyright (c) Maomi. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/Maomi.MQ
@@ -10,24 +10,24 @@ namespace Maomi.MQ;
 /// Queue name.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-public class QueueNameAttribute : Attribute, IQueueNameOptions
+public class RouterKeyAttribute : Attribute, IRouterKeyOptions
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="QueueNameAttribute"/> class.
+    /// Initializes a new instance of the <see cref="RouterKeyAttribute"/> class.
     /// </summary>
     /// <param name="routingKey"></param>
-    public QueueNameAttribute(string routingKey)
+    public RouterKeyAttribute(string routingKey)
     {
         ArgumentNullException.ThrowIfNullOrEmpty(routingKey, nameof(routingKey));
         RoutingKey = routingKey;
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="QueueNameAttribute"/> class.
+    /// Initializes a new instance of the <see cref="RouterKeyAttribute"/> class.
     /// </summary>
     /// <param name="exchange"></param>
     /// <param name="routingKey"></param>
-    public QueueNameAttribute(string exchange, string routingKey)
+    public RouterKeyAttribute(string exchange, string routingKey)
     {
         Exchange = exchange;
         RoutingKey = routingKey;

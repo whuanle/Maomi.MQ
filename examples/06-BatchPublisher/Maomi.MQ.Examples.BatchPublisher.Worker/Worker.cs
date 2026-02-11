@@ -3,7 +3,7 @@ using Maomi.MQ.Attributes;
 
 namespace Maomi.MQ.Examples.BatchPublisher.Worker;
 
-[QueueName("example.batch.metrics")]
+[RouterKey("example.batch.metrics")]
 public sealed class MetricMessage
 {
     public Guid Id { get; set; } = Guid.NewGuid();

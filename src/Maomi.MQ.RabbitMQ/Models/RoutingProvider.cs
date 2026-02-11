@@ -18,7 +18,7 @@ public class RoutingProvider : IRoutingProvider
     }
 
     /// <inheritdoc/>
-    public IQueueNameOptions Get(IQueueNameOptions queueNameOptions)
+    public IRouterKeyOptions Get(IRouterKeyOptions queueNameOptions)
     {
         return queueNameOptions;
     }

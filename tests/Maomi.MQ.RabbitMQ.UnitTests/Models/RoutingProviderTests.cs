@@ -20,7 +20,7 @@ public class RoutingProviderTests
     public void Get_QueueNameOptions_ShouldReturnSameReference()
     {
         var provider = new RoutingProvider();
-        var options = new QueueNameAttribute("ex-a", "route-a");
+        var options = new RouterKeyAttribute("ex-a", "route-a");
 
         var result = provider.Get(options);
 

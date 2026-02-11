@@ -42,7 +42,7 @@ if (app.Environment.IsDevelopment())
 app.MapControllers();
 app.Run();
 
-[QueueName("example.quickstart")]
+[RouterKey("example.quickstart")]
 public sealed class QuickStartMessage
 {
     public Guid Id { get; set; } = Guid.NewGuid();

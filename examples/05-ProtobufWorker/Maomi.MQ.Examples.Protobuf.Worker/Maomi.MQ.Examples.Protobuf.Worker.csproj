@@ -12,8 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\src\serializers\Maomi.MQ.Message.Protobuf-net\Maomi.MQ.Message.Protobuf-net.csproj" />
     <ProjectReference Include="..\..\..\src\Maomi.MQ.RabbitMQ\Maomi.MQ.RabbitMQ.csproj" />
+    <ProjectReference Include="..\..\..\src\serializers\Maomi.MQ.Message.Protobuf-net\Maomi.MQ.Message.Protobuf-net.csproj" />
   </ItemGroup>
 
 </Project>

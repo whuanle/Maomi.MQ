@@ -15,8 +15,8 @@ namespace Maomi.MQ;
 public interface IMessagePublisher
 {
     /// <summary>
-    /// When a message like TMessage is marked with the [<see cref="QueueNameAttribute"/>] attribute, it can be automatically published to the corresponding endpoint.<br />
-    /// 当类似 TMessage 使用 [<see cref="QueueNameAttribute"/>] 特性标注时，可以自动发布消息到对应的端点.
+    /// When a message like TMessage is marked with the [<see cref="RouterKeyAttribute"/>] attribute, it can be automatically published to the corresponding endpoint.<br />
+    /// 当类似 TMessage 使用 [<see cref="RouterKeyAttribute"/>] 特性标注时，可以自动发布消息到对应的端点.
     /// </summary>
     /// <typeparam name="TMessage">Event model.<br />事件模型类.</typeparam>
     /// <param name="message">Event object.<br />事件对象.</param>

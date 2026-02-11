@@ -38,13 +38,13 @@ public class ConsumerAttribute : Attribute, IConsumerOptions
     public string? BindExchange { get; set; }
 
     /// <inheritdoc />
-    public ExchangeType ExchangeType { get; set; }
+    public ExchangeType ExchangeType { get; set; } = ExchangeType.Fanout;
 
     /// <inheritdoc />
     public string? RoutingKey { get; set; }
 
     /// <inheritdoc/>
-    public bool? IsBroadcast { get; set; } = false;
+    public bool IsBroadcast { get; set; } = false;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConsumerAttribute"/> class.

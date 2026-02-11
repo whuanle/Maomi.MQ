@@ -42,7 +42,7 @@ var host = builder.Build();
 await host.RunAsync();
 
 [ProtoContract]
-[QueueName("example.protobuf.person")]
+[RouterKey("example.protobuf.person")]
 public sealed class PersonMessage
 {
     [ProtoMember(1)]

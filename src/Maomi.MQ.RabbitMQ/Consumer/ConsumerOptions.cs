@@ -66,6 +66,7 @@ public class ConsumerOptions : IConsumerOptions
         this.BindExchange = options.BindExchange;
         this.ExchangeType = options.ExchangeType;
         this.RoutingKey = options.RoutingKey;
+        this.IsBroadcast = options.IsBroadcast;
     }
 
     /// <inheritdoc/>
