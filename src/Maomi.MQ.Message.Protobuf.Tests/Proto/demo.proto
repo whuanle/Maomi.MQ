@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-option csharp_namespace = "ProtoDemo.Proto";
-
-message Person {
-  int32 id = 1;
-  string name = 2;
-  string email = 3;
-}

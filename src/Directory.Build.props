@@ -1,0 +1,40 @@
+<Project>
+	<PropertyGroup>
+		<MaomiMqRepoRoot>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)..\'))</MaomiMqRepoRoot>
+		<PackageVersion>2.1.0</PackageVersion>
+		<Description>RabbitMQ Publisher and consumer communication model framework.</Description>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageProjectUrl>https://mmq.whuanle.cn</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/whuanle/Maomi.MQ</RepositoryUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryType>git</RepositoryType>
+		<PackageReleaseNotes>RabbitMQ Publisher and consumer communication model framework.</PackageReleaseNotes>
+		<IncludeSymbols>True</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+		<OutputType>Library</OutputType>
+		<TargetFrameworks>net7.0;net8.0;net9.0;net10.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>true</IsPackable>
+		<Title>Maomi.MQ</Title>
+		<RootNamespace>Maomi.MQ</RootNamespace>
+		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+		<PackageIcon>package.png</PackageIcon>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<AdditionalFiles Include="$(MaomiMqRepoRoot)stylecop.json" />
+		<None Include="$(MaomiMqRepoRoot)README.md" Pack="true" PackagePath="\" CopyToOutputDirectory="Always" Link="README.md" />
+		<PackageReference Include="StyleCop.Analyzers">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="package.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+</Project>

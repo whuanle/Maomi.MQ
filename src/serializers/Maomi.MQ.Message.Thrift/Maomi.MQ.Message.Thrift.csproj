@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="ApacheThrift" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\Maomi.MQ.Core\Maomi.MQ.Core.csproj" />
+	</ItemGroup>
+
+</Project>

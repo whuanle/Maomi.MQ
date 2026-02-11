@@ -39,5 +39,5 @@ public class MqOptionsBuilder
     /// Message serializers.<br />
     /// 消息序列化器，每个 ContentType 对应一个序列化器.
     /// </summary>
-    public Action<List<IMessageSerializer>>? MessageSerializers { get; init; }
+    public Action<List<IMessageSerializer>>? MessageSerializers { get; set; }
 }

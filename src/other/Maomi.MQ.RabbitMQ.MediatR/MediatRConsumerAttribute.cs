@@ -1,0 +1,98 @@
+﻿// <copyright file="MediatRConsumerAttribute.cs" company="Maomi">
+// Copyright (c) Maomi. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Github link: https://github.com/whuanle/Maomi.MQ
+// </copyright>
+
+namespace Maomi.MQ.MediatR;
+
+/// <summary>
+/// MediatR message options.<br />
+/// MediatR 消息配置.
+/// </summary>
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+public class MediatRConsumerAttribute : Attribute, IConsumerOptions
+{
+    /// <inheritdoc />
+    public string Queue { get; set; }
+
+    /// <inheritdoc />
+    public string? DeadExchange { get; set; }
+
+    /// <inheritdoc />
+    public string? DeadRoutingKey { get; set; }
+
+    /// <inheritdoc />
+    public ushort Qos { get; set; } = 100;
+
+    /// <inheritdoc />
+    public bool RetryFaildRequeue { get; set; } = true;
+
+    /// <inheritdoc />
+    public int Expiration { get; set; }
+
+    /// <inheritdoc />
+    public AutoQueueDeclare AutoQueueDeclare { get; set; }
+
+    /// <inheritdoc />
+    public string? BindExchange { get; set; }
+
+    /// <inheritdoc />
+    public ExchangeType ExchangeType { get; set; }
+
+    /// <inheritdoc />
+    public string? RoutingKey { get; set; }
+
+    /// <inheritdoc />
+    public bool? IsBroadcast { get; set; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MediatRConsumerAttribute"/> class.
+    /// </summary>
+    /// <param name="queue">Queue name.</param>
+    public MediatRConsumerAttribute(string queue)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(queue, nameof(queue));
+        Queue = queue;
+    }
+
+    /// <inheritdoc />
+    public IConsumerOptions Clone()
+    {
+        MediatRConsumerAttribute newOptions = new(this.Queue);
+        newOptions.CopyFrom(this);
+        return newOptions;
+    }
+
+    /// <inheritdoc />
+    public void CopyFrom(IConsumerOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        this.Queue = options.Queue;
+        this.DeadExchange = options.DeadExchange;
+        this.DeadRoutingKey = options.DeadRoutingKey;
+        this.Qos = options.Qos;
+        this.RetryFaildRequeue = options.RetryFaildRequeue;
+        this.Expiration = options.Expiration;
+        this.AutoQueueDeclare = options.AutoQueueDeclare;
+        this.BindExchange = options.BindExchange;
+        this.ExchangeType = options.ExchangeType;
+        this.RoutingKey = options.RoutingKey;
+        this.IsBroadcast = options.IsBroadcast;
+    }
+
+    /// <inheritdoc/>
+    public bool Equals(IConsumerOptions? other)
+    {
+        if (other == null)
+        {
+            return false;
+        }
+
+        return this.Queue == other.Queue
+            && this.BindExchange == other.BindExchange
+            && this.ExchangeType == other.ExchangeType
+            && this.RoutingKey == other.RoutingKey
+            && this.IsBroadcast == other.IsBroadcast;
+    }
+}

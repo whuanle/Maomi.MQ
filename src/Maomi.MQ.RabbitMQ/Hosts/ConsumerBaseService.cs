@@ -15,6 +15,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -25,8 +26,9 @@ namespace Maomi.MQ.Hosts;
 /// </summary>
 public abstract class ConsumerBaseService : BackgroundService
 {
-    private static readonly Func<BasicDeliverEventArgs, IConsumerOptions, Dictionary<string, object>> CreateLoggerState =
-        static (eventArgs, consumerOptions) => new Dictionary<string, object>
+    protected static Dictionary<string, object> CreateLoggerState(BasicDeliverEventArgs eventArgs, IConsumerOptions consumerOptions)
+    {
+        return new Dictionary<string, object>
         {
             { "Queue", consumerOptions.Queue },
             { "Exchange", eventArgs.Exchange },
@@ -36,6 +38,7 @@ public abstract class ConsumerBaseService : BackgroundService
             { "Redelivered", eventArgs.Redelivered },
             { "MessageId", eventArgs.BasicProperties.MessageId ?? string.Empty }
         };
+    }
 
     protected delegate Task<string> CreateConsumerHandler(ConsumerBaseService consumer, IChannel consummerChannel, Type consumerType, Type messageType, IConsumerOptions consumerOptions);
 
@@ -49,6 +52,7 @@ public abstract class ConsumerBaseService : BackgroundService
     protected readonly IServiceProvider _serviceProvider;
     protected readonly MqOptions _mqOptions;
     protected readonly ILogger _logger;
+    private readonly ConcurrentDictionary<Type, CreateConsumerHandler> _createConsumerHandlers = new();
 
     protected ConsumerBaseService(ServiceFactory serviceFactory, ILoggerFactory loggerFactory)
     {
@@ -194,6 +198,13 @@ public abstract class ConsumerBaseService : BackgroundService
     /// <param name="messageType"></param>
     /// <returns>Delegate.</returns>
     protected virtual CreateConsumerHandler BuildCreateConsumerHandler(Type messageType)
+    {
+        ArgumentNullException.ThrowIfNull(messageType);
+
+        return _createConsumerHandlers.GetOrAdd(messageType, BuildCreateConsumerHandlerCore);
+    }
+
+    private static CreateConsumerHandler BuildCreateConsumerHandlerCore(Type messageType)
     {
         ParameterExpression service = Expression.Variable(typeof(ConsumerBaseService), "service");
         ParameterExpression channel = Expression.Parameter(typeof(IChannel), "consummerChannel");

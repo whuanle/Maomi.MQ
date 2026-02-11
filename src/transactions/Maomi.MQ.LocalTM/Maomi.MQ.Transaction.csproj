@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Maomi.MQ.RabbitMQ\Maomi.MQ.RabbitMQ.csproj" />
+	</ItemGroup>
+</Project>
