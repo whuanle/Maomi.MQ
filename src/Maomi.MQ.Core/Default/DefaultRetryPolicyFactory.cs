@@ -11,6 +11,7 @@
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
+using System.Collections.Concurrent;
 
 namespace Maomi.MQ.Default;
 
@@ -24,6 +25,8 @@ public class DefaultRetryPolicyFactory : IRetryPolicyFactory
     protected readonly int RetryBaseDelaySeconds = 2;
 
     protected readonly ILogger<DefaultRetryPolicyFactory> _logger;
+
+    private readonly ConcurrentDictionary<string, AsyncRetryPolicy> _retryPolicies = new(StringComparer.Ordinal);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DefaultRetryPolicyFactory"/> class.
@@ -40,19 +43,10 @@ public class DefaultRetryPolicyFactory : IRetryPolicyFactory
     /// <inheritdoc/>
     public virtual Task<AsyncRetryPolicy> CreatePolicy(string queue, string id)
     {
-        // Create a retry policy.
-        // 创建重试策略.
-        var retryPolicy = Policy
-            .Handle<Exception>()
-            .WaitAndRetryAsync(
-                retryCount: RetryCount,
-                sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(RetryBaseDelaySeconds, retryAttempt)),
-                onRetry: async (exception, timeSpan, retryCount, context) =>
-                {
-                    await FaildAsync(queue, exception, timeSpan, retryCount, context);
-                });
+        _ = id;
+        var queueName = queue ?? string.Empty;
 
-        return Task.FromResult(retryPolicy);
+        return Task.FromResult(_retryPolicies.GetOrAdd(queueName, CreateRetryPolicy));
     }
 
     /// <summary>
@@ -69,5 +63,18 @@ public class DefaultRetryPolicyFactory : IRetryPolicyFactory
         _logger.LogWarning("Retry execution event,queue [{Queue}],retry count [{RetryCount}],timespan [{TimeSpan}]", queue, retryCount, timeSpan);
 
         return Task.CompletedTask;
+    }
+
+    protected virtual AsyncRetryPolicy CreateRetryPolicy(string queue)
+    {
+        // Create a retry policy.
+        // 创建重试策略.
+        return Policy
+            .Handle<Exception>()
+            .WaitAndRetryAsync(
+                retryCount: RetryCount,
+                sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(RetryBaseDelaySeconds, retryAttempt)),
+                onRetry: (exception, timeSpan, retryCount, context) =>
+                    FaildAsync(queue, exception, timeSpan, retryCount, context));
     }
 }

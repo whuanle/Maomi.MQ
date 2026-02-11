@@ -31,6 +31,19 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
 
     protected readonly ConcurrentDictionary<string, string> _consumers;
     protected readonly ConcurrentDictionary<string, IChannel> _dynamicConsumerChannels;
+
+    private static readonly Func<BasicDeliverEventArgs, IConsumerOptions, Dictionary<string, object>> CreateLoggerState =
+        static (eventArgs, consumerOptions) => new Dictionary<string, object>
+        {
+            { "Queue", consumerOptions.Queue },
+            { "Exchange", eventArgs.Exchange },
+            { "RoutingKey", eventArgs.RoutingKey },
+            { "ConsumerTag", eventArgs.ConsumerTag },
+            { "DeliveryTag", eventArgs.DeliveryTag },
+            { "Redelivered", eventArgs.Redelivered },
+            { "MessageId", eventArgs.BasicProperties.MessageId ?? string.Empty }
+        };
+
     private bool _disposed;
 
     /// <summary>
@@ -227,16 +240,7 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
         {
             try
             {
-                Dictionary<string, object> loggerState = new()
-                {
-                    { "Queue", consumerOptions.Queue },
-                    { "Exchange", eventArgs.Exchange },
-                    { "RoutingKey", eventArgs.RoutingKey },
-                    { "ConsumerTag", eventArgs.ConsumerTag },
-                    { "DeliveryTag", eventArgs.DeliveryTag },
-                    { "Redelivered", eventArgs.Redelivered },
-                    { "MessageId", eventArgs.BasicProperties.MessageId ?? string.Empty }
-                };
+                Dictionary<string, object> loggerState = CreateLoggerState(eventArgs, consumerOptions);
 
                 using (_logger.BeginScope(loggerState))
                 {

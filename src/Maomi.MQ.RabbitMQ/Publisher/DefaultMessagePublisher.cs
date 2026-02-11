@@ -13,6 +13,7 @@ using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -32,6 +33,9 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
     protected readonly IPublisherDiagnostics _publisherDiagnostics;
 
     protected readonly Lazy<IRoutingProvider> _routingProvider;
+
+    private readonly ConcurrentDictionary<Type, IQueueNameOptions> _queueNameOptionsCache;
+    private readonly ConcurrentDictionary<Type, IMessageSerializer> _messageSerializerCache;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DefaultMessagePublisher"/> class.
@@ -59,6 +63,8 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
         _publisherDiagnostics = serviceProvider.GetRequiredService<IPublisherDiagnostics>();
 
         _routingProvider = new Lazy<IRoutingProvider>(() => _serviceProvider.GetRequiredService<IRoutingProvider>());
+        _queueNameOptionsCache = new ConcurrentDictionary<Type, IQueueNameOptions>();
+        _messageSerializerCache = new ConcurrentDictionary<Type, IMessageSerializer>();
     }
 
     /// <summary>
@@ -75,6 +81,8 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
         _idGen = publisher._idGen;
         _logger = publisher._logger;
         _publisherDiagnostics = publisher._publisherDiagnostics;
+        _queueNameOptionsCache = publisher._queueNameOptionsCache;
+        _messageSerializerCache = publisher._messageSerializerCache;
     }
 
     /// <inheritdoc />
@@ -91,13 +99,7 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
             properties.Invoke(basicProperties);
         }
 
-        IQueueNameOptions? queueName = message.GetType().GetCustomAttribute<QueueNameAttribute>();
-        if (queueName == null)
-        {
-            throw new InvalidOperationException($"The message type [{typeof(TMessage).FullName}] does not have the [{nameof(QueueNameAttribute)}] attribute.");
-        }
-
-        queueName = _routingProvider.Value.Get(queueName);
+        var queueName = _routingProvider.Value.Get(ResolveQueueNameOptions(message.GetType()));
 
         return CustomPublishAsync(queueName.Exchange ?? string.Empty, queueName.RoutingKey, message, basicProperties, cancellationToken);
     }
@@ -158,20 +160,7 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
             };
         }
 
-        IMessageSerializer? messageSerializer = default;
-        foreach (var item in _mqOptions.MessageSerializers)
-        {
-            if (item.SerializerVerify(message))
-            {
-                messageSerializer = item;
-                break;
-            }
-        }
-
-        if (messageSerializer == null)
-        {
-            throw new InvalidOperationException($"No suitable message serializer found for message type [{typeof(TMessage).FullName}].");
-        }
+        var messageSerializer = ResolveMessageSerializer(message);
 
         MessageHeader messageHeader = new MessageHeader
         {
@@ -185,7 +174,7 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
             Properties = properties
         };
 
-        InitializeMessageProperties<TMessage>(properties, ref messageHeader);
+        InitializeMessageProperties<TMessage>(properties, ref messageHeader, messageSerializer);
 
         using Activity? activity = _publisherDiagnostics.Start(messageHeader, exchange, routingKey);
 
@@ -261,21 +250,12 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
 
     protected virtual void InitializeMessageProperties<TMessage>(BasicProperties properties, ref MessageHeader messageHeader)
     {
-        IMessageSerializer? messageSerializer = default;
-        foreach (var item in _mqOptions.MessageSerializers)
-        {
-            if (item.SerializerVerify<TMessage>())
-            {
-                messageSerializer = item;
-                break;
-            }
-        }
+        var messageSerializer = ResolveMessageSerializer<TMessage>();
+        InitializeMessageProperties<TMessage>(properties, ref messageHeader, messageSerializer);
+    }
 
-        if (messageSerializer == null)
-        {
-            throw new InvalidOperationException($"No suitable message serializer found for message type [{typeof(TMessage).FullName}].");
-        }
-
+    protected virtual void InitializeMessageProperties<TMessage>(BasicProperties properties, ref MessageHeader messageHeader, IMessageSerializer messageSerializer)
+    {
         properties.AppId = _mqOptions.AppName;
         properties.ContentType = messageSerializer.ContentType;
         properties.MessageId = messageHeader.Id.ToString();
@@ -283,5 +263,62 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
         properties.Type = typeof(TMessage).FullName;
 
         properties.Headers = properties.Headers ?? new Dictionary<string, object?>();
+    }
+
+    private IQueueNameOptions ResolveQueueNameOptions(Type messageType)
+    {
+        if (_queueNameOptionsCache.TryGetValue(messageType, out var queueNameOptions))
+        {
+            return queueNameOptions;
+        }
+
+        IQueueNameOptions? queueName = messageType.GetCustomAttribute<QueueNameAttribute>();
+        if (queueName == null)
+        {
+            throw new InvalidOperationException($"The message type [{messageType.FullName}] does not have the [{nameof(QueueNameAttribute)}] attribute.");
+        }
+
+        _queueNameOptionsCache.TryAdd(messageType, queueName);
+        return queueName;
+    }
+
+    private IMessageSerializer ResolveMessageSerializer<TMessage>(TMessage message)
+    {
+        var messageType = message?.GetType() ?? typeof(TMessage);
+        if (_messageSerializerCache.TryGetValue(messageType, out var messageSerializer))
+        {
+            return messageSerializer;
+        }
+
+        foreach (var item in _mqOptions.MessageSerializers)
+        {
+            if (item.SerializerVerify(message))
+            {
+                _messageSerializerCache.TryAdd(messageType, item);
+                return item;
+            }
+        }
+
+        throw new InvalidOperationException($"No suitable message serializer found for message type [{messageType.FullName}].");
+    }
+
+    private IMessageSerializer ResolveMessageSerializer<TMessage>()
+    {
+        var messageType = typeof(TMessage);
+        if (_messageSerializerCache.TryGetValue(messageType, out var messageSerializer))
+        {
+            return messageSerializer;
+        }
+
+        foreach (var item in _mqOptions.MessageSerializers)
+        {
+            if (item.SerializerVerify<TMessage>())
+            {
+                _messageSerializerCache.TryAdd(messageType, item);
+                return item;
+            }
+        }
+
+        throw new InvalidOperationException($"No suitable message serializer found for message type [{messageType.FullName}].");
     }
 }

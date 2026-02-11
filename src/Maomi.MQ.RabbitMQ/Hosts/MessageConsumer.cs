@@ -13,10 +13,10 @@ using Maomi.MQ.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Polly;
-using Polly.Retry;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Maomi.MQ.Hosts;
 
@@ -34,6 +34,10 @@ public class MessageConsumer<TMessage>
     protected readonly Func<IServiceProvider, object> _consumerInstance;
     protected readonly ILogger _logger;
     protected readonly IConsumerDiagnostics _consumerDiagnostics;
+
+    private static readonly ConditionalWeakTable<MqOptions, IReadOnlyDictionary<string, IMessageSerializer>> SerializerMaps = new();
+
+    private readonly IReadOnlyDictionary<string, IMessageSerializer> _serializers;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MessageConsumer{TMessage}"/> class.
@@ -56,6 +60,11 @@ public class MessageConsumer<TMessage>
         _consumerOptions = consumerOptions;
         _consumerInstance = consumerInstance;
         _logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<MessageConsumer<TMessage>>();
+
+        _serializers = SerializerMaps.GetValue(_mqOptions, static options =>
+            options.MessageSerializers
+                .GroupBy(x => x.ContentType)
+                .ToDictionary(x => x.Key, x => x.First(), StringComparer.OrdinalIgnoreCase));
     }
 
     public virtual async Task ConsumerAsync(IChannel channel, BasicDeliverEventArgs eventArgs)
@@ -88,17 +97,7 @@ public class MessageConsumer<TMessage>
 
         try
         {
-            IMessageSerializer? messageSerializer = default;
-            foreach (var serializer in _mqOptions.MessageSerializers)
-            {
-                if (serializer.ContentType == messageHeader.ContentType)
-                {
-                    messageSerializer = serializer;
-                    break;
-                }
-            }
-
-            if (messageSerializer == null)
+            if (!_serializers.TryGetValue(messageHeader.ContentType ?? string.Empty, out var messageSerializer))
             {
                 throw new InvalidOperationException($"No suitable message serializer was found for content type '{messageHeader.ContentType}'.");
             }
@@ -129,13 +128,13 @@ public class MessageConsumer<TMessage>
 
         // Custom retry policy.
         // 自定义重试策略.
-        AsyncRetryPolicy customRetryPolicy = await _policyFactory.CreatePolicy(_consumerOptions.Queue, messageHeader.Id);
+        var customRetryPolicy = await _policyFactory.CreatePolicy(_consumerOptions.Queue, messageHeader.Id);
         var policyWrap = fallbackPolicy.WrapAsync(customRetryPolicy);
 
         // 执行消费和重试.
         fallbackState = await policyWrap.ExecuteAsync(async () =>
         {
-            Interlocked.Increment(ref retryCount);
+            retryCount++;
             var executeState = await ExecuteAndRetryAsync(eventArgs, consumer, messageHeader, eventBody, retryCount);
             return executeState;
         });

@@ -25,6 +25,18 @@ namespace Maomi.MQ.Hosts;
 /// </summary>
 public abstract class ConsumerBaseService : BackgroundService
 {
+    private static readonly Func<BasicDeliverEventArgs, IConsumerOptions, Dictionary<string, object>> CreateLoggerState =
+        static (eventArgs, consumerOptions) => new Dictionary<string, object>
+        {
+            { "Queue", consumerOptions.Queue },
+            { "Exchange", eventArgs.Exchange },
+            { "RoutingKey", eventArgs.RoutingKey },
+            { "ConsumerTag", eventArgs.ConsumerTag },
+            { "DeliveryTag", eventArgs.DeliveryTag },
+            { "Redelivered", eventArgs.Redelivered },
+            { "MessageId", eventArgs.BasicProperties.MessageId ?? string.Empty }
+        };
+
     protected delegate Task<string> CreateConsumerHandler(ConsumerBaseService consumer, IChannel consummerChannel, Type consumerType, Type messageType, IConsumerOptions consumerOptions);
 
     /// <summary>
@@ -139,16 +151,7 @@ public abstract class ConsumerBaseService : BackgroundService
         {
             try
             {
-                Dictionary<string, object> loggerState = new()
-                {
-                    { "Queue", consumerOptions.Queue },
-                    { "Exchange", eventArgs.Exchange },
-                    { "RoutingKey", eventArgs.RoutingKey },
-                    { "ConsumerTag", eventArgs.ConsumerTag },
-                    { "DeliveryTag", eventArgs.DeliveryTag },
-                    { "Redelivered", eventArgs.Redelivered },
-                    { "MessageId", eventArgs.BasicProperties.MessageId ?? string.Empty }
-                };
+                Dictionary<string, object> loggerState = CreateLoggerState(eventArgs, consumerOptions);
 
                 using (_logger.BeginScope(loggerState))
                 {
