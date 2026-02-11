@@ -33,6 +33,7 @@ public partial class ConsumerHostedService : ConsumerBaseService
 
     protected readonly IReadOnlyList<ConsumerType> _consumerTypes;
     protected readonly Dictionary<string, IChannel> _consumers = new();
+    private bool _basicReturnHandlerRegistered;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConsumerHostedService"/> class.
@@ -57,6 +58,13 @@ public partial class ConsumerHostedService : ConsumerBaseService
     }
 
     /// <inheritdoc />
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await CleanupConsumersAsync(cancellationToken);
+        await base.StopAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var applicationStartedTask = WaitForHostStartedAsync(stoppingToken);
@@ -71,7 +79,12 @@ public partial class ConsumerHostedService : ConsumerBaseService
 
         try
         {
-            _connectionObject.DefaultChannel.BasicReturnAsync += BasicReturnAsync;
+            if (!_basicReturnHandlerRegistered)
+            {
+                _connectionObject.DefaultChannel.BasicReturnAsync += BasicReturnAsync;
+                _basicReturnHandlerRegistered = true;
+            }
+
             await WaitReadyInitQueueAsync();
             _logger.LogWarning("The consumer host has been started.");
         }
@@ -85,6 +98,8 @@ public partial class ConsumerHostedService : ConsumerBaseService
         {
             await Task.Delay(10000, stoppingToken);
         }
+
+        await CleanupConsumersAsync(stoppingToken);
     }
 
     protected virtual async Task BasicReturnAsync(object sender, BasicReturnEventArgs @event)
@@ -143,5 +158,42 @@ public partial class ConsumerHostedService : ConsumerBaseService
         });
 
         return tcs.Task;
+    }
+
+    private async Task CleanupConsumersAsync(CancellationToken cancellationToken)
+    {
+        if (_basicReturnHandlerRegistered)
+        {
+            _connectionObject.DefaultChannel.BasicReturnAsync -= BasicReturnAsync;
+            _basicReturnHandlerRegistered = false;
+        }
+
+        if (_consumers.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var item in _consumers.ToArray())
+        {
+            try
+            {
+                await item.Value.BasicCancelAsync(item.Key, true, cancellationToken);
+            }
+            catch
+            {
+            }
+            finally
+            {
+                try
+                {
+                    item.Value.Dispose();
+                }
+                catch
+                {
+                }
+
+                _consumers.Remove(item.Key);
+            }
+        }
     }
 }

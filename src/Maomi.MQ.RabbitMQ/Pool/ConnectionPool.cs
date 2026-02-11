@@ -11,6 +11,7 @@ namespace Maomi.MQ.Pool;
 /// 连接对象池.
 /// </summary>
 public class ConnectionPool
+    : IDisposable
 {
     private readonly MqOptions _mqOptions;
     private readonly ConnectionObject _connection;
@@ -41,5 +42,11 @@ public class ConnectionPool
     public virtual IDisposeConnectionObject Create()
     {
         return new ConnectionObject(_mqOptions);
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        _connection.Dispose();
     }
 }

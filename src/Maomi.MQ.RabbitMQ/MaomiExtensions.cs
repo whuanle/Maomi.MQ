@@ -124,6 +124,17 @@ public static partial class MaomiExtensions
             consumerTypes.AddRange(types);
         }
 
+        var duplicateQueueNames = consumerTypes
+            .GroupBy(item => item.Queue)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToArray();
+
+        if (duplicateQueueNames.Length > 0)
+        {
+            throw new InvalidOperationException($"Duplicate queue names found: {string.Join(", ", duplicateQueueNames)}. Each consumer must have a unique queue name.");
+        }
+
         services.AddSingleton<IConsumerTypeProvider>(new ConsumerTypeProvider(consumerTypes));
 
         Func<IServiceProvider, ConsumerHostedService> funcFactory = (serviceProvider) =>

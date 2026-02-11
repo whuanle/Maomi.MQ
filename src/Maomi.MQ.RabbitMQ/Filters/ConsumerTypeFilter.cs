@@ -76,8 +76,6 @@ public class ConsumerTypeFilter : ITypeFilter
             throw new ArgumentException($"Multiple consumers are bound to the same queue. queue: [{consumerAttribute.Queue}],consumer: {existConsumerType.Consumer.Name} and {type.Name}");
         }
 
-        // todo: 同一个模型类可以被多个消费者
-        //services.TryAddEnumerable(new ServiceDescriptor(serviceType: consumerInterface, implementationType: type, lifetime: ServiceLifetime.Scoped));
         services.Add(new ServiceDescriptor(serviceType: type, implementationType: type, lifetime: ServiceLifetime.Scoped));
 
         var eventType = consumerInterface.GenericTypeArguments[0];

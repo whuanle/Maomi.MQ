@@ -38,6 +38,7 @@ public static class MessageHeaderExtensions
 
         return header;
     }
+
     /// <summary>
     /// Get message header from <see cref="IReadOnlyBasicProperties"/>.
     /// </summary>

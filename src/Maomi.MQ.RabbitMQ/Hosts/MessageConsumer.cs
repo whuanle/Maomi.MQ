@@ -222,7 +222,7 @@ public class MessageConsumer<TMessage>
         return ConsumerState.Ack;
     }
 
-    protected virtual async Task<ConsumerState> FallbackAsync(BasicDeliverEventArgs eventArgs, IConsumer<TMessage> consumer, MessageHeader messageHeader, TMessage? eventBody, Exception? ex,CancellationToken cancellationToken = default)
+    protected virtual async Task<ConsumerState> FallbackAsync(BasicDeliverEventArgs eventArgs, IConsumer<TMessage> consumer, MessageHeader messageHeader, TMessage? eventBody, Exception? ex, CancellationToken cancellationToken = default)
     {
         var fallbackActivity = _consumerDiagnostics.StartFallback(messageHeader);
         ConsumerState fallbackState = ConsumerState.Ack;

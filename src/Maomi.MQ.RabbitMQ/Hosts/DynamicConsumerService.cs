@@ -30,6 +30,8 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
     protected readonly IConnectionObject _connectionObject;
 
     protected readonly ConcurrentDictionary<string, string> _consumers;
+    protected readonly ConcurrentDictionary<string, IChannel> _dynamicConsumerChannels;
+    private bool _disposed;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DynamicConsumerService"/> class.
@@ -46,6 +48,7 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
         _connectionPool = connectionPool;
         _connectionObject = _connectionPool.Get();
         _consumers = new();
+        _dynamicConsumerChannels = new();
         _consumerTypeProvider = consumerTypeProvider;
     }
 
@@ -109,7 +112,7 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
         }
 
         var dynamicProxyConsumer = new DynamicProxyConsumer<TMessage>(execute, faild, fallback);
-        var consummerChannel = _connectionObject.DefaultChannel;
+        var consummerChannel = await _connectionObject.Connection.CreateChannelAsync();
         await InitQueueAsync(consummerChannel, consumerOptions);
 
         string consumerTag = await CreateDynamicMessageConsumer<TMessage>(consummerChannel, consumerOptions, dynamicProxyConsumer);
@@ -119,7 +122,16 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
         if (!isAdd)
         {
             await consummerChannel.BasicCancelAsync(consumerTag, true);
+            consummerChannel.Dispose();
             throw new ArgumentException($"Queue[{consumerOptions.Queue}] have been used by dynamic consumer");
+        }
+
+        if (!_dynamicConsumerChannels.TryAdd(consumerTag, consummerChannel))
+        {
+            await consummerChannel.BasicCancelAsync(consumerTag, true);
+            consummerChannel.Dispose();
+            _consumers.Remove(consumerOptions.Queue, out _);
+            throw new ArgumentException($"ConsumerTag[{consumerTag}] have been used by dynamic consumer");
         }
 
         return consumerTag;
@@ -130,7 +142,16 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
     {
         if (_consumers.TryGetValue(queue, out var consumerTag))
         {
-            await _connectionObject.DefaultChannel.BasicCancelAsync(consumerTag, true);
+            if (_dynamicConsumerChannels.TryRemove(consumerTag, out var dynamicChannel))
+            {
+                await dynamicChannel.BasicCancelAsync(consumerTag, true);
+                dynamicChannel.Dispose();
+            }
+            else
+            {
+                await _connectionObject.DefaultChannel.BasicCancelAsync(consumerTag, true);
+            }
+
             _consumers.Remove(queue, out _);
         }
 
@@ -147,9 +168,53 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
             _consumers.Remove(kv.Key, out _);
         }
 
-        await _connectionObject.DefaultChannel.BasicCancelAsync(consumerTag, true);
+        if (_dynamicConsumerChannels.TryRemove(consumerTag, out var dynamicChannel))
+        {
+            await dynamicChannel.BasicCancelAsync(consumerTag, true);
+            dynamicChannel.Dispose();
+        }
+        else
+        {
+            await _connectionObject.DefaultChannel.BasicCancelAsync(consumerTag, true);
+        }
 
         await Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public override void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        foreach (var item in _dynamicConsumerChannels)
+        {
+            try
+            {
+                item.Value.BasicCancelAsync(item.Key, true).GetAwaiter().GetResult();
+            }
+            catch
+            {
+            }
+            finally
+            {
+                try
+                {
+                    item.Value.Dispose();
+                }
+                catch
+                {
+                }
+            }
+        }
+
+        _dynamicConsumerChannels.Clear();
+        _consumers.Clear();
+        _disposed = true;
+
+        base.Dispose();
     }
 
     protected virtual async Task<string> CreateDynamicMessageConsumer<TMessage>(IChannel consummerChannel, IConsumerOptions consumerOptions, DynamicProxyConsumer<TMessage> proxyConsumer)
