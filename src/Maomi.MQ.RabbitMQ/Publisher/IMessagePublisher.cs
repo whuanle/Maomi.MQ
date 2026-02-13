@@ -15,6 +15,18 @@ namespace Maomi.MQ;
 public interface IMessagePublisher
 {
     /// <summary>
+    /// When a message like TMessage is marked with the [<see cref="RouterKeyAttribute"/>] attribute, it can be automatically published to the corresponding endpoint.<br />
+    /// 当类似 TMessage 使用 [<see cref="RouterKeyAttribute"/>] 特性标注时，可以自动发布消息到对应的端点.
+    /// </summary>
+    /// <typeparam name="TMessage">Event model.<br />事件模型类.</typeparam>
+    /// <param name="message">Event object.<br />事件对象.</param>
+    /// <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns><see cref="Task"/>.</returns>
+    Task AutoPublishAsync<TMessage>(TMessage message, Action<BasicProperties>? properties = null, CancellationToken cancellationToken = default)
+        where TMessage : class;
+
+    /// <summary>
     /// Publish messagge.<br />
     /// 发布消息.
     /// </summary>
@@ -40,29 +52,6 @@ public interface IMessagePublisher
     /// <param name="cancellationToken"></param>
     /// <returns><see cref="Task"/>.</returns>
     Task PublishAsync<TMessage>(string exchange, string routingKey, TMessage message, BasicProperties? properties = default, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Publish messagge.<br />
-    /// 发布消息.
-    /// </summary>
-    /// <typeparam name="TMessage">Event model.<br />事件模型类.</typeparam>
-    /// <param name="model">Event object.<br />事件对象.</param>
-    /// <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
-    /// <param name="cancellationToken"></param>
-    /// <returns><see cref="Task"/>.</returns>
-    Task PublishAsync<TMessage>(TMessage model, Action<BasicProperties>? properties = null, CancellationToken cancellationToken = default)
-        where TMessage : class;
-
-    /// <summary>
-    /// Publish messagge.<br />
-    /// 发布消息.
-    /// </summary>
-    /// <typeparam name="TMessage">Event model.<br />事件模型类.</typeparam>
-    /// <param name="message">Event object.<br />事件对象.</param>
-    /// <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
-    /// <param name="cancellationToken"></param>
-    /// <returns><see cref="Task"/>.</returns>
-    Task PublishAsync<TMessage>(TMessage message, BasicProperties? properties = default, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Publish messagge.<br />

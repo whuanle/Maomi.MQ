@@ -27,4 +27,18 @@ public interface IChannelMessagePublisher
     /// <param name="cancellationToken"></param>
     /// <returns><see cref="Task"/>.</returns>
     Task PublishChannelAsync<TMessage>(IChannel channel, string exchange, string routingKey, TMessage message, BasicProperties properties, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Publish messagge.<br />
+    /// 发布消息.
+    /// </summary>
+    /// <param name="channel"></param>
+    /// <param name="exchange">Exchange name.<br />交换器名称.</param>
+    /// <param name="routingKey">Queue name.<br />队列名称.</param>
+    /// <param name="messageHeader">Message header.<br />Header 信息.</param>
+    /// <param name="message">Message body.<br />消息内容.</param>
+    /// <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns><see cref="Task"/>.</returns>
+    Task PublishChannelAsync(IChannel channel, string exchange, string routingKey, MessageHeader messageHeader, byte[] message, BasicProperties properties, CancellationToken cancellationToken = default);
 }

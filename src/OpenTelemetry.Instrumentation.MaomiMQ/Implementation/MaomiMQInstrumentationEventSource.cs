@@ -8,7 +8,7 @@
 
 using System;
 using System.Diagnostics.Tracing;
-using OpenTelemetry.Internal;
+using System.Globalization;
 
 namespace OpenTelemetry.Instrumentation.MaomiMQ.Implementation;
 
@@ -37,7 +37,7 @@ internal class MaomiMQInstrumentationEventSource : EventSource
     {
         if (this.IsEnabled(EventLevel.Error, (EventKeywords)(-1)))
         {
-            this.EnrichmentException(ex.ToInvariantString());
+            this.EnrichmentException(ToInvariantString(ex));
         }
     }
 
@@ -52,7 +52,7 @@ internal class MaomiMQInstrumentationEventSource : EventSource
     {
         if (this.IsEnabled(EventLevel.Error, (EventKeywords)(-1)))
         {
-            this.UnknownErrorProcessingEvent(handlerName, eventName, ex.ToInvariantString());
+            this.UnknownErrorProcessingEvent(handlerName, eventName, ToInvariantString(ex));
         }
     }
 
@@ -60,5 +60,20 @@ internal class MaomiMQInstrumentationEventSource : EventSource
     public void UnknownErrorProcessingEvent(string handlerName, string eventName, string ex)
     {
         this.WriteEvent(4, handlerName, eventName, ex);
+    }
+
+    private static string ToInvariantString(Exception exception)
+    {
+        var originalUICulture = Thread.CurrentThread.CurrentUICulture;
+
+        try
+        {
+            Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
+            return exception.ToString();
+        }
+        finally
+        {
+            Thread.CurrentThread.CurrentUICulture = originalUICulture;
+        }
     }
 }

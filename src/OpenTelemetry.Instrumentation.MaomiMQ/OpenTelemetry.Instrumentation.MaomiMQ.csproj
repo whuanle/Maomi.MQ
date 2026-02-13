@@ -1,78 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Description>OpenTelemetry Maomi.MQ Instrumentation</Description>
 		<PackageTags>$(PackageTags);distributed-tracing</PackageTags>
-		<MinVerTagPrefix>Instrumentation.MaomiMQ-</MinVerTagPrefix>
-		<Nullable>enable</Nullable>
-		<TargetFrameworks>net8.0</TargetFrameworks>
 		<AssemblyName>Maomi.MQ.Instrumentation</AssemblyName>
-		<IsPackable>true</IsPackable>
-		<PackageVersion>2.0.1</PackageVersion>
-		<Title>nstrumentation.MaomiMQ</Title>
-		<Description>
-			RabbitMQ Publisher and consumer communication model framework.
-			RabbitMQ 发布者和消费者通讯模型框架。
-		</Description>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageIcon>opentelemetry-icon-color.png</PackageIcon>
-		<PackageProjectUrl>https://mmq.whuanle.cn</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/whuanle/Maomi.MQ</RepositoryUrl>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<RepositoryType>git</RepositoryType>
-		<PackageReleaseNotes>
-			RabbitMQ Publisher and consumer communication model framework.
-			RabbitMQ 发布者和消费者通讯模型框架。
-		</PackageReleaseNotes>
-		<IncludeSymbols>True</IncludeSymbols>
-		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
-		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 	</PropertyGroup>
 
 	<PropertyGroup>
 		<DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
 	</PropertyGroup>
-	
+
 	<ItemGroup>
 		<None Include="opentelemetry-icon-color.png" Pack="true" PackagePath="\" />
 	</ItemGroup>
-	
+
 	<ItemGroup>
-		<None Include="..\..\README.md">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
-	</ItemGroup>
-	
-	<ItemGroup>
-		<Compile Include="$(SolutionDir)\src\OpenTelemetry\Shared\AssemblyVersionExtensions.cs" Link="Includes\AssemblyVersionExtensions.cs" />
-		<Compile Include="$(SolutionDir)\src\OpenTelemetry\Shared\ActivityInstrumentationHelper.cs" Link="Includes\ActivityInstrumentationHelper.cs" />
-		<Compile Include="$(SolutionDir)\src\OpenTelemetry\Shared\DiagnosticSourceListener.cs" Link="Includes\DiagnosticSourceListener.cs" />
-		<Compile Include="$(SolutionDir)\src\OpenTelemetry\Shared\DiagnosticSourceSubscriber.cs" Link="Includes\DiagnosticSourceSubscriber.cs" />
-		<Compile Include="$(SolutionDir)\src\OpenTelemetry\Shared\ExceptionExtensions.cs" Link="Includes\ExceptionExtensions.cs" />
-		<Compile Include="$(SolutionDir)\src\OpenTelemetry\Shared\Guard.cs" Link="Includes\Guard.cs" />
-		<Compile Include="$(SolutionDir)\src\OpenTelemetry\Shared\ListenerHandler.cs" Link="Includes\ListenerHandler.cs" />
-		<Compile Include="$(SolutionDir)\src\OpenTelemetry\Shared\PropertyFetcher.AOT.cs" Link="Includes\PropertyFetcher.AOT.cs" />
+		<PackageReference Include="OpenTelemetry.Api" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="OpenTelemetry.Api" Version="1.11.0" />
+		<Compile Remove="Shared/**/*.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<AdditionalFiles Include="..\..\stylecop.json" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <ProjectReference Include="..\Maomi.MQ.Core\Maomi.MQ.Core.csproj" />
+		<ProjectReference Include="..\Maomi.MQ.Core\Maomi.MQ.Core.csproj" />
 	</ItemGroup>
 </Project>

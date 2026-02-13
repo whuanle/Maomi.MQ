@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Maomi.MQ.Core\Maomi.MQ.Core.csproj" />
+    <ProjectReference Include="..\..\src\serializers\Maomi.MQ.Message.MessagePack\Maomi.MQ.Message.MessagePack.csproj" />
+    <ProjectReference Include="..\..\src\serializers\Maomi.MQ.Message.Protobuf\Maomi.MQ.Message.Protobuf.csproj" Aliases="gpb" />
+    <ProjectReference Include="..\..\src\serializers\Maomi.MQ.Message.Protobuf-net\Maomi.MQ.Message.Protobuf-net.csproj" Aliases="pbn" />
+    <ProjectReference Include="..\..\src\serializers\Maomi.MQ.Message.Thrift\Maomi.MQ.Message.Thrift.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Proto\demo.proto" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Proto\demo.proto" />
+  </ItemGroup>
+
+</Project>

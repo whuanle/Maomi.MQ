@@ -65,7 +65,15 @@ public class ConnectionObject : IDisposeConnectionObject
         {
             if (disposing)
             {
-                Connection.Dispose();
+                if (_channel.IsValueCreated)
+                {
+                    _channel.Value.Dispose();
+                }
+
+                if (_connection.IsValueCreated)
+                {
+                    _connection.Value.Dispose();
+                }
             }
 
             disposedValue = true;

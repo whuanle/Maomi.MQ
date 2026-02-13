@@ -4,6 +4,8 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
+using Maomi.MQ.Attributes;
+using Maomi.MQ.Consumer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Reflection;
@@ -11,8 +13,8 @@ using System.Reflection;
 namespace Maomi.MQ.Filters;
 
 /// <summary>
-/// Consumer type filter.<br />
-/// 消费者类型过滤器.
+/// Add the consumers with the [<see cref="ConsumerAttribute"/>] feature to the container.<br />
+/// 将带有 [<see cref="ConsumerAttribute"/>] 特性的消费者添加到容器中.
 /// </summary>
 public class ConsumerTypeFilter : ITypeFilter
 {
@@ -66,15 +68,14 @@ public class ConsumerTypeFilter : ITypeFilter
                 return;
             }
 
-            consumerAttribute = register.Options.Clone();
+            consumerAttribute = register.ConsumerOptions.Clone();
         }
 
         if (_consumers.FirstOrDefault(x => x.Queue == consumerAttribute.Queue) is ConsumerType existConsumerType)
         {
-            throw new ArgumentException($"Repeat bound queue [{consumerAttribute.Queue}],{existConsumerType.Event.Name} and {type.Name}");
+            throw new ArgumentException($"Multiple consumers are bound to the same queue. queue: [{consumerAttribute.Queue}],consumer: {existConsumerType.Consumer.Name} and {type.Name}");
         }
 
-        services.TryAddEnumerable(new ServiceDescriptor(serviceType: consumerInterface, implementationType: type, lifetime: ServiceLifetime.Scoped));
         services.Add(new ServiceDescriptor(serviceType: type, implementationType: type, lifetime: ServiceLifetime.Scoped));
 
         var eventType = consumerInterface.GenericTypeArguments[0];

@@ -4,6 +4,8 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
+using Maomi.MQ.Diagnostics;
+
 namespace Maomi.MQ.Default;
 
 /// <summary>
@@ -17,21 +19,21 @@ public class ServiceFactory
     /// </summary>
     /// <param name="options"></param>
     /// <param name="serviceProvider"></param>
-    /// <param name="serializer"></param>
     /// <param name="retryPolicyFactory"></param>
     /// <param name="ids"></param>
+    /// <param name="consumerDiagnostics"></param>
     public ServiceFactory(
         IServiceProvider serviceProvider,
         MqOptions options,
-        IMessageSerializer serializer,
         IRetryPolicyFactory retryPolicyFactory,
-        IIdFactory ids)
+        IIdProvider ids,
+        IConsumerDiagnostics consumerDiagnostics)
     {
         ServiceProvider = serviceProvider;
         Options = options;
-        Serializer = serializer;
         RetryPolicyFactory = retryPolicyFactory;
         Ids = ids;
+        ConsumerDiagnostics = consumerDiagnostics;
     }
 
     /// <summary>
@@ -45,17 +47,17 @@ public class ServiceFactory
     public IServiceProvider ServiceProvider { get; private set; }
 
     /// <summary>
-    /// <see cref="IIdFactory"/>.
+    /// <see cref="IIdProvider"/>.
     /// </summary>
-    public IIdFactory Ids { get; private init; }
-
-    /// <summary>
-    /// <see cref="IMessageSerializer"/>.
-    /// </summary>
-    public IMessageSerializer Serializer { get; private set; }
+    public IIdProvider Ids { get; private init; }
 
     /// <summary>
     /// <see cref="IRetryPolicyFactory"/>.
     /// </summary>
     public IRetryPolicyFactory RetryPolicyFactory { get; private init; }
+
+    /// <summary>
+    /// <see cref="IConsumerDiagnostics"/>.
+    /// </summary>
+    public IConsumerDiagnostics ConsumerDiagnostics { get; private init; }
 }

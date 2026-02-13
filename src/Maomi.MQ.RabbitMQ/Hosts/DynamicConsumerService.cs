@@ -29,7 +29,10 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
     protected readonly ConnectionPool _connectionPool;
     protected readonly IConnectionObject _connectionObject;
 
-    protected readonly ConcurrentDictionary<string, string> _consumers;
+    private readonly ConcurrentDictionary<string, DynamicConsumerRegistration> _consumers;
+    private readonly ConcurrentDictionary<string, string> _consumerTags;
+
+    private bool _disposed;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DynamicConsumerService"/> class.
@@ -46,6 +49,7 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
         _connectionPool = connectionPool;
         _connectionObject = _connectionPool.Get();
         _consumers = new();
+        _consumerTags = new();
         _consumerTypeProvider = consumerTypeProvider;
     }
 
@@ -61,16 +65,7 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
     where TMessage : class
     where TConsumer : class, IConsumer<TMessage>
     {
-        var existConsumer = _consumerTypeProvider.FirstOrDefault(x => x.Queue == consumerOptions.Queue);
-        if (existConsumer != null)
-        {
-            throw new ArgumentException($"Queue[{consumerOptions.Queue}] have been used by consumer [{existConsumer.Event.Name}]");
-        }
-
-        if (_consumers.ContainsKey(consumerOptions.Queue))
-        {
-            throw new ArgumentException($"Queue[{consumerOptions.Queue}] have been used by dynamic consumer");
-        }
+        EnsureQueueCanBeUsed(consumerOptions);
 
         var consummerChannel = _connectionObject.DefaultChannel;
         await InitQueueAsync(consummerChannel, consumerOptions);
@@ -78,12 +73,11 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
         var createConsumer = BuildCreateConsumerHandler(typeof(TMessage));
         var consumerTag = await createConsumer(this, consummerChannel, typeof(TConsumer), typeof(TMessage), consumerOptions);
 
-        var isAdd = _consumers.TryAdd(consumerOptions.Queue, consumerTag);
-
-        if (!isAdd)
+        var registerResult = TryRegisterConsumer(consumerOptions.Queue, new DynamicConsumerRegistration(consumerTag, consummerChannel, ownsChannel: false));
+        if (registerResult != RegisterConsumerResult.Success)
         {
             await consummerChannel.BasicCancelAsync(consumerTag, true);
-            throw new ArgumentException($"Queue[{consumerOptions.Queue}] have been used by dynamic consumer");
+            ThrowRegisterConflict(registerResult, consumerOptions.Queue, consumerTag);
         }
 
         return consumerTag;
@@ -97,29 +91,20 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
         ConsumerFallbackAsync<TMessage>? fallback = null)
         where TMessage : class
     {
-        var existConsumer = _consumerTypeProvider.FirstOrDefault(x => x.Queue == consumerOptions.Queue);
-        if (existConsumer != null)
-        {
-            throw new ArgumentException($"Queue[{consumerOptions.Queue}] have been used by consumer [{existConsumer.Event.Name}]");
-        }
-
-        if (_consumers.ContainsKey(consumerOptions.Queue))
-        {
-            throw new ArgumentException($"Queue[{consumerOptions.Queue}] have been used by dynamic consumer");
-        }
+        EnsureQueueCanBeUsed(consumerOptions);
 
         var dynamicProxyConsumer = new DynamicProxyConsumer<TMessage>(execute, faild, fallback);
-        var consummerChannel = _connectionObject.DefaultChannel;
+        var consummerChannel = await _connectionObject.Connection.CreateChannelAsync();
         await InitQueueAsync(consummerChannel, consumerOptions);
 
         string consumerTag = await CreateDynamicMessageConsumer<TMessage>(consummerChannel, consumerOptions, dynamicProxyConsumer);
 
-        var isAdd = _consumers.TryAdd(consumerOptions.Queue, consumerTag);
-
-        if (!isAdd)
+        var registerResult = TryRegisterConsumer(consumerOptions.Queue, new DynamicConsumerRegistration(consumerTag, consummerChannel, ownsChannel: true));
+        if (registerResult != RegisterConsumerResult.Success)
         {
             await consummerChannel.BasicCancelAsync(consumerTag, true);
-            throw new ArgumentException($"Queue[{consumerOptions.Queue}] have been used by dynamic consumer");
+            consummerChannel.Dispose();
+            ThrowRegisterConflict(registerResult, consumerOptions.Queue, consumerTag);
         }
 
         return consumerTag;
@@ -128,28 +113,68 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
     /// <inheritdoc />
     public virtual async Task StopConsumerAsync(string queue)
     {
-        if (_consumers.TryGetValue(queue, out var consumerTag))
+        if (_consumers.TryRemove(queue, out var registration))
         {
-            await _connectionObject.DefaultChannel.BasicCancelAsync(consumerTag, true);
-            _consumers.Remove(queue, out _);
+            _consumerTags.TryRemove(registration.ConsumerTag, out _);
+            await CancelAndDisposeConsumerAsync(registration);
         }
-
-        await Task.CompletedTask;
     }
 
     /// <inheritdoc />
     public virtual async Task StopConsumerTagAsync(string consumerTag)
     {
-        var kv = _consumers.FirstOrDefault(x => x.Value == consumerTag);
-
-        if (kv.Value != null)
+        if (_consumerTags.TryRemove(consumerTag, out var queue) && _consumers.TryRemove(queue, out var registration))
         {
-            _consumers.Remove(kv.Key, out _);
+            await CancelAndDisposeConsumerAsync(registration);
+            return;
         }
 
         await _connectionObject.DefaultChannel.BasicCancelAsync(consumerTag, true);
+    }
 
-        await Task.CompletedTask;
+    /// <inheritdoc />
+    public override void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        foreach (var item in _consumers.ToArray())
+        {
+            if (!_consumers.TryRemove(item.Key, out var registration))
+            {
+                continue;
+            }
+
+            _consumerTags.TryRemove(registration.ConsumerTag, out _);
+
+            try
+            {
+                registration.Channel.BasicCancelAsync(registration.ConsumerTag, true).GetAwaiter().GetResult();
+            }
+            catch
+            {
+            }
+            finally
+            {
+                if (registration.OwnsChannel)
+                {
+                    try
+                    {
+                        registration.Channel.Dispose();
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+        }
+
+        _consumerTags.Clear();
+        _disposed = true;
+
+        base.Dispose();
     }
 
     protected virtual async Task<string> CreateDynamicMessageConsumer<TMessage>(IChannel consummerChannel, IConsumerOptions consumerOptions, DynamicProxyConsumer<TMessage> proxyConsumer)
@@ -160,24 +185,23 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
 
         consumer.ReceivedAsync += async (sender, eventArgs) =>
         {
-            Dictionary<string, object> loggerState = new()
+            try
             {
-                { "Queue", consumerOptions.Queue },
-                { "Exchange", eventArgs.Exchange },
-                { "RoutingKey", eventArgs.RoutingKey },
-                { "ConsumerTag", eventArgs.ConsumerTag },
-                { "DeliveryTag", eventArgs.DeliveryTag },
-                { "Redelivered", eventArgs.Redelivered },
-                { "MessageId", eventArgs.BasicProperties.MessageId ?? string.Empty }
-            };
+                Dictionary<string, object> loggerState = CreateLoggerState(eventArgs, consumerOptions);
 
-            using (_logger.BeginScope(loggerState))
+                using (_logger.BeginScope(loggerState))
+                {
+                    using var scope = _serviceProvider.CreateScope();
+                    var serviceProvider = scope.ServiceProvider;
+
+                    MessageConsumer<TMessage> messageConsumer = new MessageConsumer<TMessage>(serviceProvider, consumerOptions, s => proxyConsumer);
+                    await messageConsumer.ConsumerAsync(consummerChannel, eventArgs);
+                }
+            }
+            catch (Exception ex)
             {
-                using var scope = _serviceProvider.CreateScope();
-                var serviceProvider = scope.ServiceProvider;
-
-                MessageConsumer messageConsumer = new MessageConsumer(serviceProvider, consumerOptions, s => proxyConsumer);
-                await messageConsumer.ConsumerAsync<TMessage>(consummerChannel, eventArgs);
+                _logger.LogError(ex, "An error occurred while declaring the queue.Consumer services have been withdrawn.");
+                throw;
             }
         };
 
@@ -194,10 +218,76 @@ public class DynamicConsumerService : ConsumerBaseService, IDynamicConsumer
         return Task.CompletedTask;
     }
 
-    private class ConsumerTag
+    private void EnsureQueueCanBeUsed(IConsumerOptions consumerOptions)
     {
-        public string Tag { get; init; } = default!;
+        var existConsumer = _consumerTypeProvider.FirstOrDefault(x => x.Queue == consumerOptions.Queue);
+        if (existConsumer != null)
+        {
+            throw new ArgumentException($"Queue[{consumerOptions.Queue}] have been used by consumer [{existConsumer.Event.Name}]");
+        }
+    }
 
-        public MessageConsumer MessageConsumer { get; init; } = default!;
+    private RegisterConsumerResult TryRegisterConsumer(string queue, DynamicConsumerRegistration registration)
+    {
+        if (!_consumers.TryAdd(queue, registration))
+        {
+            return RegisterConsumerResult.QueueConflict;
+        }
+
+        if (!_consumerTags.TryAdd(registration.ConsumerTag, queue))
+        {
+            _consumers.TryRemove(queue, out _);
+            return RegisterConsumerResult.ConsumerTagConflict;
+        }
+
+        return RegisterConsumerResult.Success;
+    }
+
+    private void ThrowRegisterConflict(RegisterConsumerResult registerResult, string queue, string consumerTag)
+    {
+        if (registerResult == RegisterConsumerResult.QueueConflict)
+        {
+            throw new ArgumentException($"Queue[{queue}] have been used by dynamic consumer");
+        }
+
+        if (registerResult == RegisterConsumerResult.ConsumerTagConflict)
+        {
+            throw new ArgumentException($"ConsumerTag[{consumerTag}] have been used by dynamic consumer");
+        }
+
+        throw new InvalidOperationException("Unknown dynamic consumer register result.");
+    }
+
+    private async Task CancelAndDisposeConsumerAsync(DynamicConsumerRegistration registration)
+    {
+        await registration.Channel.BasicCancelAsync(registration.ConsumerTag, true);
+
+        if (registration.OwnsChannel)
+        {
+            registration.Channel.Dispose();
+        }
+    }
+
+    private enum RegisterConsumerResult
+    {
+        Success,
+        QueueConflict,
+        ConsumerTagConflict
+    }
+
+    private sealed class DynamicConsumerRegistration
+    {
+        public DynamicConsumerRegistration(string consumerTag, IChannel channel, bool ownsChannel)
+        {
+            ConsumerTag = consumerTag;
+            Channel = channel;
+            OwnsChannel = ownsChannel;
+        }
+
+        public string ConsumerTag { get; }
+
+        public IChannel Channel { get; }
+
+        public bool OwnsChannel { get; }
     }
 }

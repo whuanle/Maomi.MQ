@@ -34,4 +34,10 @@ public class MqOptions
     /// RabbitMQ connection factory.
     /// </summary>
     public IConnectionFactory ConnectionFactory { get; init; } = null!;
+
+    /// <summary>
+    /// Message serializers.<br />
+    /// 消息序列化器，每个 ContentType 对应一个序列化器.
+    /// </summary>
+    public IReadOnlyCollection<IMessageSerializer> MessageSerializers { get; init; } = Array.Empty<IMessageSerializer>();
 }

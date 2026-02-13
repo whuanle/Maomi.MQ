@@ -1,4 +1,4 @@
-# Maomi.MQ 　　　　　　　　　　　　　　　　　　　　[English](https://github.com/whuanle/Maomi.MQ/blob/main/README.md)
+# Maomi.MQ 　　　　　　　　　　　　　　　　　　　　[English](./README.md)
 
 作者：痴者工良
 

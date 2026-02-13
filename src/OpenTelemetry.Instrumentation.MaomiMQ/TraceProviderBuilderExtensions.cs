@@ -5,7 +5,6 @@
 // </copyright>
 
 using OpenTelemetry.Instrumentation.MaomiMQ;
-using OpenTelemetry.Internal;
 using OpenTelemetry.Metrics;
 using System;
 
@@ -35,17 +34,23 @@ public static class TraceProviderBuilderExtensions
         this TracerProviderBuilder builder,
         Action<MaomiMQInstrumentationOptions>? configure)
     {
-        Guard.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(builder);
 
         var options = new MaomiMQInstrumentationOptions();
         configure?.Invoke(options);
 
-        builder.AddInstrumentation(() => new Instrumentation.MaomiMQ.MaomiMQInstrumentation(options));
+        builder.AddInstrumentation(() => new MaomiMQInstrumentation(options));
 
         builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.MaomiMQ);
         builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.EventBus);
         builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.Publisher);
         builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.Consumer);
+        builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.ActivitySource.Publisher);
+        builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.ActivitySource.Consumer);
+        builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.ActivitySource.Execute);
+        builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.ActivitySource.Retry);
+        builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.ActivitySource.Fallback);
+        builder.AddSource(Maomi.MQ.Diagnostics.DiagnosticName.ActivitySource.EventBusExecute);
 
         foreach (var item in options.Sources)
         {
@@ -62,7 +67,7 @@ public static class TraceProviderBuilderExtensions
     /// <returns>The instance of <see cref="MeterProviderBuilder"/> to chain the calls.</returns>
     public static MeterProviderBuilder AddMaomiMQInstrumentation(this MeterProviderBuilder builder)
     {
-        OpenTelemetry.Internal.Guard.ThrowIfNull(builder, "builder");
+        ArgumentNullException.ThrowIfNull(builder);
         return builder.ConfigureMeters();
     }
 

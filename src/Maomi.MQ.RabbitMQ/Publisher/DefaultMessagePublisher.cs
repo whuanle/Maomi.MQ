@@ -8,14 +8,14 @@
 #pragma warning disable SA1600
 #pragma warning disable CS1591
 
-using Maomi.MQ.Default;
 using Maomi.MQ.Diagnostics;
 using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
+using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Diagnostics.Metrics;
+using System.Reflection;
 
 namespace Maomi.MQ;
 
@@ -24,73 +24,47 @@ namespace Maomi.MQ;
 /// </summary>
 public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessagePublisher
 {
-    protected static readonly DiagnosticListener _diagnosticListener = new DiagnosticListener(DiagnosticName.Listener.Publisher);
-    protected static readonly ActivitySource _activitySource = new ActivitySource(DiagnosticName.ActivitySource.Publisher);
-
-    protected readonly Meter _meter;
-    protected readonly Counter<int> _meterPushMessageCount;
-    protected readonly Counter<int> _meterPushFaildMessageCount;
-    protected readonly Histogram<long> _meterPushMessageBytes;
-
     protected readonly IServiceProvider _serviceProvider;
     protected readonly MqOptions _mqOptions;
-    protected readonly IMessageSerializer _messageSerializer;
     protected readonly ConnectionPool _connectionPool;
     protected readonly IConnectionObject _connectionObject;
-    protected readonly IIdFactory _idGen;
+    protected readonly IIdProvider _idGen;
     protected readonly ILogger _logger;
+    protected readonly IPublisherDiagnostics _publisherDiagnostics;
 
-    protected readonly Lazy<IConsumerTypeProvider> _consumerTypeProvider;
     protected readonly Lazy<IRoutingProvider> _routingProvider;
+
+    private readonly ConcurrentDictionary<Type, IRouterKeyOptions> _queueNameOptionsCache;
+    private readonly ConcurrentDictionary<Type, IMessageSerializer> _messageSerializerCache;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DefaultMessagePublisher"/> class.
     /// </summary>
     /// <param name="serviceProvider"></param>
     /// <param name="mqOptions"></param>
-    /// <param name="messageSerializer"></param>
     /// <param name="connectionPool"></param>
     /// <param name="idGen"></param>
     /// <param name="loggerFactory"></param>
     public DefaultMessagePublisher(
         IServiceProvider serviceProvider,
         MqOptions mqOptions,
-        IMessageSerializer messageSerializer,
         ConnectionPool connectionPool,
-        IIdFactory idGen,
+        IIdProvider idGen,
         ILoggerFactory loggerFactory)
     {
         _serviceProvider = serviceProvider;
         _mqOptions = mqOptions;
-        _messageSerializer = messageSerializer;
         _connectionPool = connectionPool;
         _connectionObject = _connectionPool.Get();
 
         _idGen = idGen;
-        _logger = loggerFactory.CreateLogger(DiagnosticName.Publisher);
+        _logger = loggerFactory.CreateLogger<DefaultMessagePublisher>();
 
-        _consumerTypeProvider = new Lazy<IConsumerTypeProvider>(() => _serviceProvider.GetRequiredService<IConsumerTypeProvider>());
+        _publisherDiagnostics = serviceProvider.GetRequiredService<IPublisherDiagnostics>();
+
         _routingProvider = new Lazy<IRoutingProvider>(() => _serviceProvider.GetRequiredService<IRoutingProvider>());
-
-        var tags = new Dictionary<string, object?>()
-        {
-            { nameof(MessageHeader.AppId), _mqOptions.AppName }
-        };
-
-        var meterFactory = serviceProvider.GetService<IMeterFactory>();
-
-        _meter = meterFactory != null ? meterFactory.Create(DiagnosticName.Meter.Publisher) : SharedMeter.Publisher;
-        _meterPushMessageCount = _meter.CreateCounter<int>(
-            DiagnosticName.Meter.PublisherMessageCount,
-            unit: "{request}",
-            description: "The total number of messages published.",
-            tags);
-        _meterPushFaildMessageCount = _meter.CreateCounter<int>(
-            DiagnosticName.Meter.PublisherFaildMessageCount,
-            unit: "{request}",
-            "Total number of failed messages sent",
-            tags);
-        _meterPushMessageBytes = _meter.CreateHistogram<long>(DiagnosticName.Meter.PublisherMessageSent, "Byte", "The size of the received message", tags);
+        _queueNameOptionsCache = new ConcurrentDictionary<Type, IRouterKeyOptions>();
+        _messageSerializerCache = new ConcurrentDictionary<Type, IMessageSerializer>();
     }
 
     /// <summary>
@@ -100,23 +74,19 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
     protected DefaultMessagePublisher(DefaultMessagePublisher publisher)
     {
         _serviceProvider = publisher._serviceProvider;
-        _consumerTypeProvider = publisher._consumerTypeProvider;
         _routingProvider = publisher._routingProvider;
         _mqOptions = publisher._mqOptions;
-        _messageSerializer = publisher._messageSerializer;
         _connectionPool = publisher._connectionPool;
         _connectionObject = publisher._connectionObject;
         _idGen = publisher._idGen;
         _logger = publisher._logger;
-
-        _meter = publisher._meter;
-        _meterPushMessageCount = publisher._meterPushMessageCount;
-        _meterPushFaildMessageCount = publisher._meterPushFaildMessageCount;
-        _meterPushMessageBytes = publisher._meterPushMessageBytes;
+        _publisherDiagnostics = publisher._publisherDiagnostics;
+        _queueNameOptionsCache = publisher._queueNameOptionsCache;
+        _messageSerializerCache = publisher._messageSerializerCache;
     }
 
     /// <inheritdoc />
-    public virtual Task PublishAsync<TMessage>(TMessage message, Action<BasicProperties>? properties = null, CancellationToken cancellationToken = default)
+    public virtual Task AutoPublishAsync<TMessage>(TMessage message, Action<BasicProperties>? properties = null, CancellationToken cancellationToken = default)
         where TMessage : class
     {
         var basicProperties = new BasicProperties()
@@ -129,10 +99,9 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
             properties.Invoke(basicProperties);
         }
 
-        var consumerOptions = _consumerTypeProvider.Value.First(x => x.Event == typeof(TMessage)).ConsumerOptions;
-        consumerOptions = _routingProvider.Value.Get(consumerOptions);
+        var queueName = _routingProvider.Value.Get(ResolveQueueNameOptions(message.GetType()));
 
-        return CustomPublishAsync(consumerOptions.BindExchange ?? string.Empty, consumerOptions.RoutingKey ?? consumerOptions.Queue, message, basicProperties, cancellationToken);
+        return CustomPublishAsync(queueName.Exchange ?? string.Empty, queueName.RoutingKey, message, basicProperties, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -167,22 +136,6 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
     }
 
     /// <inheritdoc />
-    public virtual Task PublishAsync<TMessage>(TMessage message, BasicProperties? properties = default, CancellationToken cancellationToken = default)
-    {
-        if (properties == null)
-        {
-            properties = new BasicProperties()
-            {
-                DeliveryMode = DeliveryModes.Persistent
-            };
-        }
-
-        var consumerOptions = _consumerTypeProvider.Value.First(x => x.Event == typeof(TMessage)).ConsumerOptions;
-        consumerOptions = _routingProvider.Value.Get(consumerOptions);
-        return CustomPublishAsync(consumerOptions.BindExchange ?? string.Empty, consumerOptions.RoutingKey ?? consumerOptions.Queue, message, properties);
-    }
-
-    /// <inheritdoc />
     public virtual async Task CustomPublishAsync<TMessage>(string exchange, string routingKey, TMessage message, BasicProperties? properties = default, CancellationToken cancellationToken = default)
     {
         if (properties == null)
@@ -197,10 +150,8 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
     }
 
     /// <inheritdoc />
-    public virtual async Task PublishChannelAsync<TMessage>(IChannel channel, string exchange, string reoutingKey, TMessage message, BasicProperties properties, CancellationToken cancellationToken = default)
+    public virtual async Task PublishChannelAsync<TMessage>(IChannel channel, string exchange, string routingKey, TMessage message, BasicProperties properties, CancellationToken cancellationToken = default)
     {
-        using Activity? activity = _activitySource.StartActivity(DiagnosticName.ActivitySource.Publisher, ActivityKind.Producer);
-
         if (properties == null)
         {
             properties = new BasicProperties()
@@ -209,35 +160,31 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
             };
         }
 
-        var messageSerializer = _messageSerializer;
-        if (messageSerializer is IMessageSerializerFactory serializerFactory)
-        {
-            messageSerializer = serializerFactory.GetMessageSerializer(typeof(TMessage));
-        }
+        var messageSerializer = ResolveMessageSerializer(message);
 
         MessageHeader messageHeader = new MessageHeader
         {
             Id = _idGen.NextId().ToString(),
             Timestamp = DateTimeOffset.Now,
             AppId = _mqOptions.AppName,
-            ContentEncoding = messageSerializer.ContentEncoding,
             ContentType = messageSerializer.ContentType,
             Type = typeof(TMessage).FullName!,
-            UserId = properties.UserId ?? string.Empty,
+            Exchange = exchange,
+            RoutingKey = routingKey,
             Properties = properties
         };
 
-        InitializeMessageProperties<TMessage>(properties, ref messageHeader);
+        InitializeMessageProperties<TMessage>(properties, ref messageHeader, messageSerializer);
 
-        OnStartEvent(ref messageHeader, exchange, reoutingKey, activity);
+        using Activity? activity = _publisherDiagnostics.Start(messageHeader, exchange, routingKey);
 
         byte[]? body = default;
         try
         {
-            body = _messageSerializer.Serializer(message);
+            body = messageSerializer.Serializer(message);
             await channel.BasicPublishAsync(
                 exchange: exchange,
-                routingKey: reoutingKey,
+                routingKey: routingKey,
                 basicProperties: properties,
                 body: body,
                 mandatory: true,
@@ -249,33 +196,67 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "The message with id [{Id}] failed to send, exchange: [{Exchange}], reoutingKey: [{reoutingKey}].", messageHeader.Id, exchange, reoutingKey);
-            OnExecptionEvent(ref messageHeader, exchange, reoutingKey, ex, activity);
+            _logger.LogWarning(ex, "The message with id [{Id}] failed to send, exchange: [{Exchange}], routingKey: [{RoutingKey}].", messageHeader.Id, exchange, routingKey);
+            _publisherDiagnostics.Exception(messageHeader, exchange, routingKey, ex, activity);
             throw;
         }
         finally
         {
-            _meterPushMessageBytes.Record(body?.Length ?? 0);
-            OnStopEvent(ref messageHeader, exchange, reoutingKey, activity);
+            _publisherDiagnostics.RecordMessageSize(messageHeader, exchange, routingKey, body?.Length ?? 0, activity);
+            _publisherDiagnostics.Stop(messageHeader, exchange, routingKey, activity);
         }
     }
-}
 
-/// <summary>
-/// <inheritdoc />
-/// </summary>
-public partial class DefaultMessagePublisher
-{
-    protected virtual void InitializeMessageProperties<TMessage>(BasicProperties properties, ref MessageHeader messageHeader)
+    /// <inheritdoc />
+    public virtual async Task PublishChannelAsync(IChannel channel, string exchange, string routingKey, MessageHeader messageHeader, byte[] message, BasicProperties properties, CancellationToken cancellationToken = default)
     {
-        var messageSerializer = _messageSerializer;
-        if (messageSerializer is IMessageSerializerFactory serializerFactory)
+        if (properties == null)
         {
-            messageSerializer = serializerFactory.GetMessageSerializer(typeof(TMessage));
+            properties = new BasicProperties()
+            {
+                DeliveryMode = DeliveryModes.Persistent
+            };
         }
 
+        properties.Headers = properties.Headers ?? new Dictionary<string, object?>();
+        using Activity? activity = _publisherDiagnostics.Start(messageHeader, exchange, routingKey);
+
+        try
+        {
+            await channel.BasicPublishAsync(
+                exchange: exchange,
+                routingKey: routingKey,
+                basicProperties: properties,
+                body: message,
+                mandatory: true,
+                cancellationToken: cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "The message with id [{Id}] failed to send, exchange: [{Exchange}], routingKey: [{RoutingKey}].", messageHeader.Id, exchange, routingKey);
+            _publisherDiagnostics.Exception(messageHeader, exchange, routingKey, ex, activity);
+            throw;
+        }
+        finally
+        {
+            _publisherDiagnostics.RecordMessageSize(messageHeader, exchange, routingKey, message?.Length ?? 0, activity);
+            _publisherDiagnostics.Stop(messageHeader, exchange, routingKey, activity);
+        }
+    }
+
+    protected virtual void InitializeMessageProperties<TMessage>(BasicProperties properties, ref MessageHeader messageHeader)
+    {
+        var messageSerializer = ResolveMessageSerializer<TMessage>();
+        InitializeMessageProperties<TMessage>(properties, ref messageHeader, messageSerializer);
+    }
+
+    protected virtual void InitializeMessageProperties<TMessage>(BasicProperties properties, ref MessageHeader messageHeader, IMessageSerializer messageSerializer)
+    {
         properties.AppId = _mqOptions.AppName;
-        properties.ContentEncoding = messageSerializer.ContentEncoding;
         properties.ContentType = messageSerializer.ContentType;
         properties.MessageId = messageHeader.Id.ToString();
         properties.Timestamp = new AmqpTimestamp(messageHeader.Timestamp.ToUnixTimeMilliseconds());
@@ -284,78 +265,60 @@ public partial class DefaultMessagePublisher
         properties.Headers = properties.Headers ?? new Dictionary<string, object?>();
     }
 
-    protected bool IsEnabledListener()
+    private IRouterKeyOptions ResolveQueueNameOptions(Type messageType)
     {
-        // check if there is a parent Activity or if someone listens to "<Maomi.MQ.Publisher>" ActivitySource or "MaomiMQPublisherHandlerDiagnosticListener" DiagnosticListener.
-        return Activity.Current != null ||
-               _activitySource.HasListeners() ||
-               _diagnosticListener.IsEnabled();
-    }
-
-    protected virtual void OnStartEvent(ref MessageHeader messageHeader, string exchange, string reoutingKey, Activity? activity)
-    {
-        if (activity == null || !IsEnabledListener())
+        if (_queueNameOptionsCache.TryGetValue(messageType, out var queueNameOptions))
         {
-            return;
+            return queueNameOptions;
         }
 
-        activity.AddTag("Id", messageHeader.Id);
-        activity.AddTag("Timestamp", messageHeader.Timestamp);
-        activity.AddTag("AppId", messageHeader.AppId);
-        activity.AddTag("ContentEncoding", messageHeader.ContentEncoding);
-        activity.AddTag("ContentType", messageHeader.ContentType);
-        activity.AddTag("Type", messageHeader.Type);
-        activity.AddTag("UserId", messageHeader.UserId);
-        activity.AddTag("Exchange", exchange);
-        activity.AddTag("RoutingKey", reoutingKey);
-
-        TagList tagList = default;
-        tagList.Add(nameof(MessageHeader.AppId), messageHeader.AppId);
-        tagList.Add("Exchange", exchange);
-        tagList.Add("RoutingKey", reoutingKey);
-
-        _meterPushMessageCount.Add(1, tagList);
-        _diagnosticListener.Write(DiagnosticName.Event.PublisherStart, messageHeader);
-    }
-
-    protected virtual void OnStopEvent(ref MessageHeader messageHeader, string exchange, string reoutingKey, Activity? activity)
-    {
-        if (activity == null || !IsEnabledListener())
+        IRouterKeyOptions? queueName = messageType.GetCustomAttribute<RouterKeyAttribute>();
+        if (queueName == null)
         {
-            return;
+            throw new InvalidOperationException($"The message type [{messageType.FullName}] does not have the [{nameof(RouterKeyAttribute)}] attribute.");
         }
 
-        activity.SetStatus(ActivityStatusCode.Ok);
-        activity.Stop();
-
-        TagList tagList = default;
-        tagList.Add(nameof(MessageHeader.AppId), messageHeader.AppId);
-        tagList.Add("Exchange", exchange);
-        tagList.Add("RoutingKey", reoutingKey);
-
-        _diagnosticListener.Write(DiagnosticName.Event.PublisherStop, messageHeader);
+        _queueNameOptionsCache.TryAdd(messageType, queueName);
+        return queueName;
     }
 
-    protected virtual void OnExecptionEvent(ref MessageHeader messageHeader, string exchange, string reoutingKey, Exception exception, Activity? activity)
+    private IMessageSerializer ResolveMessageSerializer<TMessage>(TMessage message)
     {
-        if (activity == null || !IsEnabledListener())
+        var messageType = message?.GetType() ?? typeof(TMessage);
+        if (_messageSerializerCache.TryGetValue(messageType, out var messageSerializer))
         {
-            return;
+            return messageSerializer;
         }
 
-        TagList tagList = default;
-        tagList.Add(nameof(MessageHeader.AppId), messageHeader.AppId);
-        tagList.Add("Exchange", exchange);
-        tagList.Add("RoutingKey", reoutingKey);
+        foreach (var item in _mqOptions.MessageSerializers)
+        {
+            if (item.SerializerVerify(message))
+            {
+                _messageSerializerCache.TryAdd(messageType, item);
+                return item;
+            }
+        }
 
-#if NET9_0_OR_GREATER
-        activity.AddException(exception, tagList);
-#else
-        DiagnosticsExtensions.AddException(activity, exception, tagList);
-#endif
-        activity.SetStatus(ActivityStatusCode.Error);
-        _meterPushFaildMessageCount.Add(1, tagList);
+        throw new InvalidOperationException($"No suitable message serializer found for message type [{messageType.FullName}].");
+    }
 
-        _diagnosticListener.Write(DiagnosticName.Event.PublisherExecption, exception);
+    private IMessageSerializer ResolveMessageSerializer<TMessage>()
+    {
+        var messageType = typeof(TMessage);
+        if (_messageSerializerCache.TryGetValue(messageType, out var messageSerializer))
+        {
+            return messageSerializer;
+        }
+
+        foreach (var item in _mqOptions.MessageSerializers)
+        {
+            if (item.SerializerVerify<TMessage>())
+            {
+                _messageSerializerCache.TryAdd(messageType, item);
+                return item;
+            }
+        }
+
+        throw new InvalidOperationException($"No suitable message serializer found for message type [{messageType.FullName}].");
     }
 }

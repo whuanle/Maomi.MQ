@@ -24,11 +24,3 @@ public interface IConnectionObject
     /// </summary>
     IChannel DefaultChannel { get; }
 }
-
-/// <summary>
-/// IConnection,IChannel pool.<br />
-/// TCP 连接和通道.
-/// </summary>
-public interface IDisposeConnectionObject : IConnectionObject, IDisposable
-{
-}

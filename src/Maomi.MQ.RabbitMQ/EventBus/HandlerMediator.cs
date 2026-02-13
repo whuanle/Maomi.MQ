@@ -53,7 +53,7 @@ public class HandlerMediator<TMessage> : IHandlerMediator<TMessage>
         // Build execution flow.
         // 构建执行链.
         // 1 => 2 => 3 =>...
-        foreach (var handler in _eventInfo.Handlers.OrderBy(x => x.Key))
+        foreach (var handler in _eventInfo.Handlers)
         {
             ActivityTagsCollection executeTags = new()
             {

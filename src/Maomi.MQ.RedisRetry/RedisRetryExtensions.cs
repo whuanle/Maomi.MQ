@@ -30,7 +30,6 @@ public static class RedisRetryExtensions
         {
             var logger = s.GetRequiredService<ILogger<DefaultRetryPolicyFactory>>();
             var redis = func.Invoke(s);
-            var mqOptions = s.GetRequiredService<MqOptions>();
             return new RedisRetryPolicyFactory(logger, redis);
         });
         return services;

@@ -13,16 +13,27 @@ namespace Maomi.MQ;
 public interface IMessageSerializer
 {
     /// <summary>
-    /// MIME content encoding.<br />
-    /// 消息的编码格式.
-    /// </summary>
-    public string ContentEncoding { get; }
-
-    /// <summary>
     /// MIME content type.<br />
     /// 消息的编码类型.
     /// </summary>
     public string ContentType { get; }
+
+    /// <summary>
+    /// Verify whether this type of serialization should be used. <br />
+    /// 验证类型是否该使用此序列化器.
+    /// </summary>
+    /// <typeparam name="TObject">Type.</typeparam>
+    /// <param name="obj">Object.</param>
+    /// <returns><see cref="byte"/>[].</returns>
+    public bool SerializerVerify<TObject>(TObject obj);
+
+    /// <summary>
+    /// Verify whether this type of serialization should be used. <br />
+    /// 验证类型是否该使用此序列化器.
+    /// </summary>
+    /// <typeparam name="TObject">Type.</typeparam>
+    /// <returns><see cref="byte"/>[].</returns>
+    public bool SerializerVerify<TObject>();
 
     /// <summary>
     /// Serializer.

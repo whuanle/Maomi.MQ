@@ -4,6 +4,7 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
+using Maomi.MQ.Consumer;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Maomi.MQ.Filters;

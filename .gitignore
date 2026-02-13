@@ -358,3 +358,17 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+
+# .NET
+appsettings.Development.json
+/example/consumer/ConsumerWeb/appsettings.Development.json
+/example/consumer/DynamicConsumerWeb/appsettings.Development.json
+/example/event/ConsumerMiddleware/appsettings.Development.json
+/example/event/EventWeb/appsettings.Development.json
+/example/FastEndpoints/FastEndpointsDemo/appsettings.Development.json
+/example/mediator/MediatorRabbitMQ/appsettings.Development.json
+/example/OpenTelemetry/ActivitySourceApi/appsettings.Development.json
+/example/publisher/PublisherWeb/appsettings.Development.json
+/example/qos/QosPublisher/appsettings.Development.json
+/example/retry/RetryWeb/appsettings.Development.json
+/example/WebDemo/appsettings.Development.json

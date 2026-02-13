@@ -4,10 +4,14 @@
 // Github link: https://github.com/whuanle/Maomi.MQ
 // </copyright>
 
+using Maomi.MQ.Consumer;
 using Maomi.MQ.Default;
+using Maomi.MQ.Defaults;
+using Maomi.MQ.Diagnostics;
 using Maomi.MQ.EventBus;
 using Maomi.MQ.Filters;
 using Maomi.MQ.Hosts;
+using Maomi.MQ.Models;
 using Maomi.MQ.Pool;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -69,24 +73,37 @@ public static partial class MaomiExtensions
         ArgumentNullException.ThrowIfNull(optionsBuilder.Rabbit);
         optionsBuilder.Rabbit.Invoke(connectionFactory);
 
+        List<IMessageSerializer> serializers = new()
+        {
+            new DefaultJsonMessageSerializer()
+        };
+
+        optionsBuilder.MessageSerializers?.Invoke(serializers);
+
         services.AddSingleton<MqOptions>(new MqOptions
         {
             AppName = optionsBuilder.AppName,
             WorkId = optionsBuilder.WorkId,
             AutoQueueDeclare = optionsBuilder.AutoQueueDeclare,
-            ConnectionFactory = connectionFactory
+            ConnectionFactory = connectionFactory,
+            MessageSerializers = serializers
         });
 
-        services.AddMaomiMQCore();
+        services.AddMaomiMQCore((ushort)optionsBuilder.WorkId);
+
         services.AddScoped<IBreakdown, DefaultBreakdown>();
         services.AddSingleton<IRoutingProvider, RoutingProvider>();
-        services.AddSingleton<IIdFactory>(new DefaultIdFactory((ushort)optionsBuilder.WorkId));
         services.AddSingleton<ServiceFactory>();
         services.AddSingleton<IDynamicConsumer, DynamicConsumerService>();
 
         services.AddSingleton<ConnectionPool>();
 
-        services.AddScoped<IMessagePublisher, DefaultMessagePublisher>();
+        services.AddSingleton<IConsumerDiagnostics, ConsumerDiagnostics>();
+        services.AddSingleton<IPublisherDiagnostics, PublisherDiagnostics>();
+
+        services.AddScoped<DefaultMessagePublisher>();
+        services.AddScoped<IMessagePublisher>(s => s.GetRequiredService<DefaultMessagePublisher>());
+        services.AddScoped<IChannelMessagePublisher, DefaultMessagePublisher>(s => s.GetRequiredService<DefaultMessagePublisher>());
 
         foreach (var assembly in assemblies)
         {
@@ -107,11 +124,23 @@ public static partial class MaomiExtensions
             consumerTypes.AddRange(types);
         }
 
+        var duplicateQueueNames = consumerTypes
+            .GroupBy(item => item.Queue)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToArray();
+
+        if (duplicateQueueNames.Length > 0)
+        {
+            throw new InvalidOperationException($"Duplicate queue names found: {string.Join(", ", duplicateQueueNames)}. Each consumer must have a unique queue name.");
+        }
+
         services.AddSingleton<IConsumerTypeProvider>(new ConsumerTypeProvider(consumerTypes));
 
         Func<IServiceProvider, ConsumerHostedService> funcFactory = (serviceProvider) =>
         {
             return new ConsumerHostedService(
+                serviceProvider.GetRequiredService<IHostApplicationLifetime>(),
                 serviceProvider.GetRequiredService<ServiceFactory>(),
                 serviceProvider.GetRequiredService<ConnectionPool>(),
                 consumerTypes);

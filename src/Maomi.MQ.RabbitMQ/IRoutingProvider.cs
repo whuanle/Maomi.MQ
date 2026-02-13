@@ -7,7 +7,8 @@
 namespace Maomi.MQ;
 
 /// <summary>
-/// Check exchange, routingKey, and queue.
+/// Check exchange, routingKey, and queue.This interface will be called when publishing messages or creating consumer programs. <br />You can re-implement this interface to intercept and modify the routing information.<br />
+/// 在发布消息或创建消费者程序时会调用此接口，你可以重新实现此接口，以便拦截、修改路由信息.
 /// </summary>
 public interface IRoutingProvider
 {
@@ -17,4 +18,11 @@ public interface IRoutingProvider
     /// <param name="consumerOptions"></param>
     /// <returns><see cref="IConsumerOptions"/>.</returns>
     IConsumerOptions Get(IConsumerOptions consumerOptions);
+
+    /// <summary>
+    /// Get options.
+    /// </summary>
+    /// <param name="queueNameOptions"></param>
+    /// <returns><see cref="IConsumerOptions"/>.</returns>
+    IRouterKeyOptions Get(IRouterKeyOptions queueNameOptions);
 }

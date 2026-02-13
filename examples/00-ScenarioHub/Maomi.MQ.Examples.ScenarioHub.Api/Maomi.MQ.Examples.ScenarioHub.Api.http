@@ -1,0 +1,6 @@
+@Maomi.MQ.Examples.ScenarioHub.Api_HostAddress = http://localhost:5067
+
+GET {{Maomi.MQ.Examples.ScenarioHub.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

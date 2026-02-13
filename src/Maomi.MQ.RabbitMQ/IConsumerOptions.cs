@@ -10,7 +10,7 @@ namespace Maomi.MQ;
 /// Consumer.<br />
 /// 消费者配置.
 /// </summary>
-public interface IConsumerOptions
+public interface IConsumerOptions : IEquatable<IConsumerOptions>
 {
     /// <summary>
     /// Queue name.<br />
@@ -63,13 +63,19 @@ public interface IConsumerOptions
     /// Exchange type.<br />
     /// 交换器类型.
     /// </summary>
-    string? ExchangeType { get; }
+    ExchangeType ExchangeType { get; }
 
     /// <summary>
     /// Bind the routing key.<br />
     /// 绑定路由键.
     /// </summary>
     string? RoutingKey { get; }
+
+    /// <summary>
+    /// Broadcast mode.<br />
+    /// 广播模式.
+    /// </summary>
+    bool IsBroadcast { get; }
 
     /// <summary>
     /// Creates a new object that is a copy of the current instance.

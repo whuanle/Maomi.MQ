@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<TargetFrameworks>net7.0;net8.0;net9.0;net10.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>true</IsPackable>
+		<Title>Maomi.MQ</Title>
+		<RootNamespace>Maomi.MQ</RootNamespace>
+		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+		<PackageIcon>package.png</PackageIcon>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="package.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="MessagePack" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Maomi.MQ.Core\Maomi.MQ.Core.csproj" />
+	</ItemGroup>
+
+</Project>

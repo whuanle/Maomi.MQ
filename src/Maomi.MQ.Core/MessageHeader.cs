@@ -17,7 +17,11 @@ public struct MessageHeader
     /// </summary>
     public MessageHeader()
     {
+#if NET9_0_OR_GREATER
+        Id = Guid.CreateVersion7().ToString("N");
+#else
         Id = Guid.NewGuid().ToString("N");
+#endif
         Timestamp = DateTimeOffset.Now;
     }
 
@@ -33,10 +37,10 @@ public struct MessageHeader
     public DateTimeOffset Timestamp { get; init; } = default!;
 
     /// <summary>
-    /// The message comes with an attribute, which for RabbitMQ is IBasicProperties.<br />
-    /// 消息附带属性，对于 RabbitMQ 是 IBasicProperties.
+    /// The message comes with an attribute, which for RabbitMQ is IReadOnlyBasicProperties.<br />
+    /// 消息附带属性，对于 RabbitMQ 是 IReadOnlyBasicProperties.
     /// </summary>
-    public object? Properties { get; init; } = default!;
+    public object Properties { get; init; } = new object();
 
     /// <summary>
     /// The content format of the message,ex: "application/json".
@@ -44,22 +48,23 @@ public struct MessageHeader
     public string ContentType { get; init; } = default!;
 
     /// <summary>
-    /// Encoding of message,ex: "UTF-8".
-    /// </summary>
-    public string ContentEncoding { get; init; } = default!;
-
-    /// <summary>
-    /// The message type,ex: "order".
+    /// The object type,ex: "order".<br />
+    /// 被序列化传递的对象类型的名称.
     /// </summary>
     public string Type { get; init; } = default!;
-
-    /// <summary>
-    /// The message is sent by which user.<br />
-    /// </summary>
-    public string UserId { get; init; } = default!;
 
     /// <summary>
     /// The message is sent by which application.<br />
     /// </summary>
     public string AppId { get; init; } = default!;
+
+    /// <summary>
+    /// The exchange the message was originally published to.
+    /// </summary>
+    public string Exchange { get; init; } = default!;
+
+    /// <summary>
+    /// The routing key used when the message was originally published.
+    /// </summary>
+    public string RoutingKey { get; init; } = default!;
 }

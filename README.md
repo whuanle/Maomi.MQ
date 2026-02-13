@@ -1,4 +1,4 @@
-* # Maomi.MQ 　　　　　　　　　　　　　　　　　　　　[中文](https://github.com/whuanle/Maomi.MQ/blob/main/README.zh-cn.md)
+* # Maomi.MQ 　　　　　　　　　　　　　　　　　　　　[中文](./README.zh-cn.md)
 
   **Author:**  whuanle   
   **Documentation URL:** [https://mmq.whuanle.cn](https://mmq.whuanle.cn)    
@@ -17,6 +17,7 @@
   ### Table of Contents  
   
   * [Quick Start](https://mmq.whuanle.cn/1.start.html)  
+  * [Refactored local examples](./example/samples/README.md)
   * [Publishing Events](https://mmq.whuanle.cn/2.publisher.html)  
   * [Consumers](https://mmq.whuanle.cn/2.0.consumer.html)  
     - [Consumer Mode](https://mmq.whuanle.cn/2.1.consumer.html)  
