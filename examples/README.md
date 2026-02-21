@@ -23,6 +23,10 @@ This folder contains the rebuilt sample projects for `Maomi.MQ`.
 - `07-Transaction/Maomi.MQ.Examples.Transaction.Api`
   - Outbox + inbox barrier sample based on `Maomi.MQ.Transaction`.
   - Includes API controller for manual outbox registration in DB transaction, then publish after commit.
+- `08-LoadTest/Maomi.MQ.Examples.LoadTest.Api`
+  - Pressure test API sample with one publish endpoint.
+  - `QueueNo` selects target queue (1=json, 2=protobuf-net, 3=messagepack, 4=raw-binary).
+  - Sends 1,000,000 messages in a loop by default.
 
 ## Run
 
@@ -72,6 +76,11 @@ dotnet run --project examples/00-ScenarioHub/Maomi.MQ.Examples.ScenarioHub.Api
   - `GET /api/transaction/orders?take=20`
 - Query service status
   - `GET /api/transaction/status`
+
+## LoadTest APIs
+
+- Queue-based pressure publish
+  - `POST /api/loadtest/publish`
 
 ## Notes
 

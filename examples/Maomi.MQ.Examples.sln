@@ -35,6 +35,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "07-Transaction", "07-Transa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Maomi.MQ.Examples.Transaction.Api", "07-Transaction\Maomi.MQ.Examples.Transaction.Api\Maomi.MQ.Examples.Transaction.Api.csproj", "{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "08-LoadTest", "08-LoadTest", "{2FB8AB51-54DA-EDB5-4BF0-AA08E106A912}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Maomi.MQ.Examples.LoadTest.Api", "08-LoadTest\Maomi.MQ.Examples.LoadTest.Api\Maomi.MQ.Examples.LoadTest.Api.csproj", "{7F87207E-B018-47EC-A5AA-DEAB8F4A7EC1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -141,6 +145,18 @@ Global
 		{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176}.Release|x64.Build.0 = Release|Any CPU
 		{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176}.Release|x86.ActiveCfg = Release|Any CPU
 		{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176}.Release|x86.Build.0 = Release|Any CPU
+		{7F87207E-B018-47EC-A5AA-DEAB8F4A7EC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F87207E-B018-47EC-A5AA-DEAB8F4A7EC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F87207E-B018-47EC-A5AA-DEAB8F4A7EC1}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7F87207E-B018-47EC-A5AA-DEAB8F4A7EC1}.Debug|x64.Build.0 = Debug|Any CPU
+		{7F87207E-B018-47EC-A5AA-DEAB8F4A7EC1}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7F87207E-B018-47EC-A5AA-DEAB8F4A7EC1}.Debug|x86.Build.0 = Debug|Any CPU
+		{7F87207E-B018-47EC-A5AA-DEAB8F4A7EC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F87207E-B018-47EC-A5AA-DEAB8F4A7EC1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F87207E-B018-47EC-A5AA-DEAB8F4A7EC1}.Release|x64.ActiveCfg = Release|Any CPU
+		{7F87207E-B018-47EC-A5AA-DEAB8F4A7EC1}.Release|x64.Build.0 = Release|Any CPU
+		{7F87207E-B018-47EC-A5AA-DEAB8F4A7EC1}.Release|x86.ActiveCfg = Release|Any CPU
+		{7F87207E-B018-47EC-A5AA-DEAB8F4A7EC1}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -154,5 +170,6 @@ Global
 		{D3CB2139-9F63-44ED-B873-1197D601CA6F} = {84E8E23D-6429-E550-C340-84CF1D64F84C}
 		{5F38865D-F221-4436-AA82-61CF5F5E7254} = {A9A87FB3-D2A3-B51A-D11F-8A4772E0A6F4}
 		{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176} = {A6A7DDA6-B85B-05E6-056E-36BD1B9144A2}
+		{7F87207E-B018-47EC-A5AA-DEAB8F4A7EC1} = {2FB8AB51-54DA-EDB5-4BF0-AA08E106A912}
 	EndGlobalSection
 EndGlobal
