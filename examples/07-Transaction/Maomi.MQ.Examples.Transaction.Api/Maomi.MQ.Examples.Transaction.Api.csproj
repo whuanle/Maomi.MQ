@@ -8,7 +8,8 @@
 
   <ItemGroup>
     <PackageReference Include="MySqlConnector" />
-    <PackageReference Include="Swashbuckle.AspNetCore" />
+    <PackageReference Include="NSwag.AspNetCore" />
+    <PackageReference Include="Scalar.AspNetCore" />
   </ItemGroup>
 
   <ItemGroup>

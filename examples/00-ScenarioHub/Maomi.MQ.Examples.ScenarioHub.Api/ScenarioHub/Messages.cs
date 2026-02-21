@@ -75,3 +75,13 @@ public sealed class MetricMessage
 
     public int Value { get; set; }
 }
+
+[RouterKey("scenario.broadcast.exchange", "scenario.broadcast.notice")]
+public sealed class BroadcastNoticeMessage
+{
+    public Guid? Id { get; set; } = Guid.NewGuid();
+
+    public string Text { get; set; } = string.Empty;
+
+    public DateTimeOffset? At { get; set; } = DateTimeOffset.UtcNow;
+}

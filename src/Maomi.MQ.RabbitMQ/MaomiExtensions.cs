@@ -125,6 +125,7 @@ public static partial class MaomiExtensions
         }
 
         var duplicateQueueNames = consumerTypes
+            .Where(item => item.ConsumerOptions.IsBroadcast == false)
             .GroupBy(item => item.Queue)
             .Where(group => group.Count() > 1)
             .Select(group => group.Key)

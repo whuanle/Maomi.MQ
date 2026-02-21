@@ -360,3 +360,99 @@ public sealed class MetricConsumer : IConsumer<MetricMessage>
         return Task.FromResult(ConsumerState.Ack);
     }
 }
+
+[Consumer(
+    "scenario.broadcast.notice",
+    BindExchange = "scenario.broadcast.exchange",
+    ExchangeType = ExchangeType.Fanout,
+    RoutingKey = "scenario.broadcast.notice",
+    IsBroadcast = true,
+    Qos = 1)]
+public sealed class BroadcastConsumerAlpha1 : IConsumer<BroadcastNoticeMessage>
+{
+    private readonly ILogger<BroadcastConsumerAlpha1> _logger;
+
+    public BroadcastConsumerAlpha1(ILogger<BroadcastConsumerAlpha1> logger)
+    {
+        _logger = logger;
+    }
+
+    public Task ExecuteAsync(MessageHeader messageHeader, BroadcastNoticeMessage message)
+    {
+        _logger.LogInformation(
+            "Broadcast alpha consumed. HeaderId={HeaderId}, MessageId={MessageId}, Text={Text}",
+            messageHeader.Id,
+            message.Id,
+            message.Text);
+        return Task.CompletedTask;
+    }
+
+    public Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, BroadcastNoticeMessage message)
+    {
+        _logger.LogWarning(
+            ex,
+            "Broadcast alpha consume failed. HeaderId={HeaderId}, MessageId={MessageId}, RetryCount={RetryCount}",
+            messageHeader.Id,
+            message.Id,
+            retryCount);
+        return Task.CompletedTask;
+    }
+
+    public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, BroadcastNoticeMessage? message, Exception? ex)
+    {
+        _logger.LogError(
+            ex,
+            "Broadcast alpha fallback reached. HeaderId={HeaderId}, MessageId={MessageId}",
+            messageHeader.Id,
+            message?.Id);
+        return Task.FromResult(ConsumerState.Ack);
+    }
+}
+
+[Consumer(
+    "scenario.broadcast.notice",
+    BindExchange = "scenario.broadcast.exchange",
+    ExchangeType = ExchangeType.Fanout,
+    RoutingKey = "scenario.broadcast.notice",
+    IsBroadcast = true,
+    Qos = 1)]
+public sealed class BroadcastConsumerAlpha2 : IConsumer<BroadcastNoticeMessage>
+{
+    private readonly ILogger<BroadcastConsumerAlpha2> _logger;
+
+    public BroadcastConsumerAlpha2(ILogger<BroadcastConsumerAlpha2> logger)
+    {
+        _logger = logger;
+    }
+
+    public Task ExecuteAsync(MessageHeader messageHeader, BroadcastNoticeMessage message)
+    {
+        _logger.LogInformation(
+            "Broadcast alpha consumed. HeaderId={HeaderId}, MessageId={MessageId}, Text={Text}",
+            messageHeader.Id,
+            message.Id,
+            message.Text);
+        return Task.CompletedTask;
+    }
+
+    public Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, BroadcastNoticeMessage message)
+    {
+        _logger.LogWarning(
+            ex,
+            "Broadcast alpha consume failed. HeaderId={HeaderId}, MessageId={MessageId}, RetryCount={RetryCount}",
+            messageHeader.Id,
+            message.Id,
+            retryCount);
+        return Task.CompletedTask;
+    }
+
+    public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, BroadcastNoticeMessage? message, Exception? ex)
+    {
+        _logger.LogError(
+            ex,
+            "Broadcast alpha fallback reached. HeaderId={HeaderId}, MessageId={MessageId}",
+            messageHeader.Id,
+            message?.Id);
+        return Task.FromResult(ConsumerState.Ack);
+    }
+}

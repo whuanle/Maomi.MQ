@@ -15,7 +15,6 @@ builder.Services.AddHostedService(serviceProvider => serviceProvider.GetRequired
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddOpenApiDocument();
 
@@ -31,7 +30,7 @@ builder.Services.AddMaomiMQ(
     options.MessageSerializers = serializers => serializers.Insert(0, protobufSerializer);
     options.Rabbit = rabbit =>
     {
-        rabbit.Uri = new Uri(rabbitUri!);
+        rabbit.Uri = new Uri(uriString: rabbitUri!);
     };
 },
 [typeof(Program).Assembly]);

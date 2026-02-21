@@ -35,6 +35,11 @@ public class ConsumerType : IComparable<ConsumerType>
     /// <inheritdoc/>
     public override int GetHashCode()
     {
+        if (ConsumerOptions.IsBroadcast)
+        {
+            return HashCode.Combine(Queue, Consumer.Name.ToLower());
+        }
+
         return HashCode.Combine(Queue);
     }
 
@@ -48,6 +53,11 @@ public class ConsumerType : IComparable<ConsumerType>
 
         if (obj is ConsumerType consumerType)
         {
+            if (this.ConsumerOptions.IsBroadcast && consumerType.ConsumerOptions.IsBroadcast)
+            {
+                return consumerType.Queue == this.Queue && consumerType.Consumer == this.Consumer;
+            }
+
             return consumerType.Queue == this.Queue;
         }
 
@@ -57,6 +67,22 @@ public class ConsumerType : IComparable<ConsumerType>
     /// <inheritdoc/>
     public int CompareTo(ConsumerType? other)
     {
+        if (other == null)
+        {
+            return 1;
+        }
+
+        if (other.ConsumerOptions.IsBroadcast && this.ConsumerOptions.IsBroadcast)
+        {
+            var queueComparison = this.Queue.CompareTo(other.Queue);
+            if (queueComparison != 0)
+            {
+                return queueComparison;
+            }
+
+            return this.Consumer.Name.ToLower().CompareTo(other.Consumer.Name.ToLower());
+        }
+
         return this.Queue.CompareTo(other?.Queue);
     }
 }

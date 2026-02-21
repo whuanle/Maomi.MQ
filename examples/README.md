@@ -49,6 +49,8 @@ dotnet run --project examples/00-ScenarioHub/Maomi.MQ.Examples.ScenarioHub.Api
   - `POST /api/scenario/quickstart/publish`
 - EventBus
   - `POST /api/scenario/eventbus/publish`
+- Broadcast
+  - `POST /api/scenario/broadcast/publish`
 - Dynamic consumer
   - `POST /api/scenario/dynamic/start`
   - `DELETE /api/scenario/dynamic/stop/{queue}`
@@ -75,4 +77,4 @@ dotnet run --project examples/00-ScenarioHub/Maomi.MQ.Examples.ScenarioHub.Api
 
 - Sample project names are unified under `Maomi.MQ.Examples.*`.
 - Projects target `net8.0` and rely on central package management.
-- Swagger is enabled for API samples in Development environment.
+- Scalar API reference is enabled for API samples in Development environment.
