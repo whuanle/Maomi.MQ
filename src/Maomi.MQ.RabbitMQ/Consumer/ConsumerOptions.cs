@@ -43,7 +43,7 @@ public class ConsumerOptions : IConsumerOptions
     public string? RoutingKey { get; set; }
 
     /// <inheritdoc />
-    public bool? IsBroadcast { get; set; }
+    public bool IsBroadcast { get; set; }
 
     /// <inheritdoc />
     public IConsumerOptions Clone()

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MySqlConnector" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Maomi.MQ.RabbitMQ\Maomi.MQ.RabbitMQ.csproj" />
+    <ProjectReference Include="..\..\..\src\transactions\Maomi.MQ.Transaction\Maomi.MQ.Transaction.csproj" />
+    <ProjectReference Include="..\..\..\src\transactions\Maomi.MQ.Transaction.Mysql\Maomi.MQ.Transaction.Mysql.csproj" />
+  </ItemGroup>
+
+</Project>

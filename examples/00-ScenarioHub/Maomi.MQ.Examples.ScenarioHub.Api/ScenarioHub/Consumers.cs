@@ -1,36 +1,48 @@
 using Maomi.MQ;
 using Maomi.MQ.Attributes;
 using Maomi.MQ.EventBus;
-using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace Maomi.MQ.Samples.ScenarioHub;
 
 [Consumer("scenario.quickstart")]
 public sealed class QuickStartConsumer : IConsumer<QuickStartMessage>
 {
-    private readonly ScenarioRuntimeState _state;
+    private readonly ILogger<QuickStartConsumer> _logger;
 
-    public QuickStartConsumer(ScenarioRuntimeState state)
+    public QuickStartConsumer(ILogger<QuickStartConsumer> logger)
     {
-        _state = state;
+        _logger = logger;
     }
 
     public Task ExecuteAsync(MessageHeader messageHeader, QuickStartMessage message)
     {
-        Interlocked.Increment(ref _state.QuickStartConsumed);
-        _state.AddLog($"quickstart consumed: {message.Id} text={message.Text}");
+        _logger.LogInformation(
+            "QuickStart consumed. HeaderId={HeaderId}, MessageId={MessageId}, Text={Text}",
+            messageHeader.Id,
+            message.Id,
+            message.Text);
         return Task.CompletedTask;
     }
 
     public Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, QuickStartMessage message)
     {
-        _state.AddLog($"quickstart failed: {message.Id} retry={retryCount} ex={ex.Message}");
+        _logger.LogWarning(
+            ex,
+            "QuickStart consume failed. HeaderId={HeaderId}, MessageId={MessageId}, RetryCount={RetryCount}",
+            messageHeader.Id,
+            message.Id,
+            retryCount);
         return Task.CompletedTask;
     }
 
     public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, QuickStartMessage? message, Exception? ex)
     {
-        _state.AddLog($"quickstart fallback: {message?.Id} ex={ex?.Message}");
+        _logger.LogError(
+            ex,
+            "QuickStart fallback reached. HeaderId={HeaderId}, MessageId={MessageId}",
+            messageHeader.Id,
+            message?.Id);
         return Task.FromResult(ConsumerState.Ack);
     }
 }
@@ -38,30 +50,44 @@ public sealed class QuickStartConsumer : IConsumer<QuickStartMessage>
 [Consumer("scenario.eventbus.order")]
 public sealed class OrderCreatedMiddleware : IEventMiddleware<OrderCreatedEvent>
 {
-    private readonly ScenarioRuntimeState _state;
+    private readonly ILogger<OrderCreatedMiddleware> _logger;
 
-    public OrderCreatedMiddleware(ScenarioRuntimeState state)
+    public OrderCreatedMiddleware(ILogger<OrderCreatedMiddleware> logger)
     {
-        _state = state;
+        _logger = logger;
     }
 
     public async Task ExecuteAsync(MessageHeader messageHeader, OrderCreatedEvent message, EventHandlerDelegate<OrderCreatedEvent> next)
     {
-        Interlocked.Increment(ref _state.EventBusConsumed);
-        _state.AddLog($"eventbus middleware start: {message.OrderId}");
+        _logger.LogInformation(
+            "EventBus middleware start. HeaderId={HeaderId}, OrderId={OrderId}",
+            messageHeader.Id,
+            message.OrderId);
         await next(messageHeader, message, CancellationToken.None);
-        _state.AddLog($"eventbus middleware end: {message.OrderId}");
+        _logger.LogInformation(
+            "EventBus middleware end. HeaderId={HeaderId}, OrderId={OrderId}",
+            messageHeader.Id,
+            message.OrderId);
     }
 
     public Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, OrderCreatedEvent? message)
     {
-        _state.AddLog($"eventbus middleware failed: {message?.OrderId} retry={retryCount} ex={ex.Message}");
+        _logger.LogWarning(
+            ex,
+            "EventBus middleware failed. HeaderId={HeaderId}, OrderId={OrderId}, RetryCount={RetryCount}",
+            messageHeader.Id,
+            message?.OrderId,
+            retryCount);
         return Task.CompletedTask;
     }
 
     public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, OrderCreatedEvent? message, Exception? ex)
     {
-        _state.AddLog($"eventbus middleware fallback: {message?.OrderId} ex={ex?.Message}");
+        _logger.LogError(
+            ex,
+            "EventBus middleware fallback reached. HeaderId={HeaderId}, OrderId={OrderId}",
+            messageHeader.Id,
+            message?.OrderId);
         return Task.FromResult(ConsumerState.Ack);
     }
 }
@@ -69,22 +95,22 @@ public sealed class OrderCreatedMiddleware : IEventMiddleware<OrderCreatedEvent>
 [EventOrder(1)]
 public sealed class ReserveInventoryHandler : IEventHandler<OrderCreatedEvent>
 {
-    private readonly ScenarioRuntimeState _state;
+    private readonly ILogger<ReserveInventoryHandler> _logger;
 
-    public ReserveInventoryHandler(ScenarioRuntimeState state)
+    public ReserveInventoryHandler(ILogger<ReserveInventoryHandler> logger)
     {
-        _state = state;
+        _logger = logger;
     }
 
     public Task ExecuteAsync(OrderCreatedEvent message, CancellationToken cancellationToken)
     {
-        _state.AddLog($"eventbus handler[1] reserve inventory: {message.OrderId}");
+        _logger.LogInformation("EventBus handler[1] reserve inventory. OrderId={OrderId}", message.OrderId);
         return Task.CompletedTask;
     }
 
     public Task CancelAsync(OrderCreatedEvent message, CancellationToken cancellationToken)
     {
-        _state.AddLog($"eventbus handler[1] cancel inventory: {message.OrderId}");
+        _logger.LogInformation("EventBus handler[1] cancel inventory. OrderId={OrderId}", message.OrderId);
         return Task.CompletedTask;
     }
 }
@@ -92,22 +118,25 @@ public sealed class ReserveInventoryHandler : IEventHandler<OrderCreatedEvent>
 [EventOrder(2)]
 public sealed class CreateBillHandler : IEventHandler<OrderCreatedEvent>
 {
-    private readonly ScenarioRuntimeState _state;
+    private readonly ILogger<CreateBillHandler> _logger;
 
-    public CreateBillHandler(ScenarioRuntimeState state)
+    public CreateBillHandler(ILogger<CreateBillHandler> logger)
     {
-        _state = state;
+        _logger = logger;
     }
 
     public Task ExecuteAsync(OrderCreatedEvent message, CancellationToken cancellationToken)
     {
-        _state.AddLog($"eventbus handler[2] create bill: {message.OrderId} amount={message.Amount}");
+        _logger.LogInformation(
+            "EventBus handler[2] create bill. OrderId={OrderId}, Amount={Amount}",
+            message.OrderId,
+            message.Amount);
         return Task.CompletedTask;
     }
 
     public Task CancelAsync(OrderCreatedEvent message, CancellationToken cancellationToken)
     {
-        _state.AddLog($"eventbus handler[2] cancel bill: {message.OrderId}");
+        _logger.LogInformation("EventBus handler[2] cancel bill. OrderId={OrderId}", message.OrderId);
         return Task.CompletedTask;
     }
 }
@@ -115,22 +144,25 @@ public sealed class CreateBillHandler : IEventHandler<OrderCreatedEvent>
 [EventOrder(3)]
 public sealed class NotifyCustomerHandler : IEventHandler<OrderCreatedEvent>
 {
-    private readonly ScenarioRuntimeState _state;
+    private readonly ILogger<NotifyCustomerHandler> _logger;
 
-    public NotifyCustomerHandler(ScenarioRuntimeState state)
+    public NotifyCustomerHandler(ILogger<NotifyCustomerHandler> logger)
     {
-        _state = state;
+        _logger = logger;
     }
 
     public Task ExecuteAsync(OrderCreatedEvent message, CancellationToken cancellationToken)
     {
-        _state.AddLog($"eventbus handler[3] notify customer: {message.OrderId} customer={message.Customer}");
+        _logger.LogInformation(
+            "EventBus handler[3] notify customer. OrderId={OrderId}, Customer={Customer}",
+            message.OrderId,
+            message.Customer);
         return Task.CompletedTask;
     }
 
     public Task CancelAsync(OrderCreatedEvent message, CancellationToken cancellationToken)
     {
-        _state.AddLog($"eventbus handler[3] cancel notify: {message.OrderId}");
+        _logger.LogInformation("EventBus handler[3] cancel notify. OrderId={OrderId}", message.OrderId);
         return Task.CompletedTask;
     }
 }
@@ -143,38 +175,47 @@ public sealed class NotifyCustomerHandler : IEventHandler<OrderCreatedEvent>
     DeadRoutingKey = "scenario.retry.dead")]
 public sealed class RetryConsumer : IConsumer<RetryMessage>
 {
-    private readonly ScenarioRuntimeState _state;
+    private readonly ILogger<RetryConsumer> _logger;
     private readonly IMessagePublisher _publisher;
 
-    public RetryConsumer(ScenarioRuntimeState state, IMessagePublisher publisher)
+    public RetryConsumer(ILogger<RetryConsumer> logger, IMessagePublisher publisher)
     {
-        _state = state;
+        _logger = logger;
         _publisher = publisher;
     }
 
     public Task ExecuteAsync(MessageHeader messageHeader, RetryMessage message)
     {
-        Interlocked.Increment(ref _state.RetryConsumed);
-
         if (message.ForceFail)
         {
             throw new InvalidOperationException("forced failure for retry demo");
         }
 
-        _state.AddLog($"retry consumed success: {message.Id}");
+        _logger.LogInformation(
+            "Retry consumed success. HeaderId={HeaderId}, MessageId={MessageId}",
+            messageHeader.Id,
+            message.Id);
         return Task.CompletedTask;
     }
 
     public Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, RetryMessage message)
     {
-        Interlocked.Increment(ref _state.RetryFailed);
-        _state.AddLog($"retry failed: {message.Id} retry={retryCount} ex={ex.Message}");
+        _logger.LogWarning(
+            ex,
+            "Retry consume failed. HeaderId={HeaderId}, MessageId={MessageId}, RetryCount={RetryCount}",
+            messageHeader.Id,
+            message.Id,
+            retryCount);
         return Task.CompletedTask;
     }
 
     public async Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, RetryMessage? message, Exception? ex)
     {
-        _state.AddLog($"retry fallback: {message?.Id} ex={ex?.Message}");
+        _logger.LogError(
+            ex,
+            "Retry fallback reached. HeaderId={HeaderId}, MessageId={MessageId}",
+            messageHeader.Id,
+            message?.Id);
 
         if (message != null)
         {
@@ -196,29 +237,41 @@ public sealed class RetryConsumer : IConsumer<RetryMessage>
 [Consumer("scenario.retry.dead", Qos = 1)]
 public sealed class RetryDeadConsumer : IConsumer<RetryDeadMessage>
 {
-    private readonly ScenarioRuntimeState _state;
+    private readonly ILogger<RetryDeadConsumer> _logger;
 
-    public RetryDeadConsumer(ScenarioRuntimeState state)
+    public RetryDeadConsumer(ILogger<RetryDeadConsumer> logger)
     {
-        _state = state;
+        _logger = logger;
     }
 
     public Task ExecuteAsync(MessageHeader messageHeader, RetryDeadMessage message)
     {
-        Interlocked.Increment(ref _state.DeadLetterConsumed);
-        _state.AddLog($"dead-letter consumed: {message.Id} at={message.DeadAt:O}");
+        _logger.LogInformation(
+            "Dead-letter consumed. HeaderId={HeaderId}, MessageId={MessageId}, DeadAt={DeadAt}",
+            messageHeader.Id,
+            message.Id,
+            message.DeadAt);
         return Task.CompletedTask;
     }
 
     public Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, RetryDeadMessage message)
     {
-        _state.AddLog($"dead-letter failed: {message.Id} retry={retryCount} ex={ex.Message}");
+        _logger.LogWarning(
+            ex,
+            "Dead-letter consume failed. HeaderId={HeaderId}, MessageId={MessageId}, RetryCount={RetryCount}",
+            messageHeader.Id,
+            message.Id,
+            retryCount);
         return Task.CompletedTask;
     }
 
     public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, RetryDeadMessage? message, Exception? ex)
     {
-        _state.AddLog($"dead-letter fallback: {message?.Id} ex={ex?.Message}");
+        _logger.LogError(
+            ex,
+            "Dead-letter fallback reached. HeaderId={HeaderId}, MessageId={MessageId}",
+            messageHeader.Id,
+            message?.Id);
         return Task.FromResult(ConsumerState.Ack);
     }
 }
@@ -226,29 +279,42 @@ public sealed class RetryDeadConsumer : IConsumer<RetryDeadMessage>
 [Consumer("scenario.protobuf.person", Qos = 5)]
 public sealed class PersonMessageConsumer : IConsumer<PersonMessage>
 {
-    private readonly ScenarioRuntimeState _state;
+    private readonly ILogger<PersonMessageConsumer> _logger;
 
-    public PersonMessageConsumer(ScenarioRuntimeState state)
+    public PersonMessageConsumer(ILogger<PersonMessageConsumer> logger)
     {
-        _state = state;
+        _logger = logger;
     }
 
     public Task ExecuteAsync(MessageHeader messageHeader, PersonMessage message)
     {
-        Interlocked.Increment(ref _state.ProtobufConsumed);
-        _state.AddLog($"protobuf consumed: {message.Id} name={message.Name} age={message.Age}");
+        _logger.LogInformation(
+            "Protobuf consumed. HeaderId={HeaderId}, MessageId={MessageId}, Name={Name}, Age={Age}",
+            messageHeader.Id,
+            message.Id,
+            message.Name,
+            message.Age);
         return Task.CompletedTask;
     }
 
     public Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, PersonMessage message)
     {
-        _state.AddLog($"protobuf failed: {message.Id} retry={retryCount} ex={ex.Message}");
+        _logger.LogWarning(
+            ex,
+            "Protobuf consume failed. HeaderId={HeaderId}, MessageId={MessageId}, RetryCount={RetryCount}",
+            messageHeader.Id,
+            message.Id,
+            retryCount);
         return Task.CompletedTask;
     }
 
     public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, PersonMessage? message, Exception? ex)
     {
-        _state.AddLog($"protobuf fallback: {message?.Id} ex={ex?.Message}");
+        _logger.LogError(
+            ex,
+            "Protobuf fallback reached. HeaderId={HeaderId}, MessageId={MessageId}",
+            messageHeader.Id,
+            message?.Id);
         return Task.FromResult(ConsumerState.Ack);
     }
 }
@@ -256,28 +322,41 @@ public sealed class PersonMessageConsumer : IConsumer<PersonMessage>
 [Consumer("scenario.batch.metrics", Qos = 20)]
 public sealed class MetricConsumer : IConsumer<MetricMessage>
 {
-    private readonly ScenarioRuntimeState _state;
+    private readonly ILogger<MetricConsumer> _logger;
 
-    public MetricConsumer(ScenarioRuntimeState state)
+    public MetricConsumer(ILogger<MetricConsumer> logger)
     {
-        _state = state;
+        _logger = logger;
     }
 
     public Task ExecuteAsync(MessageHeader messageHeader, MetricMessage message)
     {
-        Interlocked.Increment(ref _state.BatchConsumed);
+        _logger.LogInformation(
+            "Batch metric consumed. HeaderId={HeaderId}, MessageId={MessageId}, Value={Value}",
+            messageHeader.Id,
+            message.Id,
+            message.Value);
         return Task.CompletedTask;
     }
 
     public Task FaildAsync(MessageHeader messageHeader, Exception ex, int retryCount, MetricMessage message)
     {
-        _state.AddLog($"batch metric failed: {message.Id} retry={retryCount} ex={ex.Message}");
+        _logger.LogWarning(
+            ex,
+            "Batch metric consume failed. HeaderId={HeaderId}, MessageId={MessageId}, RetryCount={RetryCount}",
+            messageHeader.Id,
+            message.Id,
+            retryCount);
         return Task.CompletedTask;
     }
 
     public Task<ConsumerState> FallbackAsync(MessageHeader messageHeader, MetricMessage? message, Exception? ex)
     {
-        _state.AddLog($"batch metric fallback: {message?.Id} ex={ex?.Message}");
+        _logger.LogError(
+            ex,
+            "Batch metric fallback reached. HeaderId={HeaderId}, MessageId={MessageId}",
+            messageHeader.Id,
+            message?.Id);
         return Task.FromResult(ConsumerState.Ack);
     }
 }

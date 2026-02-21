@@ -8,12 +8,12 @@ namespace Maomi.MQ.Samples.ScenarioHub.Controllers;
 public sealed class RetryDeadLetterController : ControllerBase
 {
     private readonly IMessagePublisher _publisher;
-    private readonly ScenarioRuntimeState _state;
+    private readonly ILogger<RetryDeadLetterController> _logger;
 
-    public RetryDeadLetterController(IMessagePublisher publisher, ScenarioRuntimeState state)
+    public RetryDeadLetterController(IMessagePublisher publisher, ILogger<RetryDeadLetterController> logger)
     {
         _publisher = publisher;
-        _state = state;
+        _logger = logger;
     }
 
     [HttpPost("publish")]
@@ -26,7 +26,10 @@ public sealed class RetryDeadLetterController : ControllerBase
         };
 
         await _publisher.AutoPublishAsync(message);
-        _state.AddLog($"retry published: {message.Id} forceFail={message.ForceFail}");
+        _logger.LogInformation(
+            "Retry published. MessageId={MessageId}, ForceFail={ForceFail}",
+            message.Id,
+            message.ForceFail);
         return Results.Ok(message);
     }
 }

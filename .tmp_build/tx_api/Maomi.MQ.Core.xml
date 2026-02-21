@@ -1,0 +1,317 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Maomi.MQ.Core</name>
+    </assembly>
+    <members>
+        <member name="T:Maomi.MQ.ConsumerState">
+            <summary>
+            Consumer state.<br />
+            After receiving RabbitMQ messages, ACK, NACK, and put back to the queue are determined by status enumeration.<br />
+            消费者状态.<br />
+            接受 RabbitMQ 消息后，通过状态枚举确定进行 ACK、NACK 以及放回队列等.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.ConsumerState.Ack">
+            <summary>
+            ACK.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.ConsumerState.Nack">
+            <summary>
+            Immediately NACK and use the default configuration to set whether to put the message back on the queue.<br />
+            立即 NACK，并使用默认配置设置是否将消息放回队列.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.ConsumerState.NackAndRequeue">
+            <summary>
+            Immediately NACK and put the message back on the queue.<br />
+            立即 NACK，并将消息放回队列.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.ConsumerState.NackAndNoRequeue">
+            <summary>
+            Immediately NACK, and the message will be removed from the server queue.<br />
+            立即 NACK，消息将会从服务器队列中移除.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.ConsumerState.Exception">
+            <summary>
+            Exception.<br />
+            出现异常情况.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Default.DefaultIdProvider">
+            <summary>
+            Snowflake id generator.<br />
+            雪花 id 生成器.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Default.DefaultIdProvider.#ctor(System.UInt16)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Default.DefaultIdProvider"/> class.
+            </summary>
+            <param name="workId"></param>
+        </member>
+        <member name="M:Maomi.MQ.Default.DefaultIdProvider.NextId">
+            <inheritdoc />
+        </member>
+        <member name="T:Maomi.MQ.Default.DefaultRetryPolicyFactory">
+            <summary>
+            Default retry policy.<br />
+            默认的重试策略提供器.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Default.DefaultRetryPolicyFactory.#ctor(Microsoft.Extensions.Logging.ILogger{Maomi.MQ.Default.DefaultRetryPolicyFactory})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Default.DefaultRetryPolicyFactory"/> class.
+            </summary>
+            <param name="logger"></param>
+        </member>
+        <member name="M:Maomi.MQ.Default.DefaultRetryPolicyFactory.CreatePolicy(System.String,System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Default.DefaultRetryPolicyFactory.FaildAsync(System.String,System.Exception,System.TimeSpan,System.Int32,Polly.Context)">
+            <summary>
+            Executed when retry fails.You can record the retry history here.
+            </summary>
+            <param name="queue"></param>
+            <param name="ex"></param>
+            <param name="timeSpan"></param>
+            <param name="retryCount"></param>
+            <param name="context"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="T:Maomi.MQ.Defaults.DefaultJsonMessageSerializer">
+            <summary>
+            Default json serializer.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Defaults.DefaultJsonMessageSerializer.ContentType">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Defaults.DefaultJsonMessageSerializer.Deserialize``1(System.ReadOnlySpan{System.Byte})">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Defaults.DefaultJsonMessageSerializer.Serializer``1(``0)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Defaults.DefaultJsonMessageSerializer.SerializerVerify``1(``0)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Defaults.DefaultJsonMessageSerializer.SerializerVerify``1">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.Diagnostics.DiagnosticName">
+            <summary>
+            Diagnostic name.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.EmptyConsumer`1">
+            <summary>
+            Empty consumer, only the definition is created, no consumption is performed.<br />
+            空消费者，只创建定义，不执行消费.
+            </summary>
+            <typeparam name="TMessage">Event model.</typeparam>
+        </member>
+        <member name="M:Maomi.MQ.EmptyConsumer`1.ExecuteAsync(Maomi.MQ.MessageHeader,`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.EmptyConsumer`1.FaildAsync(Maomi.MQ.MessageHeader,System.Exception,System.Int32,`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.EmptyConsumer`1.FallbackAsync(Maomi.MQ.MessageHeader,`0,System.Exception)">
+            <inheritdoc />
+        </member>
+        <member name="T:Maomi.MQ.MaomiCoreExtensions">
+            <summary>
+            Extensnions.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.MaomiCoreExtensions.AddMaomiMQCore(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Nullable{System.UInt16})">
+            <summary>
+            Add base services.<br />
+            添加基础服务.
+            </summary>
+            <param name="services"></param>
+            <param name="workId"></param>
+            <returns><see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.</returns>
+        </member>
+        <member name="T:Maomi.MQ.IBasicMessageHandler`1">
+            <summary>
+            It is only used to define the message and has no meaning at all.
+            </summary>
+            <typeparam name="TMessage">Event model.</typeparam>
+        </member>
+        <member name="M:Maomi.MQ.IBasicMessageHandler`1.ExecuteAsync(Maomi.MQ.MessageHeader,`0)">
+            <summary>
+            The received message is processed when it has been deserialized correctly.<br />
+            当消息被正确反序列化后，处理接收到的消息.
+            </summary>
+            <param name="messageHeader">Message identification.<br />消息标识.</param>
+            <param name="message">Message body.<br />消息内容.</param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.IBasicMessageHandler`1.FaildAsync(Maomi.MQ.MessageHeader,System.Exception,System.Int32,`0)">
+            <summary>
+            When an exception occurs to ExecuteAsync, execute it immediately.<br />
+            当 ExecuteAsync 出现异常后，立即执行.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="ex">An anomaly occurs when consuming.<br />消费时出现的异常.</param>
+            <param name="retryCount">Current retry times.<br />当前重试次数.</param>
+            <param name="message"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.IBasicMessageHandler`1.FallbackAsync(Maomi.MQ.MessageHeader,`0,System.Exception)">
+            <summary>
+            When all retries fail, or an exception occurs that the ExecuteAsync method cannot be accessed.<br />
+            当所有重试均失败，或出现不能进入 ExecuteAsync 方法的异常.
+            </summary>
+            <param name="messageHeader">Message identification.<br />消息标识.</param>
+            <param name="message">Message body.<br />消息内容.</param>
+            <param name="ex"></param>
+            <returns>Determine how the message will be handled.</returns>
+        </member>
+        <member name="T:Maomi.MQ.IConsumer`1">
+            <summary>
+            Consumer abstract interface.
+            </summary>
+            <typeparam name="TMessage">Event model.</typeparam>
+        </member>
+        <member name="T:Maomi.MQ.IEmptyConsumer`1">
+            <summary>
+            Empty consumer, only the definition is created, no consumption is performed.<br />
+            空消费者，只创建定义，不执行消费.
+            </summary>
+            <typeparam name="TMessage">Event model.</typeparam>
+        </member>
+        <member name="T:Maomi.MQ.IIdProvider">
+            <summary>
+            Snowflake id generator.<br />
+            雪花 id 生成器.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.IIdProvider.NextId">
+            <summary>
+            Get snowflake id.<br />
+            获取雪花 id.
+            </summary>
+            <returns>id.</returns>
+        </member>
+        <member name="T:Maomi.MQ.IMessageSerializer">
+            <summary>
+            Serializer.<br />
+            序列化消息.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.IMessageSerializer.ContentType">
+            <summary>
+            MIME content type.<br />
+            消息的编码类型.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.IMessageSerializer.SerializerVerify``1(``0)">
+            <summary>
+            Verify whether this type of serialization should be used. <br />
+            验证类型是否该使用此序列化器.
+            </summary>
+            <typeparam name="TObject">Type.</typeparam>
+            <param name="obj">Object.</param>
+            <returns><see cref="T:System.Byte"/>[].</returns>
+        </member>
+        <member name="M:Maomi.MQ.IMessageSerializer.SerializerVerify``1">
+            <summary>
+            Verify whether this type of serialization should be used. <br />
+            验证类型是否该使用此序列化器.
+            </summary>
+            <typeparam name="TObject">Type.</typeparam>
+            <returns><see cref="T:System.Byte"/>[].</returns>
+        </member>
+        <member name="M:Maomi.MQ.IMessageSerializer.Serializer``1(``0)">
+            <summary>
+            Serializer.
+            </summary>
+            <typeparam name="TObject">Type.</typeparam>
+            <param name="obj">Object.</param>
+            <returns><see cref="T:System.Byte"/>[].</returns>
+        </member>
+        <member name="M:Maomi.MQ.IMessageSerializer.Deserialize``1(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Deserialize.
+            </summary>
+            <typeparam name="TObject">Type.</typeparam>
+            <param name="bytes"><see cref="T:System.Byte"/>[].</param>
+            <returns>TObject.</returns>
+        </member>
+        <member name="T:Maomi.MQ.IRetryPolicyFactory">
+            <summary>
+            Retry policy factory.<br />
+            重试策略工厂.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.IRetryPolicyFactory.CreatePolicy(System.String,System.String)">
+            <summary>
+            Create retry policy.<br />
+            创建策略.
+            </summary>
+            <param name="queue">Queue name.<br />队列名称.</param>
+            <param name="id">Event id.</param>
+            <returns><see cref="T:System.Threading.Tasks.Task`1"/>.</returns>
+        </member>
+        <member name="T:Maomi.MQ.MessageHeader">
+            <summary>
+            Message identification.<br />
+            消息标识.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.MessageHeader.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.MessageHeader"/> struct.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.MessageHeader.Id">
+            <summary>
+            Message id.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.MessageHeader.Timestamp">
+            <summary>
+            The time when the message was created.<br />
+            消息被创建的时间.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.MessageHeader.Properties">
+            <summary>
+            The message comes with an attribute, which for RabbitMQ is IReadOnlyBasicProperties.<br />
+            消息附带属性，对于 RabbitMQ 是 IReadOnlyBasicProperties.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.MessageHeader.ContentType">
+            <summary>
+            The content format of the message,ex: "application/json".
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.MessageHeader.Type">
+            <summary>
+            The object type,ex: "order".<br />
+            被序列化传递的对象类型的名称.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.MessageHeader.AppId">
+            <summary>
+            The message is sent by which application.<br />
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.MessageHeader.Exchange">
+            <summary>
+            The exchange the message was originally published to.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.MessageHeader.RoutingKey">
+            <summary>
+            The routing key used when the message was originally published.
+            </summary>
+        </member>
+    </members>
+</doc>

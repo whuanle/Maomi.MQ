@@ -40,6 +40,8 @@ public static class Extensions
         services.AddSingleton<IMQTransactionOptions>(transactionOptions);
         services.AddScoped<IDatabaseProvider>(DbProviderResolver.Resolve);
         services.AddScoped<ITransactionMessageSerializer, TransactionMessageSerializer>();
+        services.AddScoped<ITransactionOutboxService, TransactionOutboxService>();
+        services.AddScoped<ITransactionBarrierService, TransactionBarrierService>();
         services.AddHostedService<PublisherBackgroundService>();
 
         return services;

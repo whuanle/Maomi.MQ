@@ -31,6 +31,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "00-ScenarioHub", "00-Scenar
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Maomi.MQ.Examples.ScenarioHub.Api", "00-ScenarioHub\Maomi.MQ.Examples.ScenarioHub.Api\Maomi.MQ.Examples.ScenarioHub.Api.csproj", "{5F38865D-F221-4436-AA82-61CF5F5E7254}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "07-Transaction", "07-Transaction", "{A6A7DDA6-B85B-05E6-056E-36BD1B9144A2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Maomi.MQ.Examples.Transaction.Api", "07-Transaction\Maomi.MQ.Examples.Transaction.Api\Maomi.MQ.Examples.Transaction.Api.csproj", "{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -125,6 +129,18 @@ Global
 		{5F38865D-F221-4436-AA82-61CF5F5E7254}.Release|x64.Build.0 = Release|Any CPU
 		{5F38865D-F221-4436-AA82-61CF5F5E7254}.Release|x86.ActiveCfg = Release|Any CPU
 		{5F38865D-F221-4436-AA82-61CF5F5E7254}.Release|x86.Build.0 = Release|Any CPU
+		{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176}.Debug|x64.Build.0 = Debug|Any CPU
+		{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176}.Debug|x86.Build.0 = Debug|Any CPU
+		{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176}.Release|x64.ActiveCfg = Release|Any CPU
+		{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176}.Release|x64.Build.0 = Release|Any CPU
+		{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176}.Release|x86.ActiveCfg = Release|Any CPU
+		{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -137,5 +153,6 @@ Global
 		{037BEF06-56EF-43F2-9B60-0EC87A2301CD} = {F7E9E49F-C0DB-9A8F-BCCF-527C0653C118}
 		{D3CB2139-9F63-44ED-B873-1197D601CA6F} = {84E8E23D-6429-E550-C340-84CF1D64F84C}
 		{5F38865D-F221-4436-AA82-61CF5F5E7254} = {A9A87FB3-D2A3-B51A-D11F-8A4772E0A6F4}
+		{A2E216F3-DF29-4CF5-8FE2-0BEA7E891176} = {A6A7DDA6-B85B-05E6-056E-36BD1B9144A2}
 	EndGlobalSection
 EndGlobal

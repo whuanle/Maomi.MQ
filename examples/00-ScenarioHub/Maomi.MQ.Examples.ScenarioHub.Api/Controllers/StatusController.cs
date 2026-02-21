@@ -6,42 +6,32 @@ namespace Maomi.MQ.Samples.ScenarioHub.Controllers;
 [Route("api/scenario/status")]
 public sealed class StatusController : ControllerBase
 {
-    private readonly ScenarioRuntimeState _state;
+    private static readonly DateTimeOffset StartedAt = DateTimeOffset.UtcNow;
+    private readonly BatchPublisherBackgroundService _batchWorker;
+    private readonly ILogger<StatusController> _logger;
 
-    public StatusController(ScenarioRuntimeState state)
+    public StatusController(BatchPublisherBackgroundService batchWorker, ILogger<StatusController> logger)
     {
-        _state = state;
+        _batchWorker = batchWorker;
+        _logger = logger;
     }
 
     [HttpGet]
     public IResult GetStatus()
     {
-        return Results.Ok(_state.Snapshot());
+        return Results.Ok(new
+        {
+            StartedAt,
+            Now = DateTimeOffset.UtcNow,
+            BatchPublisherEnabled = _batchWorker.IsEnabled
+        });
     }
 
     [HttpPost("reset")]
     public IResult Reset()
     {
-        _state.QuickStartConsumed = 0;
-        _state.EventBusConsumed = 0;
-        _state.DynamicConsumed = 0;
-        _state.RetryConsumed = 0;
-        _state.RetryFailed = 0;
-        _state.DeadLetterConsumed = 0;
-        _state.ProtobufConsumed = 0;
-        _state.BatchPublished = 0;
-        _state.BatchConsumed = 0;
-        _state.DynamicStarted = 0;
-        _state.DynamicStopped = 0;
-        _state.BatchPublisherEnabled = false;
-
-        _state.DynamicConsumerTags.Clear();
-
-        while (_state.Logs.TryDequeue(out _))
-        {
-        }
-
-        _state.AddLog("state reset");
-        return Results.Ok(new { Reset = true });
+        _batchWorker.SetEnabled(false);
+        _logger.LogInformation("Scenario status reset requested.");
+        return Results.Ok(new { Reset = true, BatchPublisherEnabled = _batchWorker.IsEnabled });
     }
 }

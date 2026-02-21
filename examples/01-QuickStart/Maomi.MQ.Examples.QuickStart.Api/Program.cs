@@ -20,13 +20,7 @@ builder.Services.AddMaomiMQ(
         options.AppName = "quickstart-api";
         options.Rabbit = rabbit =>
         {
-            rabbit.HostName = builder.Configuration["RabbitMQ:Host"]
-                ?? Environment.GetEnvironmentVariable("RABBITMQ")
-                ?? "127.0.0.1";
-            rabbit.Port = builder.Configuration.GetValue<int?>("RabbitMQ:Port") ?? 5672;
-            rabbit.UserName = builder.Configuration["RabbitMQ:Username"] ?? "guest";
-            rabbit.Password = builder.Configuration["RabbitMQ:Password"] ?? "guest";
-            rabbit.ClientProvidedName = Assembly.GetExecutingAssembly().GetName().Name;
+            rabbit.Uri = new Uri(builder.Configuration["RabbitMQ"]!);
         };
     },
     [typeof(Program).Assembly]);

@@ -20,6 +20,9 @@ This folder contains the rebuilt sample projects for `Maomi.MQ`.
   - `protobuf-net` serializer sample with producer + consumer.
 - `06-BatchPublisher/Maomi.MQ.Examples.BatchPublisher.Worker`
   - New batch publishing worker sample (high-frequency producer scenario).
+- `07-Transaction/Maomi.MQ.Examples.Transaction.Api`
+  - Outbox + inbox barrier sample based on `Maomi.MQ.Transaction`.
+  - Includes API controller for manual outbox registration in DB transaction, then publish after commit.
 
 ## Run
 
@@ -28,13 +31,13 @@ This folder contains the rebuilt sample projects for `Maomi.MQ`.
 3. Build all samples:
 
 ```bash
-dotnet build example/samples/Maomi.MQ.Examples.sln
+dotnet build examples/Maomi.MQ.Examples.sln
 ```
 
 4. Run one sample:
 
 ```bash
-dotnet run --project example/samples/00-ScenarioHub/Maomi.MQ.Examples.ScenarioHub.Api
+dotnet run --project examples/00-ScenarioHub/Maomi.MQ.Examples.ScenarioHub.Api
 ```
 
 ## ScenarioHub APIs
@@ -58,6 +61,15 @@ dotnet run --project example/samples/00-ScenarioHub/Maomi.MQ.Examples.ScenarioHu
   - `POST /api/scenario/batch/publish-once`
   - `POST /api/scenario/batch/worker/start`
   - `POST /api/scenario/batch/worker/stop`
+
+## Transaction APIs
+
+- Register outbox row in DB transaction, commit, then publish message
+  - `POST /api/transaction/publish`
+- Query business table rows
+  - `GET /api/transaction/orders?take=20`
+- Query service status
+  - `GET /api/transaction/status`
 
 ## Notes
 

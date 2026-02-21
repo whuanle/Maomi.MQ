@@ -9,10 +9,12 @@
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="6.1.4" />
     <PackageVersion Include="Microsoft.SqlServer.Server" Version="1.0.0" />
     <PackageVersion Include="MySqlConnector" Version="2.5.0" />
+    <PackageVersion Include="NSwag.AspNetCore" Version="14.6.3" />
     <PackageVersion Include="Polly" Version="8.6.5" />
     <PackageVersion Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
     <PackageVersion Include="protobuf-net" Version="3.2.56" />
     <PackageVersion Include="protobuf-net.Core" Version="3.2.56" />
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.12.46" />
     <PackageVersion Include="Yitter.IdGenerator" Version="1.0.14" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
     <PackageVersion Include="RabbitMQ.Client" Version="7.2.0" />

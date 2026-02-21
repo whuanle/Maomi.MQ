@@ -108,16 +108,7 @@ public abstract class ConsumerBaseService : BackgroundService
 
         // Create queues based on consumers.
         // 根据消费者创建队列.
-        if (consumerOptions.IsBroadcast.GetValueOrDefault() == false)
-        {
-            await channel.QueueDeclareAsync(
-                queue: consumerOptions.Queue,
-                durable: true,
-                exclusive: false,
-                autoDelete: false,
-                arguments: arguments);
-        }
-        else
+        if (consumerOptions.IsBroadcast == true)
         {
             // 广播消费者，队列设置为非持久、独占、自动删除，避免消费者之间互相干扰
             await channel.QueueDeclareAsync(
@@ -125,6 +116,15 @@ public abstract class ConsumerBaseService : BackgroundService
                 durable: false,
                 exclusive: true,
                 autoDelete: true,
+                arguments: arguments);
+        }
+        else
+        {
+            await channel.QueueDeclareAsync(
+                queue: consumerOptions.Queue,
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
                 arguments: arguments);
         }
 
@@ -150,7 +150,7 @@ public abstract class ConsumerBaseService : BackgroundService
     {
         await consummerChannel.BasicQosAsync(prefetchSize: 0, prefetchCount: consumerOptions.Qos, global: false);
         var consumer = new AsyncEventingBasicConsumer(consummerChannel);
-
+        _logger.LogInformation("Start consuming queue [{Queue}] with consumer [{ConsumerType}]", consumerOptions.Queue, consumerType.Name);
         consumer.ReceivedAsync += async (sender, eventArgs) =>
         {
             try

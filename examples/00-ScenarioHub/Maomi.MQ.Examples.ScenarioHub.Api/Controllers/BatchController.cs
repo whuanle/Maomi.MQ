@@ -1,6 +1,5 @@
 using Maomi.MQ;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading;
 
 namespace Maomi.MQ.Samples.ScenarioHub.Controllers;
 
@@ -9,12 +8,17 @@ namespace Maomi.MQ.Samples.ScenarioHub.Controllers;
 public sealed class BatchController : ControllerBase
 {
     private readonly IMessagePublisher _publisher;
-    private readonly ScenarioRuntimeState _state;
+    private readonly BatchPublisherBackgroundService _batchWorker;
+    private readonly ILogger<BatchController> _logger;
 
-    public BatchController(IMessagePublisher publisher, ScenarioRuntimeState state)
+    public BatchController(
+        IMessagePublisher publisher,
+        BatchPublisherBackgroundService batchWorker,
+        ILogger<BatchController> logger)
     {
         _publisher = publisher;
-        _state = state;
+        _batchWorker = batchWorker;
+        _logger = logger;
     }
 
     [HttpPost("publish-once")]
@@ -35,25 +39,22 @@ public sealed class BatchController : ControllerBase
             await _publisher.AutoPublishAsync(message);
         }
 
-        Interlocked.Add(ref _state.BatchPublished, list.Count);
-        _state.AddLog($"batch publish-once count={list.Count}");
+        _logger.LogInformation("Batch publish-once done. Count={Count}", list.Count);
         return Results.Ok(new { Count = list.Count });
     }
 
     [HttpPost("worker/start")]
     public IResult StartWorker()
     {
-        _state.BatchPublisherEnabled = true;
-        _state.AddLog("batch worker started");
-        return Results.Ok(new { Enabled = true });
+        _batchWorker.SetEnabled(true);
+        return Results.Ok(new { Enabled = _batchWorker.IsEnabled });
     }
 
     [HttpPost("worker/stop")]
     public IResult StopWorker()
     {
-        _state.BatchPublisherEnabled = false;
-        _state.AddLog("batch worker stopped");
-        return Results.Ok(new { Enabled = false });
+        _batchWorker.SetEnabled(false);
+        return Results.Ok(new { Enabled = _batchWorker.IsEnabled });
     }
 }
 

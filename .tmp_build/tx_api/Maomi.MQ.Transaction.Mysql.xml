@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Maomi.MQ.Transaction.Mysql</name>
+    </assembly>
+    <members>
+        <member name="T:Maomi.MQ.MaomiMqTransactionMySqlExtensions">
+            <summary>
+            MySQL transaction extension.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.MaomiMqTransactionMySqlExtensions.AddMaomiMQTransactionMySql(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Registers MySQL transaction database provider.
+            </summary>
+            <param name="services">Service collection.</param>
+            <returns>Service collection.</returns>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Mysql.MySqlTransactionDatabaseProvider">
+            <summary>
+            MySQL transaction database provider.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Mysql.MySqlTransactionDatabaseProvider.#ctor(Maomi.MQ.Transaction.Models.IMQTransactionOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Transaction.Mysql.MySqlTransactionDatabaseProvider"/> class.
+            </summary>
+            <param name="options">Transaction options.</param>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Mysql.MySqlTransactionDatabaseProvider.ProviderName">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Mysql.MySqlTransactionDatabaseProvider.EnsureTablesExistAsync(System.Data.Common.DbCommand,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Mysql.MySqlTransactionDatabaseProvider.InsertOutboxAsync(System.Data.Common.DbCommand,Maomi.MQ.Transaction.Database.OutboxMessageEntity,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Mysql.MySqlTransactionDatabaseProvider.TryLockOutboxBatchAsync(System.Data.Common.DbCommand,System.String,System.DateTimeOffset,System.TimeSpan,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Mysql.MySqlTransactionDatabaseProvider.GetLockedOutboxBatchAsync(System.Data.Common.DbCommand,System.String,System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Mysql.MySqlTransactionDatabaseProvider.MarkOutboxSucceededAsync(System.Data.Common.DbCommand,System.String,System.String,System.DateTimeOffset,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Mysql.MySqlTransactionDatabaseProvider.MarkOutboxFailedAsync(System.Data.Common.DbCommand,System.String,System.String,System.DateTimeOffset,System.DateTimeOffset,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Mysql.MySqlTransactionDatabaseProvider.TryEnterInboxBarrierAsync(System.Data.Common.DbCommand,Maomi.MQ.Transaction.Database.InboxBarrierEntity,System.TimeSpan,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Mysql.MySqlTransactionDatabaseProvider.MarkInboxBarrierSucceededAsync(System.Data.Common.DbCommand,System.String,System.String,System.String,System.DateTimeOffset,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Mysql.MySqlTransactionDatabaseProvider.MarkInboxBarrierFailedAsync(System.Data.Common.DbCommand,System.String,System.String,System.String,System.DateTimeOffset,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Mysql.TransactionProviderNames">
+            <summary>
+            Built-in provider names.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.Transaction.Mysql.TransactionProviderNames.MySql">
+            <summary>
+            MySQL provider.
+            </summary>
+        </member>
+    </members>
+</doc>

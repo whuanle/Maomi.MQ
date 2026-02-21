@@ -8,12 +8,12 @@ namespace Maomi.MQ.Samples.ScenarioHub.Controllers;
 public sealed class EventBusController : ControllerBase
 {
     private readonly IMessagePublisher _publisher;
-    private readonly ScenarioRuntimeState _state;
+    private readonly ILogger<EventBusController> _logger;
 
-    public EventBusController(IMessagePublisher publisher, ScenarioRuntimeState state)
+    public EventBusController(IMessagePublisher publisher, ILogger<EventBusController> logger)
     {
         _publisher = publisher;
-        _state = state;
+        _logger = logger;
     }
 
     [HttpPost("publish")]
@@ -26,7 +26,11 @@ public sealed class EventBusController : ControllerBase
         };
 
         await _publisher.AutoPublishAsync(message);
-        _state.AddLog($"eventbus published: {message.OrderId}");
+        _logger.LogInformation(
+            "EventBus published. OrderId={OrderId}, Amount={Amount}, Customer={Customer}",
+            message.OrderId,
+            message.Amount,
+            message.Customer);
         return Results.Ok(message);
     }
 }
