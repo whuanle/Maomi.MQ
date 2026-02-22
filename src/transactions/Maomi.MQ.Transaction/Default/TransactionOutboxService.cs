@@ -7,9 +7,11 @@
 using Maomi.MQ.Attributes;
 using Maomi.MQ.Transaction.Database;
 using Maomi.MQ.Transaction.Models;
+using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
 using System.Data;
 using System.Data.Common;
+using System.Globalization;
 
 namespace Maomi.MQ.Transaction.Default;
 
@@ -55,7 +57,7 @@ public sealed class TransactionOutboxService : ITransactionOutboxService
     }
 
     /// <inheritdoc/>
-    public Task<TransactionOutboxRegistration> RegisterAutoAsync<TMessage>(
+    public Task<ITransactionOutboxPublisher> RegisterAutoAsync<TMessage>(
         DbConnection dbConnection,
         DbTransaction dbTransaction,
         TMessage message,
@@ -86,7 +88,7 @@ public sealed class TransactionOutboxService : ITransactionOutboxService
     }
 
     /// <inheritdoc/>
-    public async Task<TransactionOutboxRegistration> RegisterAsync<TMessage>(
+    public async Task<ITransactionOutboxPublisher> RegisterAsync<TMessage>(
         DbConnection dbConnection,
         DbTransaction dbTransaction,
         string exchange,
@@ -114,13 +116,14 @@ public sealed class TransactionOutboxService : ITransactionOutboxService
         };
 
         var serializer = _serializerSelector.GetSerializer(message);
-        var messageId = _idProvider.NextId().ToString();
+        var messageId = ResolveMessageId(properties);
+        var messageIdText = MessageIdConverter.ToText(messageId);
         var now = DateTimeOffset.UtcNow;
         var messageType = message.GetType().FullName ?? typeof(TMessage).FullName ?? typeof(TMessage).Name;
 
         var messageHeader = new MessageHeader
         {
-            Id = messageId,
+            Id = messageIdText,
             Timestamp = now,
             AppId = _mqOptions.AppName,
             ContentType = serializer.ContentType,
@@ -138,8 +141,8 @@ public sealed class TransactionOutboxService : ITransactionOutboxService
             MessageId = messageId,
             Exchange = exchange,
             RoutingKey = routingKey,
-            MessageHeader = System.Text.Json.JsonSerializer.Serialize(messageHeader, _transactionOptions.JsonSerializerOptions),
-            MessageBody = Convert.ToBase64String(body),
+            MessageHeader = TransactionMessageStorageSerializer.SerializeHeader(messageHeader, _transactionOptions.JsonSerializerOptions),
+            MessageBody = TransactionMessageStorageSerializer.SerializeBody(body),
             MessageText = _transactionOptions.Publisher.DisplayMessageText
                 ? System.Text.Json.JsonSerializer.Serialize(message, _transactionOptions.JsonSerializerOptions)
                 : "{}",
@@ -157,23 +160,17 @@ public sealed class TransactionOutboxService : ITransactionOutboxService
         command.Transaction = dbTransaction;
         await _databaseProvider.InsertOutboxAsync(command, outbox, cancellationToken);
 
-        return new TransactionOutboxRegistration
-        {
-            MessageId = outbox.MessageId,
-            Exchange = outbox.Exchange,
-            RoutingKey = outbox.RoutingKey,
-            CreateTime = outbox.CreateTime
-        };
+        return ActivatorUtilities.CreateInstance<TransactionOutboxPublisher>(
+            _serviceProvider,
+            outbox,
+            messageHeader,
+            body,
+            properties);
     }
 
     /// <inheritdoc/>
-    public async Task<bool> MarkAsSucceededAsync(string messageId, CancellationToken cancellationToken = default)
+    public async Task<bool> MarkAsSucceededAsync(long messageId, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(messageId))
-        {
-            throw new ArgumentNullException(nameof(messageId));
-        }
-
         using var dbConnection = _transactionOptions.Connection(_serviceProvider);
         if (dbConnection.State != ConnectionState.Open)
         {
@@ -184,10 +181,11 @@ public sealed class TransactionOutboxService : ITransactionOutboxService
         using var command = dbConnection.CreateCommand();
         command.Transaction = dbTransaction;
 
+        var lockId = string.Empty;
         var updated = await _databaseProvider.MarkOutboxSucceededAsync(
             command,
             messageId,
-            string.Empty,
+            lockId,
             DateTimeOffset.UtcNow,
             cancellationToken);
 
@@ -232,6 +230,18 @@ public sealed class TransactionOutboxService : ITransactionOutboxService
         properties.Headers ??= new Dictionary<string, object?>();
     }
 
+    private long ResolveMessageId(BasicProperties properties)
+    {
+        if (!string.IsNullOrWhiteSpace(properties.MessageId))
+        {
+            return MessageIdConverter.ParseRequired(properties.MessageId, "BasicProperties.MessageId");
+        }
+
+        var generated = _idProvider.NextId();
+        properties.MessageId = generated.ToString(CultureInfo.InvariantCulture);
+        return generated;
+    }
+
     private static void ValidateConnectionAndTransaction(DbConnection dbConnection, DbTransaction dbTransaction)
     {
         ArgumentNullException.ThrowIfNull(dbConnection);
@@ -242,4 +252,5 @@ public sealed class TransactionOutboxService : ITransactionOutboxService
             throw new InvalidOperationException("The provided dbConnection does not match dbTransaction.Connection.");
         }
     }
+
 }

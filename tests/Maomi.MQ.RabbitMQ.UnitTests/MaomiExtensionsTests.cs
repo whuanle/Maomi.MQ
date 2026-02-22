@@ -37,7 +37,7 @@ public class MaomiExtensionsTests
         Assert.Throws<ArgumentNullException>(() =>
             MaomiExtensions.AddMaomiMQ(
                 services,
-                builder: null!,
+                mqOptionsBuilder: null!,
                 assemblies: [typeof(MaomiExtensionsTests).Assembly],
                 typeFilters: [new ConsumerTypeFilter()]));
     }

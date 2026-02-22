@@ -136,6 +136,14 @@ public class TransactionFiltersTests
         public Task InsertOutboxAsync(System.Data.Common.DbCommand command, OutboxMessageEntity message, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
 
+        public Task<bool> TryLockOutboxAsync(
+            System.Data.Common.DbCommand command,
+            long messageId,
+            string lockId,
+            DateTimeOffset now,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(true);
+
         public Task<int> TryLockOutboxBatchAsync(
             System.Data.Common.DbCommand command,
             string lockId,
@@ -155,7 +163,7 @@ public class TransactionFiltersTests
 
         public Task<bool> MarkOutboxSucceededAsync(
             System.Data.Common.DbCommand command,
-            string messageId,
+            long messageId,
             string lockId,
             DateTimeOffset now,
             CancellationToken cancellationToken = default) =>
@@ -163,7 +171,7 @@ public class TransactionFiltersTests
 
         public Task<bool> MarkOutboxFailedAsync(
             System.Data.Common.DbCommand command,
-            string messageId,
+            long messageId,
             string lockId,
             DateTimeOffset now,
             DateTimeOffset nextRetryTime,
@@ -181,7 +189,7 @@ public class TransactionFiltersTests
         public Task<bool> MarkInboxBarrierSucceededAsync(
             System.Data.Common.DbCommand command,
             string consumerName,
-            string messageId,
+            long messageId,
             string lockId,
             DateTimeOffset now,
             CancellationToken cancellationToken = default) =>
@@ -190,11 +198,43 @@ public class TransactionFiltersTests
         public Task<bool> MarkInboxBarrierFailedAsync(
             System.Data.Common.DbCommand command,
             string consumerName,
-            string messageId,
+            long messageId,
             string lockId,
             DateTimeOffset now,
             string errorMessage,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(true);
+
+        public Task<long> CountSucceededOutboxAsync(System.Data.Common.DbCommand command, CancellationToken cancellationToken = default) =>
+            Task.FromResult(0L);
+
+        public Task<long> CountSucceededInboxAsync(System.Data.Common.DbCommand command, CancellationToken cancellationToken = default) =>
+            Task.FromResult(0L);
+
+        public Task<int> DeleteSucceededOutboxBeforeAsync(
+            System.Data.Common.DbCommand command,
+            DateTimeOffset cutoffTime,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0);
+
+        public Task<int> DeleteSucceededInboxBeforeAsync(
+            System.Data.Common.DbCommand command,
+            DateTimeOffset cutoffTime,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0);
+
+        public Task<int> DeleteOldestSucceededOutboxAsync(
+            System.Data.Common.DbCommand command,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0);
+
+        public Task<int> DeleteOldestSucceededInboxAsync(
+            System.Data.Common.DbCommand command,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0);
     }
 }

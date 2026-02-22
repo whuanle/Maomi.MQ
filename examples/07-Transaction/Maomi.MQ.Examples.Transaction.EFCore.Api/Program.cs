@@ -1,7 +1,8 @@
-using Maomi.MQ;
+﻿using Maomi.MQ;
+using Maomi.MQ.Examples.Transaction.EFCore.Api;
 using Maomi.MQ.Models;
-using Maomi.MQ.Transaction.Mysql;
-using MySqlConnector;
+using Maomi.MQ.Transaction.EFCore;
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,8 +20,8 @@ builder.Services.AddMaomiMQ(
             ?? Environment.GetEnvironmentVariable("RabbitMQ")
             ?? "amqp://guest:guest@127.0.0.1:5672";
 
-        options.WorkId = 7;
-        options.AppName = "transaction-api";
+        options.WorkId = 8;
+        options.AppName = "transaction-efcore-api";
         options.Rabbit = rabbit =>
         {
             rabbit.Uri = new Uri(uriString: rabbitUri!);
@@ -34,11 +35,16 @@ var transactionConnectionString = builder.Configuration.GetConnectionString("Tra
     ?? Environment.GetEnvironmentVariable("MQ_TRANSACTION_DB")
     ?? "Server=127.0.0.1;Port=3306;Database=maomi_mq;User ID=root;Password=123456;";
 
-builder.Services.AddMaomiMQTransactionMySql();
+builder.Services.AddDbContext<TransactionEfCoreDbContext>(options =>
+{
+    options.UseMySql(transactionConnectionString, ServerVersion.AutoDetect(transactionConnectionString));
+});
+
 builder.Services.AddMaomiMQTransaction(options =>
 {
-    options.ProviderName = TransactionProviderNames.MySql;
-    options.Connection = _ => new MySqlConnection(transactionConnectionString);
+    // Keeps transaction runtime options and background dispatcher enabled.
+    options.ProviderName = "mysql";
+    options.Connection = _ => new MySqlConnector.MySqlConnection(transactionConnectionString);
     options.AutoCreateTable = true;
     options.Cleanup = new Maomi.MQ.Transaction.Models.MQTransactionCleanupOptions
     {
@@ -50,7 +56,19 @@ builder.Services.AddMaomiMQTransaction(options =>
     };
 });
 
+builder.Services.AddMaomiMQTransactionEFCore<TransactionEfCoreDbContext>(
+    options =>
+{
+    options.AutoSaveChanges = true;
+});
+
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<TransactionEfCoreDbContext>();
+    await db.Database.EnsureCreatedAsync();
+}
 
 if (app.Environment.IsDevelopment())
 {

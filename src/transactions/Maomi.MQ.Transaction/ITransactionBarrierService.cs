@@ -15,6 +15,20 @@ namespace Maomi.MQ.Transaction;
 public interface ITransactionBarrierService
 {
     /// <summary>
+    /// Executes business logic inside inbox barrier transaction.
+    /// </summary>
+    /// <param name="consumerName">Consumer name or queue name.</param>
+    /// <param name="messageHeader">Message header.</param>
+    /// <param name="handler">Business handler running in opened connection and transaction.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task ExecuteInBarrierAsync(
+        string consumerName,
+        MessageHeader messageHeader,
+        Func<DbConnection, DbTransaction, CancellationToken, Task> handler,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Tries to enter inbox barrier in caller transaction.
     /// </summary>
     /// <param name="dbConnection">Opened database connection.</param>
@@ -74,7 +88,7 @@ public sealed class TransactionBarrierContext
     /// <summary>
     /// Gets or sets message id.
     /// </summary>
-    public string MessageId { get; set; } = string.Empty;
+    public long MessageId { get; set; }
 
     /// <summary>
     /// Gets or sets lock id.

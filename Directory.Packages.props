@@ -23,6 +23,7 @@
     <PackageVersion Include="StackExchange.Redis" Version="2.8.37" />
     <PackageVersion Include="OpenTelemetry.Api" Version="1.15.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.5" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.5" />
     <PackageVersion Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0-preview.3.efcore.9.0.0" />
     <PackageVersion Include="AutoFixture.AutoMoq" Version="5.0.0-preview0012" />
     <PackageVersion Include="AutoFixture.Xunit2" Version="5.0.0-preview0012" />

@@ -53,26 +53,64 @@ public sealed class TransactionController : ControllerBase
 
         await InsertOrderAsync(connection, transaction, message, cancellationToken);
 
-        // RegisterAutoAsync inserts a pending outbox row into the same DB transaction.
-        var outbox = await _outboxService.RegisterAutoAsync(
+        // RegisterAsync inserts a pending outbox row into the same DB transaction.
+        var outbox = await _outboxService.RegisterAsync(
             connection,
             transaction,
+            string.Empty,
+            "example.transaction.order.created",
             message,
             cancellationToken: cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
 
-        _logger.LogInformation(
-            "Transaction committed. OrderNo={OrderNo}, OutboxMessageId={OutboxMessageId}. The background publisher will dispatch it.",
-            message.OrderNo,
-            outbox.MessageId);
+        await outbox.PublishAsync(cancellationToken);
 
         return Results.Ok(new
         {
             Status = "CommittedToOutbox",
             OutboxMessageId = outbox.MessageId,
-            OutboxStatus = "Pending",
-            DispatchMode = "BackgroundService",
+            message.OrderId,
+            message.OrderNo,
+            message.Amount,
+            message.CreatedAt
+        });
+    }
+
+    [HttpPost("publish-delegate")]
+    public async Task<IResult> PublishDelegate([FromBody] PublishTransactionRequest request, CancellationToken cancellationToken)
+    {
+        if (request.Amount <= 0)
+        {
+            return Results.BadRequest("Amount must be greater than 0.");
+        }
+
+        var orderNo = string.IsNullOrWhiteSpace(request.OrderNo)
+            ? $"SO-TX-DEL-{DateTimeOffset.UtcNow:yyyyMMddHHmmssfff}"
+            : request.OrderNo.Trim();
+
+        var message = new TransactionOrderCreatedMessage
+        {
+            OrderId = Guid.NewGuid(),
+            OrderNo = orderNo,
+            Amount = request.Amount,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+
+        var outbox = await ExecuteWithOutboxAsync(
+            string.Empty,
+            "example.transaction.order.created",
+            message,
+            async (connection, transaction, ct) =>
+            {
+                await InsertOrderAsync(connection, transaction, message, ct);
+            },
+            cancellationToken);
+
+        return Results.Ok(new
+        {
+            Status = "CommittedToOutboxByDelegate",
+            OutboxMessageId = outbox.MessageId,
             message.OrderId,
             message.OrderNo,
             message.Amount,
@@ -147,6 +185,7 @@ public sealed class TransactionController : ControllerBase
     private string GetConnectionString()
     {
         return _configuration.GetConnectionString("TransactionDb")
+            ?? _configuration["TransactionDb"]
             ?? Environment.GetEnvironmentVariable("MQ_TRANSACTION_DB")
             ?? "Server=127.0.0.1;Port=3306;Database=maomi_mq;User ID=root;Password=123456;";
     }
@@ -190,6 +229,49 @@ public sealed class TransactionController : ControllerBase
         insert.Parameters.AddWithValue("@amount", message.Amount);
         insert.Parameters.AddWithValue("@create_time", message.CreatedAt.UtcDateTime);
         await insert.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private async Task<ITransactionOutboxPublisher> ExecuteWithOutboxAsync<TMessage>(
+        string exchange,
+        string routingKey,
+        TMessage message,
+        Func<MySqlConnection, MySqlTransaction, CancellationToken, Task> businessAction,
+        CancellationToken cancellationToken)
+        where TMessage : class
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        ArgumentNullException.ThrowIfNull(businessAction);
+
+        var connectionString = GetConnectionString();
+
+        await using var connection = new MySqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await EnsureBusinessTableAsync(connection, transaction: null, cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        ITransactionOutboxPublisher outbox;
+        try
+        {
+            await businessAction(connection, transaction, cancellationToken);
+
+            outbox = await _outboxService.RegisterAsync(
+                connection,
+                transaction,
+                exchange,
+                routingKey,
+                message,
+                cancellationToken: cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+
+        await outbox.PublishAsync(cancellationToken);
+        return outbox;
     }
 }
 

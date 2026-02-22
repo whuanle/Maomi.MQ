@@ -1,4 +1,4 @@
-// <copyright file="DbTransactionConsumer.cs" company="Maomi">
+﻿// <copyright file="DbTransactionConsumer.cs" company="Maomi">
 // Copyright (c) Maomi. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/Maomi.MQ
@@ -62,11 +62,12 @@ public class DbTransactionConsumer<TMessage> : IConsumer<TMessage>
 
         var now = DateTimeOffset.UtcNow;
         var lockId = _transactionOptions.NodeId;
+        var messageId = MessageIdConverter.ParseRequired(messageHeader.Id, "MessageHeader.Id");
         var barrier = new InboxBarrierEntity
         {
             ConsumerName = _consumerName,
-            MessageId = messageHeader.Id,
-            MessageHeader = System.Text.Json.JsonSerializer.Serialize(messageHeader, _transactionOptions.JsonSerializerOptions),
+            MessageId = messageId,
+            MessageHeader = TransactionMessageStorageSerializer.SerializeHeader(messageHeader, _transactionOptions.JsonSerializerOptions),
             Exchange = messageHeader.Exchange ?? string.Empty,
             RoutingKey = messageHeader.RoutingKey ?? string.Empty,
             Status = (int)MessageStatus.Pending,
@@ -109,7 +110,7 @@ public class DbTransactionConsumer<TMessage> : IConsumer<TMessage>
             var updated = await _databaseProvider.MarkInboxBarrierSucceededAsync(
                 updateCommand,
                 _consumerName,
-                messageHeader.Id,
+                messageId,
                 lockId,
                 DateTimeOffset.UtcNow);
 
@@ -128,7 +129,7 @@ public class DbTransactionConsumer<TMessage> : IConsumer<TMessage>
             await _databaseProvider.MarkInboxBarrierFailedAsync(
                 failCommand,
                 _consumerName,
-                messageHeader.Id,
+                messageId,
                 lockId,
                 DateTimeOffset.UtcNow,
                 Truncate(ex.ToString(), _transactionOptions.Consumer.MaxErrorLength));
@@ -164,3 +165,4 @@ public class DbTransactionConsumer<TMessage> : IConsumer<TMessage>
         return value[..maxLength];
     }
 }
+

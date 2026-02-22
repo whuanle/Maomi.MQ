@@ -19,7 +19,7 @@ public sealed class InboxBarrierEntity
     /// <summary>
     /// Gets or sets message id.
     /// </summary>
-    public string MessageId { get; set; } = string.Empty;
+    public long MessageId { get; set; }
 
     /// <summary>
     /// Gets or sets serialized message header.

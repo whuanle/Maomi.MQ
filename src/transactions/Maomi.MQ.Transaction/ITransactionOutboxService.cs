@@ -24,7 +24,7 @@ public interface ITransactionOutboxService
     /// <param name="properties">Optional message properties mutator.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Registered outbox info.</returns>
-    Task<TransactionOutboxRegistration> RegisterAutoAsync<TMessage>(
+    Task<ITransactionOutboxPublisher> RegisterAutoAsync<TMessage>(
         DbConnection dbConnection,
         DbTransaction dbTransaction,
         TMessage message,
@@ -44,7 +44,7 @@ public interface ITransactionOutboxService
     /// <param name="properties">Optional message properties.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Registered outbox info.</returns>
-    Task<TransactionOutboxRegistration> RegisterAsync<TMessage>(
+    Task<ITransactionOutboxPublisher> RegisterAsync<TMessage>(
         DbConnection dbConnection,
         DbTransaction dbTransaction,
         string exchange,
@@ -60,31 +60,5 @@ public interface ITransactionOutboxService
     /// <param name="messageId">Message id.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>True if row was updated.</returns>
-    Task<bool> MarkAsSucceededAsync(string messageId, CancellationToken cancellationToken = default);
-}
-
-/// <summary>
-/// Registered outbox message metadata.
-/// </summary>
-public sealed class TransactionOutboxRegistration
-{
-    /// <summary>
-    /// Gets or sets message id.
-    /// </summary>
-    public string MessageId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Gets or sets exchange.
-    /// </summary>
-    public string Exchange { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Gets or sets routing key.
-    /// </summary>
-    public string RoutingKey { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Gets or sets create time.
-    /// </summary>
-    public DateTimeOffset CreateTime { get; set; }
+    Task<bool> MarkAsSucceededAsync(long messageId, CancellationToken cancellationToken = default);
 }

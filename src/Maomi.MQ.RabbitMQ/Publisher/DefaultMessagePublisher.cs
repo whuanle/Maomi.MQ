@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 
 namespace Maomi.MQ;
@@ -162,9 +163,13 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
 
         var messageSerializer = ResolveMessageSerializer(message);
 
+        var messageId = string.IsNullOrWhiteSpace(properties.MessageId)
+            ? _idGen.NextId().ToString(CultureInfo.InvariantCulture)
+            : properties.MessageId;
+
         MessageHeader messageHeader = new MessageHeader
         {
-            Id = _idGen.NextId().ToString(),
+            Id = messageId,
             Timestamp = DateTimeOffset.Now,
             AppId = _mqOptions.AppName,
             ContentType = messageSerializer.ContentType,
@@ -218,8 +223,30 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
             };
         }
 
+        var resolvedId = string.IsNullOrWhiteSpace(messageHeader.Id)
+            ? properties.MessageId
+            : messageHeader.Id;
+        if (!string.IsNullOrWhiteSpace(resolvedId) && string.IsNullOrWhiteSpace(properties.MessageId))
+        {
+            properties.MessageId = resolvedId;
+        }
+
+        var diagnosticsHeader = string.IsNullOrWhiteSpace(messageHeader.Id) || messageHeader.Id != resolvedId
+            ? new MessageHeader
+            {
+                Id = resolvedId ?? string.Empty,
+                Timestamp = messageHeader.Timestamp,
+                AppId = messageHeader.AppId,
+                ContentType = messageHeader.ContentType,
+                Type = messageHeader.Type,
+                Exchange = messageHeader.Exchange,
+                RoutingKey = messageHeader.RoutingKey,
+                Properties = messageHeader.Properties
+            }
+            : messageHeader;
+
         properties.Headers = properties.Headers ?? new Dictionary<string, object?>();
-        using Activity? activity = _publisherDiagnostics.Start(messageHeader, exchange, routingKey);
+        using Activity? activity = _publisherDiagnostics.Start(diagnosticsHeader, exchange, routingKey);
 
         try
         {
@@ -237,14 +264,14 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "The message with id [{Id}] failed to send, exchange: [{Exchange}], routingKey: [{RoutingKey}].", messageHeader.Id, exchange, routingKey);
-            _publisherDiagnostics.Exception(messageHeader, exchange, routingKey, ex, activity);
+            _logger.LogWarning(ex, "The message with id [{Id}] failed to send, exchange: [{Exchange}], routingKey: [{RoutingKey}].", diagnosticsHeader.Id, exchange, routingKey);
+            _publisherDiagnostics.Exception(diagnosticsHeader, exchange, routingKey, ex, activity);
             throw;
         }
         finally
         {
-            _publisherDiagnostics.RecordMessageSize(messageHeader, exchange, routingKey, message?.Length ?? 0, activity);
-            _publisherDiagnostics.Stop(messageHeader, exchange, routingKey, activity);
+            _publisherDiagnostics.RecordMessageSize(diagnosticsHeader, exchange, routingKey, message?.Length ?? 0, activity);
+            _publisherDiagnostics.Stop(diagnosticsHeader, exchange, routingKey, activity);
         }
     }
 
@@ -258,7 +285,9 @@ public partial class DefaultMessagePublisher : IMessagePublisher, IChannelMessag
     {
         properties.AppId = _mqOptions.AppName;
         properties.ContentType = messageSerializer.ContentType;
-        properties.MessageId = messageHeader.Id.ToString();
+        properties.MessageId = string.IsNullOrWhiteSpace(properties.MessageId)
+            ? messageHeader.Id
+            : properties.MessageId;
         properties.Timestamp = new AmqpTimestamp(messageHeader.Timestamp.ToUnixTimeMilliseconds());
         properties.Type = typeof(TMessage).FullName;
 

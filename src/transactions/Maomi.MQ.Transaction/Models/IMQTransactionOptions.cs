@@ -45,6 +45,11 @@ public interface IMQTransactionOptions
     public MQConsumerTransactionOptions Consumer { get; }
 
     /// <summary>
+    /// Cleanup options.
+    /// </summary>
+    public MQTransactionCleanupOptions Cleanup { get; }
+
+    /// <summary>
     /// Automatically create table.
     /// </summary>
     public bool AutoCreateTable { get; }
@@ -124,6 +129,18 @@ public class MQTransactionOptions : IMQTransactionOptions
         TableName = "mq_consumer",
         ProcessingTimeout = TimeSpan.FromSeconds(30),
         MaxErrorLength = 512
+    };
+
+    /// <summary>
+    /// Cleanup options.
+    /// </summary>
+    public MQTransactionCleanupOptions Cleanup { get; set; } = new MQTransactionCleanupOptions
+    {
+        Enabled = false,
+        ScanInterval = TimeSpan.FromMinutes(5),
+        KeepCompletedDays = null,
+        MaxCompletedCount = null,
+        DeleteBatchSize = 500
     };
 
     /// <summary>

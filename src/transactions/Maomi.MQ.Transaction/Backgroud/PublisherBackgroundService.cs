@@ -6,6 +6,7 @@
 
 using Maomi.MQ.Pool;
 using Maomi.MQ.Transaction.Database;
+using Maomi.MQ.Transaction.Default;
 using Maomi.MQ.Transaction.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -13,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System.Data;
 using System.Data.Common;
+using System.Globalization;
 
 namespace Maomi.MQ.Transaction.Backgroud;
 
@@ -179,26 +181,22 @@ public class PublisherBackgroundService : BackgroundService
     {
         try
         {
-            var header = System.Text.Json.JsonSerializer.Deserialize<MessageHeader>(message.MessageHeader, _transactionOptions.JsonSerializerOptions);
+            var header = TransactionMessageStorageSerializer.DeserializeHeader(message.MessageHeader, _transactionOptions.JsonSerializerOptions);
             if (string.IsNullOrWhiteSpace(header.Id))
             {
                 header = new MessageHeader
                 {
-                    Id = message.MessageId,
+                    Id = message.MessageId.ToString(CultureInfo.InvariantCulture),
                     Exchange = message.Exchange,
                     RoutingKey = message.RoutingKey,
                     Timestamp = DateTimeOffset.UtcNow,
-                    Properties = new BasicProperties
-                    {
-                        DeliveryMode = DeliveryModes.Persistent
-                    }
                 };
             }
 
-            var properties = System.Text.Json.JsonSerializer.Deserialize<BasicProperties>(header.Properties?.ToString() ?? "{}", _transactionOptions.JsonSerializerOptions)
-                ?? new BasicProperties { DeliveryMode = DeliveryModes.Persistent };
+            var properties = TransactionMessageStorageSerializer.CreateBasicProperties(header);
+            properties.MessageId = header.Id;
 
-            var bytes = Convert.FromBase64String(message.MessageBody);
+            var bytes = TransactionMessageStorageSerializer.DeserializeBody(message.MessageBody);
 
             if (message.RetryCount > 0)
             {
@@ -249,19 +247,15 @@ public class PublisherBackgroundService : BackgroundService
                 using var command = dbConnection.CreateCommand();
                 command.Transaction = tx;
 
-                var header = System.Text.Json.JsonSerializer.Deserialize<MessageHeader>(message.MessageHeader, _transactionOptions.JsonSerializerOptions);
+                var header = TransactionMessageStorageSerializer.DeserializeHeader(message.MessageHeader, _transactionOptions.JsonSerializerOptions);
                 if (string.IsNullOrWhiteSpace(header.Id))
                 {
                     header = new MessageHeader
                     {
-                        Id = message.MessageId,
+                        Id = message.MessageId.ToString(CultureInfo.InvariantCulture),
                         Exchange = message.Exchange,
                         RoutingKey = message.RoutingKey,
                         Timestamp = DateTimeOffset.UtcNow,
-                        Properties = new BasicProperties
-                        {
-                            DeliveryMode = DeliveryModes.Persistent
-                        }
                     };
                 }
 

@@ -42,7 +42,7 @@ public sealed class SqlServerTransactionDatabaseProvider : IDatabaseProvider, ID
             IF OBJECT_ID(N'{_outboxTable}', N'U') IS NULL
             BEGIN
                 CREATE TABLE {_outboxTable} (
-                  [message_id] nvarchar(64) NOT NULL,
+                  [message_id] bigint NOT NULL,
                   [exchange] nvarchar(256) NOT NULL,
                   [routing_key] nvarchar(256) NOT NULL,
                   [message_header] nvarchar(max) NOT NULL,
@@ -89,7 +89,7 @@ public sealed class SqlServerTransactionDatabaseProvider : IDatabaseProvider, ID
             BEGIN
                 CREATE TABLE {_inboxTable} (
                   [consumer_name] nvarchar(200) NOT NULL,
-                  [message_id] nvarchar(64) NOT NULL,
+                  [message_id] bigint NOT NULL,
                   [message_header] nvarchar(max) NOT NULL,
                   [exchange] nvarchar(256) NOT NULL,
                   [routing_key] nvarchar(256) NOT NULL,
@@ -144,6 +144,39 @@ public sealed class SqlServerTransactionDatabaseProvider : IDatabaseProvider, ID
         AddParameter(command, "@update_time", message.UpdateTime);
 
         await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<bool> TryLockOutboxAsync(
+        DbCommand command,
+        long messageId,
+        string lockId,
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default)
+    {
+        command.Parameters.Clear();
+        command.CommandText =
+            $"""
+            UPDATE {_outboxTable}
+            SET
+                [status] = @processing,
+                [lock_id] = @lock_id,
+                [lock_time] = @now,
+                [update_time] = @now
+            WHERE
+                [message_id] = @message_id
+                AND [status] IN (@pending, @failed)
+                AND ([lock_id] = N'' OR [lock_id] IS NULL);
+            """;
+
+        AddParameter(command, "@processing", (int)MessageStatus.Processing);
+        AddParameter(command, "@pending", (int)MessageStatus.Pending);
+        AddParameter(command, "@failed", (int)MessageStatus.Failed);
+        AddParameter(command, "@lock_id", lockId);
+        AddParameter(command, "@now", now);
+        AddParameter(command, "@message_id", messageId);
+
+        return await command.ExecuteNonQueryAsync(cancellationToken) > 0;
     }
 
     /// <inheritdoc/>
@@ -229,7 +262,7 @@ public sealed class SqlServerTransactionDatabaseProvider : IDatabaseProvider, ID
     /// <inheritdoc/>
     public async Task<bool> MarkOutboxSucceededAsync(
         DbCommand command,
-        string messageId,
+        long messageId,
         string lockId,
         DateTimeOffset now,
         CancellationToken cancellationToken = default)
@@ -258,7 +291,7 @@ public sealed class SqlServerTransactionDatabaseProvider : IDatabaseProvider, ID
     /// <inheritdoc/>
     public async Task<bool> MarkOutboxFailedAsync(
         DbCommand command,
-        string messageId,
+        long messageId,
         string lockId,
         DateTimeOffset now,
         DateTimeOffset nextRetryTime,
@@ -333,7 +366,7 @@ public sealed class SqlServerTransactionDatabaseProvider : IDatabaseProvider, ID
     public async Task<bool> MarkInboxBarrierSucceededAsync(
         DbCommand command,
         string consumerName,
-        string messageId,
+        long messageId,
         string lockId,
         DateTimeOffset now,
         CancellationToken cancellationToken = default)
@@ -364,7 +397,7 @@ public sealed class SqlServerTransactionDatabaseProvider : IDatabaseProvider, ID
     public async Task<bool> MarkInboxBarrierFailedAsync(
         DbCommand command,
         string consumerName,
-        string messageId,
+        long messageId,
         string lockId,
         DateTimeOffset now,
         string errorMessage,
@@ -391,6 +424,134 @@ public sealed class SqlServerTransactionDatabaseProvider : IDatabaseProvider, ID
         AddParameter(command, "@lock_id", lockId);
 
         return await command.ExecuteNonQueryAsync(cancellationToken) > 0;
+    }
+
+    /// <inheritdoc/>
+    public async Task<long> CountSucceededOutboxAsync(
+        DbCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        command.Parameters.Clear();
+        command.CommandText = $"SELECT COUNT(1) FROM {_outboxTable} WHERE [status] = @succeeded;";
+        AddParameter(command, "@succeeded", (int)MessageStatus.Succeeded);
+        var value = await command.ExecuteScalarAsync(cancellationToken);
+        return Convert.ToInt64(value, CultureInfo.InvariantCulture);
+    }
+
+    /// <inheritdoc/>
+    public async Task<long> CountSucceededInboxAsync(
+        DbCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        command.Parameters.Clear();
+        command.CommandText = $"SELECT COUNT(1) FROM {_inboxTable} WHERE [status] = @succeeded;";
+        AddParameter(command, "@succeeded", (int)MessageStatus.Succeeded);
+        var value = await command.ExecuteScalarAsync(cancellationToken);
+        return Convert.ToInt64(value, CultureInfo.InvariantCulture);
+    }
+
+    /// <inheritdoc/>
+    public async Task<int> DeleteSucceededOutboxBeforeAsync(
+        DbCommand command,
+        DateTimeOffset cutoffTime,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        command.Parameters.Clear();
+        command.CommandText =
+            $"""
+            ;WITH picked AS (
+                SELECT TOP (@take) [message_id]
+                FROM {_outboxTable}
+                WHERE [status] = @succeeded AND [update_time] < @cutoff_time
+                ORDER BY [update_time] ASC
+            )
+            DELETE o
+            FROM {_outboxTable} AS o
+            INNER JOIN picked ON o.[message_id] = picked.[message_id];
+            """;
+
+        AddParameter(command, "@succeeded", (int)MessageStatus.Succeeded);
+        AddParameter(command, "@cutoff_time", cutoffTime);
+        AddParameter(command, "@take", take);
+        return await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<int> DeleteSucceededInboxBeforeAsync(
+        DbCommand command,
+        DateTimeOffset cutoffTime,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        command.Parameters.Clear();
+        command.CommandText =
+            $"""
+            ;WITH picked AS (
+                SELECT TOP (@take) [consumer_name], [message_id]
+                FROM {_inboxTable}
+                WHERE [status] = @succeeded AND [update_time] < @cutoff_time
+                ORDER BY [update_time] ASC
+            )
+            DELETE i
+            FROM {_inboxTable} AS i
+            INNER JOIN picked ON i.[consumer_name] = picked.[consumer_name] AND i.[message_id] = picked.[message_id];
+            """;
+
+        AddParameter(command, "@succeeded", (int)MessageStatus.Succeeded);
+        AddParameter(command, "@cutoff_time", cutoffTime);
+        AddParameter(command, "@take", take);
+        return await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<int> DeleteOldestSucceededOutboxAsync(
+        DbCommand command,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        command.Parameters.Clear();
+        command.CommandText =
+            $"""
+            ;WITH picked AS (
+                SELECT TOP (@take) [message_id]
+                FROM {_outboxTable}
+                WHERE [status] = @succeeded
+                ORDER BY [update_time] ASC
+            )
+            DELETE o
+            FROM {_outboxTable} AS o
+            INNER JOIN picked ON o.[message_id] = picked.[message_id];
+            """;
+
+        AddParameter(command, "@succeeded", (int)MessageStatus.Succeeded);
+        AddParameter(command, "@take", take);
+        return await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<int> DeleteOldestSucceededInboxAsync(
+        DbCommand command,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        command.Parameters.Clear();
+        command.CommandText =
+            $"""
+            ;WITH picked AS (
+                SELECT TOP (@take) [consumer_name], [message_id]
+                FROM {_inboxTable}
+                WHERE [status] = @succeeded
+                ORDER BY [update_time] ASC
+            )
+            DELETE i
+            FROM {_inboxTable} AS i
+            INNER JOIN picked ON i.[consumer_name] = picked.[consumer_name] AND i.[message_id] = picked.[message_id];
+            """;
+
+        AddParameter(command, "@succeeded", (int)MessageStatus.Succeeded);
+        AddParameter(command, "@take", take);
+        return await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
     private async Task<InboxBarrierEnterResult> TryUpdateInboxBarrierAsync(
@@ -461,7 +622,7 @@ public sealed class SqlServerTransactionDatabaseProvider : IDatabaseProvider, ID
     private async Task<(int Status, DateTimeOffset? LockTime)?> GetInboxStatusAsync(
         DbCommand command,
         string consumerName,
-        string messageId,
+        long messageId,
         CancellationToken cancellationToken)
     {
         command.Parameters.Clear();
@@ -495,7 +656,7 @@ public sealed class SqlServerTransactionDatabaseProvider : IDatabaseProvider, ID
     {
         return new OutboxMessageEntity
         {
-            MessageId = reader["message_id"].ToString() ?? string.Empty,
+            MessageId = Convert.ToInt64(reader["message_id"], CultureInfo.InvariantCulture),
             Exchange = reader["exchange"].ToString() ?? string.Empty,
             RoutingKey = reader["routing_key"].ToString() ?? string.Empty,
             MessageHeader = reader["message_header"].ToString() ?? string.Empty,

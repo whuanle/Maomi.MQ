@@ -37,7 +37,7 @@ public static partial class MaomiExtensions
     public static IServiceCollection AddMaomiMQ(
         this IServiceCollection services,
         Action<MqOptionsBuilder> mqOptionsBuilder,
-        Assembly[] assemblies)
+        IReadOnlyCollection<Assembly> assemblies)
     {
         ITypeFilter[] typeFilters =
         new ITypeFilter[]
@@ -54,22 +54,48 @@ public static partial class MaomiExtensions
     /// 注入 Maomi.MQ 服务.
     /// </summary>
     /// <param name="services">services.</param>
-    /// <param name="builder">Global MQ configuration.<br />全局 MQ 配置.</param>
+    /// <param name="mqOptionsBuilder">Global MQ configuration.<br />全局 MQ 配置.</param>
     /// <param name="assemblies">The assembly to be scanned.<br />需要扫描的程序集.</param>
     /// <param name="typeFilters"></param>
     /// <returns><see cref="IServiceCollection"/>.</returns>
     public static IServiceCollection AddMaomiMQ(
         this IServiceCollection services,
-        Action<MqOptionsBuilder> builder,
-        Assembly[] assemblies,
-        ITypeFilter[] typeFilters)
+        Action<MqOptionsBuilder> mqOptionsBuilder,
+        IReadOnlyCollection<Assembly> assemblies,
+        Action<List<ITypeFilter>> typeFilters)
     {
-        ArgumentNullException.ThrowIfNull(builder);
+        List<ITypeFilter> defaultTypeFilters = new()
+        {
+            new ConsumerTypeFilter(),
+            new EventBusTypeFilter()
+        };
+
+        typeFilters.Invoke(defaultTypeFilters);
+
+        return AddMaomiMQ(services, mqOptionsBuilder, assemblies, defaultTypeFilters);
+    }
+
+    /// <summary>
+    /// Use the Maomi.MQ service.<br />
+    /// 注入 Maomi.MQ 服务.
+    /// </summary>
+    /// <param name="services">services.</param>
+    /// <param name="mqOptionsBuilder">Global MQ configuration.<br />全局 MQ 配置.</param>
+    /// <param name="assemblies">The assembly to be scanned.<br />需要扫描的程序集.</param>
+    /// <param name="typeFilters"></param>
+    /// <returns><see cref="IServiceCollection"/>.</returns>
+    public static IServiceCollection AddMaomiMQ(
+        this IServiceCollection services,
+        Action<MqOptionsBuilder> mqOptionsBuilder,
+        IReadOnlyCollection<Assembly> assemblies,
+        IReadOnlyCollection<ITypeFilter> typeFilters)
+    {
+        ArgumentNullException.ThrowIfNull(mqOptionsBuilder);
 
         MqOptionsBuilder optionsBuilder = new();
         ConnectionFactory connectionFactory = new ConnectionFactory();
 
-        builder.Invoke(optionsBuilder);
+        mqOptionsBuilder.Invoke(optionsBuilder);
         ArgumentNullException.ThrowIfNull(optionsBuilder.Rabbit);
         optionsBuilder.Rabbit.Invoke(connectionFactory);
 

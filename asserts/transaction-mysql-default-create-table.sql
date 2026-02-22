@@ -3,7 +3,7 @@
 -- Default table names: mq_publisher, mq_consumer
 
 CREATE TABLE IF NOT EXISTS `mq_publisher` (
-  `message_id` varchar(64) NOT NULL,
+  `message_id` bigint NOT NULL,
   `exchange` varchar(256) NOT NULL,
   `routing_key` varchar(256) NOT NULL,
   `message_header` longtext NOT NULL,
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS `mq_publisher` (
 
 CREATE TABLE IF NOT EXISTS `mq_consumer` (
   `consumer_name` varchar(200) NOT NULL,
-  `message_id` varchar(64) NOT NULL,
+  `message_id` bigint NOT NULL,
   `message_header` longtext NOT NULL,
   `exchange` varchar(256) NOT NULL,
   `routing_key` varchar(256) NOT NULL,

@@ -1,4 +1,4 @@
-// <copyright file="TransactionEventMiddleware.cs" company="Maomi">
+﻿// <copyright file="TransactionEventMiddleware.cs" company="Maomi">
 // Copyright (c) Maomi. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // Github link: https://github.com/whuanle/Maomi.MQ
@@ -33,6 +33,7 @@ public class TransactionEventMiddleware<TMessage> : IEventMiddleware<TMessage>
     /// <param name="transactionOptions">Transaction options.</param>
     /// <param name="databaseProvider">Database provider.</param>
     /// <param name="consumerTypeProvider">Consumer type provider.</param>
+    /// <param name="logger"></param>
     public TransactionEventMiddleware(
         IServiceProvider serviceProvider,
         IMQTransactionOptions transactionOptions,
@@ -60,11 +61,12 @@ public class TransactionEventMiddleware<TMessage> : IEventMiddleware<TMessage>
 
         var now = DateTimeOffset.UtcNow;
         var lockId = _transactionOptions.NodeId;
+        var messageId = MessageIdConverter.ParseRequired(messageHeader.Id, "MessageHeader.Id");
         var barrier = new InboxBarrierEntity
         {
             ConsumerName = consumerName,
-            MessageId = messageHeader.Id,
-            MessageHeader = System.Text.Json.JsonSerializer.Serialize(messageHeader, _transactionOptions.JsonSerializerOptions),
+            MessageId = messageId,
+            MessageHeader = TransactionMessageStorageSerializer.SerializeHeader(messageHeader, _transactionOptions.JsonSerializerOptions),
             Exchange = messageHeader.Exchange ?? string.Empty,
             RoutingKey = messageHeader.RoutingKey ?? string.Empty,
             Status = (int)MessageStatus.Pending,
@@ -107,7 +109,7 @@ public class TransactionEventMiddleware<TMessage> : IEventMiddleware<TMessage>
             var updated = await _databaseProvider.MarkInboxBarrierSucceededAsync(
                 updateCommand,
                 consumerName,
-                messageHeader.Id,
+                messageId,
                 lockId,
                 DateTimeOffset.UtcNow);
 
@@ -126,7 +128,7 @@ public class TransactionEventMiddleware<TMessage> : IEventMiddleware<TMessage>
             await _databaseProvider.MarkInboxBarrierFailedAsync(
                 failCommand,
                 consumerName,
-                messageHeader.Id,
+                messageId,
                 lockId,
                 DateTimeOffset.UtcNow,
                 Truncate(ex.ToString(), _transactionOptions.Consumer.MaxErrorLength));
@@ -180,3 +182,4 @@ public class TransactionEventMiddleware<TMessage> : IEventMiddleware<TMessage>
         return value[..maxLength];
     }
 }
+
