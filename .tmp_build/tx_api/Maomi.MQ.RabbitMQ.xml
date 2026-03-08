@@ -1,0 +1,1634 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Maomi.MQ.RabbitMQ</name>
+    </assembly>
+    <members>
+        <member name="T:Maomi.MQ.Attributes.ConsumerAttribute">
+            <summary>
+            Consumer.<br />
+            消费者配置.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Attributes.ConsumerAttribute.Queue">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Attributes.ConsumerAttribute.DeadExchange">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Attributes.ConsumerAttribute.DeadRoutingKey">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Attributes.ConsumerAttribute.Qos">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Attributes.ConsumerAttribute.RetryFaildRequeue">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Attributes.ConsumerAttribute.Expiration">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Attributes.ConsumerAttribute.AutoQueueDeclare">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Attributes.ConsumerAttribute.BindExchange">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Attributes.ConsumerAttribute.ExchangeType">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Attributes.ConsumerAttribute.RoutingKey">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Attributes.ConsumerAttribute.IsBroadcast">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Attributes.ConsumerAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Attributes.ConsumerAttribute"/> class.
+            </summary>
+            <param name="queue">Queue name.</param>
+        </member>
+        <member name="M:Maomi.MQ.Attributes.ConsumerAttribute.Clone">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Attributes.ConsumerAttribute.CopyFrom(Maomi.MQ.IConsumerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Attributes.ConsumerAttribute.Equals(Maomi.MQ.IConsumerOptions)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.Attributes.EventOrderAttribute">
+            <summary>
+            Identifies the order of event handler.<br />
+            标识事件执行器的顺序.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Attributes.EventOrderAttribute.Order">
+            <summary>
+            Order.<Br />
+            事件执行序号.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Attributes.EventOrderAttribute.#ctor(System.Int32)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Attributes.EventOrderAttribute"/> class.
+            </summary>
+            <param name="order">Order.</param>
+        </member>
+        <member name="T:Maomi.MQ.RouterKeyAttribute">
+            <summary>
+            Queue name.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.RouterKeyAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.RouterKeyAttribute"/> class.
+            </summary>
+            <param name="routingKey"></param>
+        </member>
+        <member name="M:Maomi.MQ.RouterKeyAttribute.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.RouterKeyAttribute"/> class.
+            </summary>
+            <param name="exchange"></param>
+            <param name="routingKey"></param>
+        </member>
+        <member name="P:Maomi.MQ.RouterKeyAttribute.Exchange">
+            <summary>
+            Exchange.<br />
+            绑定交换器.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.RouterKeyAttribute.RoutingKey">
+            <summary>
+            Queue name or routing key name.<br />
+            队列名称或路由键名称.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.AutoQueueDeclare">
+            <summary>
+            Create queues on startup,<see cref="M:RabbitMQ.Client.IChannel.QueueDeclareAsync(System.String,System.Boolean,System.Boolean,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.Object},System.Boolean,System.Boolean,System.Threading.CancellationToken)"/>.<br />
+            是否自动创建队列.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.AutoQueueDeclare.None">
+            <summary>
+            Auto.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.AutoQueueDeclare.Enable">
+            <summary>
+            Enable.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.AutoQueueDeclare.Disable">
+            <summary>
+            Disable.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Consumer.ConsumerOptions">
+            <summary>
+            Consumer options.<br />
+            消费者配置.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Consumer.ConsumerOptions.Queue">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Consumer.ConsumerOptions.DeadExchange">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Consumer.ConsumerOptions.DeadRoutingKey">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Consumer.ConsumerOptions.Qos">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Consumer.ConsumerOptions.RetryFaildRequeue">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Consumer.ConsumerOptions.Expiration">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Consumer.ConsumerOptions.AutoQueueDeclare">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Consumer.ConsumerOptions.BindExchange">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Consumer.ConsumerOptions.ExchangeType">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Consumer.ConsumerOptions.RoutingKey">
+            <inheritdoc />
+        </member>
+        <member name="P:Maomi.MQ.Consumer.ConsumerOptions.IsBroadcast">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Consumer.ConsumerOptions.Clone">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Consumer.ConsumerOptions.CopyFrom(Maomi.MQ.IConsumerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Consumer.ConsumerOptions.Equals(Maomi.MQ.IConsumerOptions)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.Consumer.ConsumerType">
+            <summary>
+            All consumers should be recorded under the "ConsumerType" category.<br />
+            所有消费者都应该被记录到 ConsumerType.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Consumer.ConsumerType.Queue">
+            <summary>
+            Queue.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Consumer.ConsumerType.Consumer">
+            <summary>
+            <see cref="T:Maomi.MQ.IConsumer`1"/>.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Consumer.ConsumerType.Event">
+            <summary>
+            Event model.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Consumer.ConsumerType.ConsumerOptions">
+            <summary>
+            Consumer options.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Consumer.ConsumerType.GetHashCode">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Consumer.ConsumerType.Equals(System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Consumer.ConsumerType.CompareTo(Maomi.MQ.Consumer.ConsumerType)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.Consumer.ConsumerTypeProvider">
+            <summary>
+            Consumer type provider.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Consumer.ConsumerTypeProvider.Consumers">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Consumer.ConsumerTypeProvider.#ctor(System.Collections.Generic.IReadOnlyList{Maomi.MQ.Consumer.ConsumerType})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Consumer.ConsumerTypeProvider"/> class.
+            </summary>
+            <param name="consumers"></param>
+        </member>
+        <member name="M:Maomi.MQ.Consumer.ConsumerTypeProvider.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Consumer.ConsumerTypeProvider"/> class.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Default.DefaultBreakdown">
+            <summary>
+            Fault processor, which calls the relevant interface when the program fails.<br />
+            故障处理器，当程序出现故障时会调用相关接口.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Default.DefaultBreakdown.#ctor(Microsoft.Extensions.Logging.ILogger{Maomi.MQ.Default.DefaultBreakdown})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Default.DefaultBreakdown"/> class.
+            </summary>
+            <param name="logger"></param>
+        </member>
+        <member name="M:Maomi.MQ.Default.DefaultBreakdown.BasicReturnAsync(System.Object,RabbitMQ.Client.Events.BasicReturnEventArgs)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Default.DefaultBreakdown.NotFoundConsumerAsync(System.String,System.Type,System.Type)">
+            <inheritdoc />
+        </member>
+        <member name="T:Maomi.MQ.Default.ServiceFactory">
+            <summary>
+            Centralize some of the services required by the program.
+            集中提供程序所必须的一些服务.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Default.ServiceFactory.#ctor(System.IServiceProvider,Maomi.MQ.MqOptions,Maomi.MQ.IRetryPolicyFactory,Maomi.MQ.IIdProvider,Maomi.MQ.Diagnostics.IConsumerDiagnostics)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Default.ServiceFactory"/> class.
+            </summary>
+            <param name="options"></param>
+            <param name="serviceProvider"></param>
+            <param name="retryPolicyFactory"></param>
+            <param name="ids"></param>
+            <param name="consumerDiagnostics"></param>
+        </member>
+        <member name="P:Maomi.MQ.Default.ServiceFactory.Options">
+            <summary>
+            <see cref="T:Maomi.MQ.MqOptions"/>.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Default.ServiceFactory.ServiceProvider">
+            <summary>
+            <see cref="T:System.IServiceProvider"/>.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Default.ServiceFactory.Ids">
+            <summary>
+            <see cref="T:Maomi.MQ.IIdProvider"/>.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Default.ServiceFactory.RetryPolicyFactory">
+            <summary>
+            <see cref="T:Maomi.MQ.IRetryPolicyFactory"/>.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Default.ServiceFactory.ConsumerDiagnostics">
+            <summary>
+            <see cref="T:Maomi.MQ.Diagnostics.IConsumerDiagnostics"/>.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.EventHandlerDelegate`1">
+            <summary>
+            Event execution chain delegate.<br />
+            事件执行链委托.
+            </summary>
+            <typeparam name="TMessage">事件模型.</typeparam>
+            <param name="messageHeader"></param>
+            <param name="message">事件对象.</param>
+            <param name="cancellationToken"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="T:Maomi.MQ.ConsumerInterceptor">
+            <summary>
+            <see cref="T:Maomi.MQ.ConsumerInterceptor"/> filter.
+            </summary>
+            <remarks>You can modify related parameters.<br />可以修改相关参数.</remarks>
+            <param name="consumerOptions"></param>
+            <param name="consumerType"></param>
+            <returns>Whether to register the consumer.<br />是否注册该消费者.</returns>
+        </member>
+        <member name="T:Maomi.MQ.Diagnostics.ConsumerDiagnostics">
+            <summary>
+            Default consumer diagnostics implementation.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.ConsumerDiagnostics.#ctor(System.IServiceProvider)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Diagnostics.ConsumerDiagnostics"/> class.
+            </summary>
+            <param name="serviceProvider"></param>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.ConsumerDiagnostics.StartConsume(Maomi.MQ.MessageHeader@,RabbitMQ.Client.Events.BasicDeliverEventArgs,Maomi.MQ.IConsumerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.ConsumerDiagnostics.StopConsume(Maomi.MQ.MessageHeader@,System.Diagnostics.Activity)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.ConsumerDiagnostics.ExceptionConsume(Maomi.MQ.MessageHeader@,System.Exception,System.Diagnostics.Activity)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.ConsumerDiagnostics.StartExecute(Maomi.MQ.MessageHeader@)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.ConsumerDiagnostics.StopExecute(Maomi.MQ.MessageHeader@,System.Diagnostics.Activity)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.ConsumerDiagnostics.ExceptionExecute(Maomi.MQ.MessageHeader@,System.Exception,System.Diagnostics.Activity)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.ConsumerDiagnostics.StartRetry(Maomi.MQ.MessageHeader@)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.ConsumerDiagnostics.StopRetry(Maomi.MQ.MessageHeader@,System.Diagnostics.Activity)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.ConsumerDiagnostics.ExceptionRetry(Maomi.MQ.MessageHeader@,System.Exception,System.Diagnostics.Activity)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.ConsumerDiagnostics.StartFallback(Maomi.MQ.MessageHeader@)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.ConsumerDiagnostics.StopFallback(Maomi.MQ.MessageHeader@,Maomi.MQ.ConsumerState,System.Diagnostics.Activity)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.ConsumerDiagnostics.ExceptionFallback(Maomi.MQ.MessageHeader@,System.Exception,System.Diagnostics.Activity)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.ConsumerDiagnostics.RecordFail(Maomi.MQ.MessageHeader@,Maomi.MQ.IConsumerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="T:Maomi.MQ.Diagnostics.IConsumerDiagnostics">
+            <summary>
+            Consumer diagnostics abstraction.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.IConsumerDiagnostics.StartConsume(Maomi.MQ.MessageHeader@,RabbitMQ.Client.Events.BasicDeliverEventArgs,Maomi.MQ.IConsumerOptions)">
+            <summary>
+            Start consume diagnostics.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="eventArgs"></param>
+            <param name="consumerOptions"></param>
+            <returns><see cref="T:System.Diagnostics.Activity"/> instance.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.IConsumerDiagnostics.StopConsume(Maomi.MQ.MessageHeader@,System.Diagnostics.Activity)">
+            <summary>
+            Stop consume diagnostics.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="activity"></param>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.IConsumerDiagnostics.ExceptionConsume(Maomi.MQ.MessageHeader@,System.Exception,System.Diagnostics.Activity)">
+            <summary>
+            Record consume exception diagnostics.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="exception"></param>
+            <param name="activity"></param>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.IConsumerDiagnostics.StartExecute(Maomi.MQ.MessageHeader@)">
+            <summary>
+            Start execute diagnostics.
+            </summary>
+            <param name="messageHeader"></param>
+            <returns><see cref="T:System.Diagnostics.Activity"/> instance.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.IConsumerDiagnostics.StopExecute(Maomi.MQ.MessageHeader@,System.Diagnostics.Activity)">
+            <summary>
+            Stop execute diagnostics.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="activity"></param>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.IConsumerDiagnostics.ExceptionExecute(Maomi.MQ.MessageHeader@,System.Exception,System.Diagnostics.Activity)">
+            <summary>
+            Record execute exception diagnostics.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="exception"></param>
+            <param name="activity"></param>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.IConsumerDiagnostics.StartRetry(Maomi.MQ.MessageHeader@)">
+            <summary>
+            Start retry diagnostics.
+            </summary>
+            <param name="messageHeader"></param>
+            <returns><see cref="T:System.Diagnostics.Activity"/> instance.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.IConsumerDiagnostics.StopRetry(Maomi.MQ.MessageHeader@,System.Diagnostics.Activity)">
+            <summary>
+            Stop retry diagnostics.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="activity"></param>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.IConsumerDiagnostics.ExceptionRetry(Maomi.MQ.MessageHeader@,System.Exception,System.Diagnostics.Activity)">
+            <summary>
+            Record retry exception diagnostics.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="exception"></param>
+            <param name="activity"></param>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.IConsumerDiagnostics.StartFallback(Maomi.MQ.MessageHeader@)">
+            <summary>
+            Start fallback diagnostics.
+            </summary>
+            <param name="messageHeader"></param>
+            <returns><see cref="T:System.Diagnostics.Activity"/> instance.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.IConsumerDiagnostics.StopFallback(Maomi.MQ.MessageHeader@,Maomi.MQ.ConsumerState,System.Diagnostics.Activity)">
+            <summary>
+            Stop fallback diagnostics.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="fallbackState"></param>
+            <param name="activity"></param>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.IConsumerDiagnostics.ExceptionFallback(Maomi.MQ.MessageHeader@,System.Exception,System.Diagnostics.Activity)">
+            <summary>
+            Record fallback exception diagnostics.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="exception"></param>
+            <param name="activity"></param>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.IConsumerDiagnostics.RecordFail(Maomi.MQ.MessageHeader@,Maomi.MQ.IConsumerOptions)">
+            <summary>
+            Record consume failure count.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="consumerOptions"></param>
+        </member>
+        <member name="T:Maomi.MQ.Diagnostics.IPublisherDiagnostics">
+            <summary>
+            Publisher diagnostics abstraction.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.IPublisherDiagnostics.Start(Maomi.MQ.MessageHeader@,System.String,System.String)">
+            <summary>
+            Start publish diagnostics.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="exchange"></param>
+            <param name="routingKey"></param>
+            <returns><see cref="T:System.Diagnostics.Activity"/> instance.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.IPublisherDiagnostics.Stop(Maomi.MQ.MessageHeader@,System.String,System.String,System.Diagnostics.Activity)">
+            <summary>
+            Stop publish diagnostics.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="exchange"></param>
+            <param name="routingKey"></param>
+            <param name="activity"></param>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.IPublisherDiagnostics.Exception(Maomi.MQ.MessageHeader@,System.String,System.String,System.Exception,System.Diagnostics.Activity)">
+            <summary>
+            Record publish exception diagnostics.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="exchange"></param>
+            <param name="routingKey"></param>
+            <param name="exception"></param>
+            <param name="activity"></param>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.IPublisherDiagnostics.RecordMessageSize(Maomi.MQ.MessageHeader@,System.String,System.String,System.Int64,System.Diagnostics.Activity)">
+            <summary>
+            Record message size metrics.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="exchange"></param>
+            <param name="routingKey"></param>
+            <param name="size"></param>
+            <param name="activity"></param>
+        </member>
+        <member name="T:Maomi.MQ.Diagnostics.PublisherDiagnostics">
+            <summary>
+            Default publisher diagnostics implementation.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.PublisherDiagnostics.#ctor(System.IServiceProvider,Maomi.MQ.MqOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Diagnostics.PublisherDiagnostics"/> class.
+            </summary>
+            <param name="serviceProvider"></param>
+            <param name="mqOptions"></param>
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.PublisherDiagnostics.Start(Maomi.MQ.MessageHeader@,System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.PublisherDiagnostics.Stop(Maomi.MQ.MessageHeader@,System.String,System.String,System.Diagnostics.Activity)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.PublisherDiagnostics.Exception(Maomi.MQ.MessageHeader@,System.String,System.String,System.Exception,System.Diagnostics.Activity)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Diagnostics.PublisherDiagnostics.RecordMessageSize(Maomi.MQ.MessageHeader@,System.String,System.String,System.Int64,System.Diagnostics.Activity)">
+            <inheritdoc />
+        </member>
+        <member name="T:Maomi.MQ.MaomiMQDiagnostic">
+            <summary>
+            ActivitySource names.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.MaomiMQDiagnostic.Sources">
+            <summary>
+            ActivitySource names.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.EventBus.DefaultEventMiddleware`1">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.EventBus.DefaultEventMiddleware`1.ExecuteAsync(Maomi.MQ.MessageHeader,`0,Maomi.MQ.EventHandlerDelegate{`0})">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.EventBus.DefaultEventMiddleware`1.FaildAsync(Maomi.MQ.MessageHeader,System.Exception,System.Int32,`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.EventBus.DefaultEventMiddleware`1.FallbackAsync(Maomi.MQ.MessageHeader,`0,System.Exception)">
+            <inheritdoc />
+        </member>
+        <member name="T:Maomi.MQ.EventBus.EventBusConsumer`1">
+            <summary>
+            Eventbus consumer.<br />
+            事件总线消费者.
+            </summary>
+            <typeparam name="TMessage">Event model.</typeparam>
+        </member>
+        <member name="M:Maomi.MQ.EventBus.EventBusConsumer`1.#ctor(Maomi.MQ.EventBus.IEventMiddleware{`0},Maomi.MQ.EventBus.IHandlerMediator{`0},Microsoft.Extensions.Logging.ILoggerFactory)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.EventBus.EventBusConsumer`1"/> class.
+            </summary>
+            <param name="eventMiddleware"></param>
+            <param name="handlerBroker"></param>
+            <param name="loggerFactory"></param>
+        </member>
+        <member name="M:Maomi.MQ.EventBus.EventBusConsumer`1.ExecuteAsync(Maomi.MQ.MessageHeader,`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.EventBus.EventBusConsumer`1.FaildAsync(Maomi.MQ.MessageHeader,System.Exception,System.Int32,`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.EventBus.EventBusConsumer`1.FallbackAsync(Maomi.MQ.MessageHeader,`0,System.Exception)">
+            <inheritdoc />
+        </member>
+        <member name="T:Maomi.MQ.EventBus.EventHandlerFactory`1">
+            <summary>
+            Event factory.
+            </summary>
+            <typeparam name="TMessage">Event model.</typeparam>
+        </member>
+        <member name="P:Maomi.MQ.EventBus.EventHandlerFactory`1.Handlers">
+            <summary>
+            <inheritdoc/>
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.EventBus.EventHandlerFactory`1.#ctor(System.Collections.Generic.IReadOnlyDictionary{System.Int32,System.Type})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.EventBus.EventHandlerFactory`1"/> class.
+            </summary>
+            <param name="handlers"></param>
+        </member>
+        <member name="T:Maomi.MQ.EventBus.HandlerMediator`1">
+            <summary>
+            Event mediator, used to generate a sequential event execution flow and compensation flow.<br />
+            事件中介者，用于生成有顺序的事件执行流程和补偿流程.
+            </summary>
+            <typeparam name="TMessage">Event mode.</typeparam>
+        </member>
+        <member name="M:Maomi.MQ.EventBus.HandlerMediator`1.#ctor(System.IServiceProvider,Maomi.MQ.EventBus.IEventHandlerFactory{`0},Microsoft.Extensions.Logging.ILoggerFactory)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.EventBus.HandlerMediator`1"/> class.
+            </summary>
+            <param name="serviceProvider"></param>
+            <param name="eventInfo"></param>
+            <param name="loggerFactory"></param>
+        </member>
+        <member name="M:Maomi.MQ.EventBus.HandlerMediator`1.ExecuteAsync(Maomi.MQ.MessageHeader,`0,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.EventBus.IEventHandler`1">
+            <summary>
+            Represents the completion of one of the steps of an event.<br />
+            表示完成一个事件的其中一个步骤.
+            </summary>
+            <typeparam name="TMessage">Message body.</typeparam>
+        </member>
+        <member name="M:Maomi.MQ.EventBus.IEventHandler`1.ExecuteAsync(`0,System.Threading.CancellationToken)">
+            <summary>
+            Forward execution event.<br />
+            正向执行事件.
+            </summary>
+            <param name="message">Message object.<br />事件对象.</param>
+            <param name="cancellationToken"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.EventBus.IEventHandler`1.CancelAsync(`0,System.Threading.CancellationToken)">
+            <summary>
+            How do I roll back the current step when event execution fails.<br />
+            当事件执行失败时，如何回滚当前步骤.
+            </summary>
+            <param name="message">Message object.<br />事件对象.</param>
+            <param name="cancellationToken"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="T:Maomi.MQ.EventBus.IEventHandlerFactory">
+            <summary>
+            Event factory.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.EventBus.IEventHandlerFactory.Handlers">
+            <summary>
+            Handlers.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.EventBus.IEventHandlerFactory`1">
+            <summary>
+            Event factory.
+            </summary>
+            <typeparam name="TMessage">Event model.</typeparam>
+        </member>
+        <member name="T:Maomi.MQ.EventBus.IEventMiddleware`1">
+            <summary>
+            Consumer abstract interface.
+            </summary>
+            <typeparam name="TMessage">事件模型.</typeparam>
+        </member>
+        <member name="M:Maomi.MQ.EventBus.IEventMiddleware`1.ExecuteAsync(Maomi.MQ.MessageHeader,`0,Maomi.MQ.EventHandlerDelegate{`0})">
+            <summary>
+            The received message is processed when it has been deserialized correctly.<br />
+            当消息被正确反序列化后，处理接收到的消息.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="message">事件内容.</param>
+            <param name="next">事件执行链委托.</param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.EventBus.IEventMiddleware`1.FaildAsync(Maomi.MQ.MessageHeader,System.Exception,System.Int32,`0)">
+            <summary>
+            When an exception occurs to ExecuteAsync, execute it immediately.<br />
+            当 ExecuteAsync 出现异常后，立即执行.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="ex">An anomaly occurs when consuming.<br />消费时出现的异常.</param>
+            <param name="retryCount">Current retry times.<br />当前重试次数.</param>
+            <param name="message"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.EventBus.IEventMiddleware`1.FallbackAsync(Maomi.MQ.MessageHeader,`0,System.Exception)">
+            <summary>
+            When all retries fail, or an exception occurs that the ExecuteAsync method cannot be accessed.<br />
+            当所有重试均失败，或出现不能进入 ExecuteAsync 方法的异常.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="message"></param>
+            <param name="ex"></param>
+            <returns>Check whether the rollback is successful.</returns>
+        </member>
+        <member name="T:Maomi.MQ.EventBus.IHandlerMediator`1">
+            <summary>
+            Event mediator, used to generate a sequential event execution flow and compensation flow.<br />
+            事件中介者，用于生成有顺序的事件执行流程和补偿流程.
+            </summary>
+            <typeparam name="TMessage">Event mode.</typeparam>
+        </member>
+        <member name="M:Maomi.MQ.EventBus.IHandlerMediator`1.ExecuteAsync(Maomi.MQ.MessageHeader,`0,System.Threading.CancellationToken)">
+            <summary>
+            Execute the event, and the method will generate a <see cref="T:Maomi.MQ.EventHandlerDelegate`1" /> delegate, passed to <see cref="T:Maomi.MQ.EventBus.IEventMiddleware`1"/>.<br />
+            执行事件，该方法会被生成 <see cref="T:Maomi.MQ.EventHandlerDelegate`1" /> 委托，传递到 <see cref="T:Maomi.MQ.EventBus.IEventMiddleware`1"/> 中.
+            </summary>
+            <param name="messageHeader"></param>
+            <param name="message"></param>
+            <param name="cancellationToken"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="T:Maomi.MQ.ExchangeType">
+            <summary>
+            Rabbit exchange type, fanout, firect, topic, headers.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.ExchangeType.Fanout">
+            <summary>
+            fanout.<br />
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.ExchangeType.Direct">
+            <summary>
+            direct.<br />
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.ExchangeType.Topic">
+            <summary>
+            topic.<br />
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.ExchangeType.Headers">
+            <summary>
+            headers.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.MessageHeaderExtensions">
+            <summary>
+            Extensions for <see cref="T:RabbitMQ.Client.IReadOnlyBasicProperties"/>.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.MessageHeaderExtensions.GetMessageHeader(RabbitMQ.Client.Events.BasicDeliverEventArgs)">
+            <summary>
+            Get message header from <see cref="T:RabbitMQ.Client.Events.BasicDeliverEventArgs"/>.
+            </summary>
+            <param name="eventArgs"></param>
+            <returns><see cref="T:Maomi.MQ.MessageHeader"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.MessageHeaderExtensions.GetMessageHeader(RabbitMQ.Client.IReadOnlyBasicProperties)">
+            <summary>
+            Get message header from <see cref="T:RabbitMQ.Client.IReadOnlyBasicProperties"/>.
+            </summary>
+            <param name="properties"></param>
+            <returns><see cref="T:Maomi.MQ.MessageHeader"/>.</returns>
+        </member>
+        <member name="T:Maomi.MQ.PublisherExtensions">
+            <summary>
+            Extensions.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.PublisherExtensions.CreateSingle(Maomi.MQ.IMessagePublisher,RabbitMQ.Client.CreateChannelOptions)">
+            <summary>
+            The publisher of an exclusive connection channel. <br />
+            独占连接通道的发布者.
+            </summary>
+            <param name="messagePublisher"></param>
+            <param name="createChannelOptions"><see cref="T:RabbitMQ.Client.CreateChannelOptions"/>.</param>
+            <returns><see cref="T:Maomi.MQ.ISingleChannelPublisher"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.PublisherExtensions.TxSelectAsync(Maomi.MQ.IMessagePublisher)">
+            <summary>
+            See <see cref="M:RabbitMQ.Client.IChannel.TxSelectAsync(System.Threading.CancellationToken)"/>. <br />
+            Asynchronously enable TX mode for this session.<br />
+            开启事务.
+            </summary>
+            <param name="messagePublisher"></param>
+            <returns><see cref="T:Maomi.MQ.TransactionPublisher"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.PublisherExtensions.CreateTransaction(Maomi.MQ.IMessagePublisher)">
+            <summary>
+            See <see cref="M:RabbitMQ.Client.IChannel.TxSelectAsync(System.Threading.CancellationToken)"/>. <br />
+            Asynchronously enable TX mode for this session.<br />
+            开启事务.
+            </summary>
+            <param name="messagePublisher"></param>
+            <returns><see cref="T:Maomi.MQ.TransactionPublisher"/>.</returns>
+        </member>
+        <member name="T:Maomi.MQ.Filters.ConsumerTypeFilter">
+            <summary>
+            Add the consumers with the [<see cref="T:Maomi.MQ.Attributes.ConsumerAttribute"/>] feature to the container.<br />
+            将带有 [<see cref="T:Maomi.MQ.Attributes.ConsumerAttribute"/>] 特性的消费者添加到容器中.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Filters.ConsumerTypeFilter.#ctor(Maomi.MQ.ConsumerInterceptor)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Filters.ConsumerTypeFilter"/> class.
+            </summary>
+            <param name="consumerInterceptor">Filter.</param>
+        </member>
+        <member name="M:Maomi.MQ.Filters.ConsumerTypeFilter.Build(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Filters.ConsumerTypeFilter.Filter(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Type)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.Filters.CustomConsumerTypeFilter">
+            <summary>
+            Fully customizable consumers and configurations.<br />
+            完全自定义消费者和配置.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Filters.CustomConsumerTypeFilter.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Filters.CustomConsumerTypeFilter"/> class.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Filters.CustomConsumerTypeFilter.Build(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Filters.CustomConsumerTypeFilter.AddConsumer``1(Maomi.MQ.IConsumerOptions)">
+            <summary>
+            Add a custom consumer type.<br />
+            添加自定义消费者.
+            </summary>
+            <typeparam name="TConsumer"><see cref="T:Maomi.MQ.IConsumer`1"/>.</typeparam>
+            <param name="consumerOptions"></param>
+        </member>
+        <member name="M:Maomi.MQ.Filters.CustomConsumerTypeFilter.AddConsumer(System.Type,Maomi.MQ.IConsumerOptions)">
+            <summary>
+            Add a custom consumer type.<br />
+            添加自定义消费者.
+            </summary>
+            <param name="consumerType"></param>
+            <param name="consumerOptions"></param>
+        </member>
+        <member name="M:Maomi.MQ.Filters.CustomConsumerTypeFilter.Filter(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Type)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.Filters.EmptyTypeFilter">
+            <summary>
+            Empty type filter.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Filters.EmptyTypeFilter.Build(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Filters.EmptyTypeFilter.Filter(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Type)">
+            <inheritdoc />
+        </member>
+        <member name="T:Maomi.MQ.Filters.EventBusTypeFilter">
+            <summary>
+            Eventbus type filter.<br />
+            事件总线类型过滤器.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Filters.EventBusTypeFilter.#ctor(Maomi.MQ.ConsumerInterceptor)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Filters.EventBusTypeFilter"/> class.
+            </summary>
+            <param name="consumerInterceptor"></param>
+        </member>
+        <member name="M:Maomi.MQ.Filters.EventBusTypeFilter.Filter(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Type)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Filters.EventBusTypeFilter.Build(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <inheritdoc />
+        </member>
+        <member name="T:Maomi.MQ.Filters.EventBusTypeFilter.EventInfo">
+            <summary>
+            Event info.<br />
+            事件信息.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Filters.EventBusTypeFilter.EventInfo.Queue">
+            <summary>
+            Queue.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Filters.EventBusTypeFilter.EventInfo.Options">
+            <summary>
+            <see cref="T:Maomi.MQ.IConsumerOptions"/>.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Filters.EventBusTypeFilter.EventInfo.EventType">
+            <summary>
+            Event type.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Filters.EventBusTypeFilter.EventInfo.Middleware">
+            <summary>
+            <see cref="T:Maomi.MQ.EventBus.IEventMiddleware`1"/>.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Filters.EventBusTypeFilter.EventInfo.Handlers">
+            <summary>
+            Event handler.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Filters.ITypeFilter">
+            <summary>
+            This interface can be used to perform type detection and create the corresponding consumers or working modes.<br />
+            可以通过此接口实现对类型的检测，创建对应的消费者或工作模式.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Filters.ITypeFilter.Filter(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Type)">
+            <summary>
+            Detect and categorize the type as a consumer.<br />
+            检测并将类型构建为消费者.
+            </summary>
+            <param name="services"></param>
+            <param name="type"></param>
+        </member>
+        <member name="M:Maomi.MQ.Filters.ITypeFilter.Build(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Obtain the list of consumer services.<br />
+            获取消费者服务列表.
+            </summary>
+            <param name="services"></param>
+            <returns>ConsumerType collection.</returns>
+        </member>
+        <member name="T:Maomi.MQ.Hosts.ConsumerBaseService">
+            <summary>
+            Base consumer host service.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.Hosts.ConsumerBaseService.CreateMessageConsumerMethod">
+            <summary>
+            Consumer method.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Hosts.ConsumerBaseService.InitQueueAsync(RabbitMQ.Client.IChannel,Maomi.MQ.IConsumerOptions)">
+            <summary>
+            Create queue and bind properties, create exchange and bind RoutingKey.<br />
+            创建队列和绑定属性，创建交换器和绑定 RoutingKey.
+            </summary>
+            <param name="channel"></param>
+            <param name="consumerOptions"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Hosts.ConsumerBaseService.CreateMessageConsumer``1(RabbitMQ.Client.IChannel,System.Type,System.Type,Maomi.MQ.IConsumerOptions)">
+            <summary>
+            Create a consumer for the queue, specify how to consume.<br />
+            为队列创建消费者，指定如何进行消费.
+            </summary>
+            <typeparam name="TMessage">Message type.</typeparam>
+            <param name="consummerChannel"></param>
+            <param name="consumerType"></param>
+            <param name="messageType"></param>
+            <param name="consumerOptions"></param>
+            <returns>Consumer tag.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Hosts.ConsumerBaseService.BuildCreateConsumerHandler(System.Type)">
+            <summary>
+            Build delegate.
+            </summary>
+            <param name="messageType"></param>
+            <returns>Delegate.</returns>
+        </member>
+        <member name="T:Maomi.MQ.Hosts.ConsumerHostedService">
+            <summary>
+            Base consumer service.Initialize the queue and build the consumer application.<br />
+            初始化队列和构建消费者程序.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Hosts.ConsumerHostedService.#ctor(Microsoft.Extensions.Hosting.IHostApplicationLifetime,Maomi.MQ.Default.ServiceFactory,Maomi.MQ.Pool.ConnectionPool,System.Collections.Generic.IReadOnlyList{Maomi.MQ.Consumer.ConsumerType})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Hosts.ConsumerHostedService"/> class.
+            </summary>
+            <param name="hostApplicationLifetime"></param>
+            <param name="serviceFactory"></param>
+            <param name="connectionPool"></param>
+            <param name="consumerTypes"></param>
+        </member>
+        <member name="M:Maomi.MQ.Hosts.ConsumerHostedService.StopAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Hosts.ConsumerHostedService.ExecuteAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Maomi.MQ.Hosts.DynamicConsumerService">
+            <summary>
+            Dynamic consumer host.<br />
+            动态消费者服务.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Hosts.DynamicConsumerService.#ctor(Maomi.MQ.Default.ServiceFactory,Maomi.MQ.Pool.ConnectionPool,Maomi.MQ.IConsumerTypeProvider)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Hosts.DynamicConsumerService"/> class.
+            </summary>
+            <param name="serviceFactory"></param>
+            <param name="connectionPool"></param>
+            <param name="consumerTypeProvider"></param>
+        </member>
+        <member name="M:Maomi.MQ.Hosts.DynamicConsumerService.EventBusAsync``1(Maomi.MQ.IConsumerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Hosts.DynamicConsumerService.ConsumerAsync``2(Maomi.MQ.IConsumerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Hosts.DynamicConsumerService.ConsumerAsync``1(Maomi.MQ.IConsumerOptions,Maomi.MQ.ConsumerExecuteAsync{``0},Maomi.MQ.ConsumerFaildAsync{``0},Maomi.MQ.ConsumerFallbackAsync{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Hosts.DynamicConsumerService.StopConsumerAsync(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Hosts.DynamicConsumerService.StopConsumerTagAsync(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Hosts.DynamicConsumerService.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="T:Maomi.MQ.Hosts.MessageConsumer`1">
+            <summary>
+            The consumer server responsible for handling MQ messages.
+            </summary>
+            <typeparam name="TMessage">TMessage.</typeparam>
+        </member>
+        <member name="M:Maomi.MQ.Hosts.MessageConsumer`1.#ctor(System.IServiceProvider,Maomi.MQ.IConsumerOptions,System.Func{System.IServiceProvider,System.Object})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Hosts.MessageConsumer`1"/> class.
+            </summary>
+            <param name="serviceProvider"></param>
+            <param name="consumerOptions"></param>
+            <param name="consumerInstance"></param>
+        </member>
+        <member name="T:Maomi.MQ.IBreakdown">
+            <summary>
+            Fault processor, which calls the relevant interface when the program fails.<br />
+            故障处理器，当程序出现故障时会调用相关接口.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.IBreakdown.NotFoundConsumerAsync(System.String,System.Type,System.Type)">
+            <summary>
+            When there is no suitable customer.<br />
+            没有找到合适消费者时.
+            </summary>
+            <param name="queue"></param>
+            <param name="messageType"></param>
+            <param name="consumerType"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.IBreakdown.BasicReturnAsync(System.Object,RabbitMQ.Client.Events.BasicReturnEventArgs)">
+            <summary>
+            Handle unrouteable messages.<br />
+            处理不可路由消息.
+            </summary>
+            <param name="sender"></param>
+            <param name="event"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="T:Maomi.MQ.IConsumerOptions">
+            <summary>
+            Consumer.<br />
+            消费者配置.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.IConsumerOptions.Queue">
+            <summary>
+            Queue name.<br />
+            队列名称.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.IConsumerOptions.DeadExchange">
+            <summary>
+            Bind the death message exchange.<br />
+            绑定死信交换器.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.IConsumerOptions.DeadRoutingKey">
+            <summary>
+            Bind the death message queue.<br />
+            绑定死信队列.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.IConsumerOptions.Expiration">
+            <summary>
+            Queue message expiration time, in millimeters.<br />
+            队列消息过期时间，单位毫秒.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.IConsumerOptions.Qos">
+            <summary>
+            Qos,1-65535.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.IConsumerOptions.RetryFaildRequeue">
+            <summary>
+            Whether to return to the queue when the number of consumption failures reaches the condition.<br />
+            消费失败次数达到条件时，是否放回队列.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.IConsumerOptions.AutoQueueDeclare">
+            <summary>
+            Create queues on startup,<see cref="M:RabbitMQ.Client.IChannel.QueueDeclareAsync(System.String,System.Boolean,System.Boolean,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.Object},System.Boolean,System.Boolean,System.Threading.CancellationToken)"/>.<br />
+            是否自动创建队列.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.IConsumerOptions.BindExchange">
+            <summary>
+            Bind the exchange.<br />
+            绑定交换器.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.IConsumerOptions.ExchangeType">
+            <summary>
+            Exchange type.<br />
+            交换器类型.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.IConsumerOptions.RoutingKey">
+            <summary>
+            Bind the routing key.<br />
+            绑定路由键.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.IConsumerOptions.IsBroadcast">
+            <summary>
+            Broadcast mode.<br />
+            广播模式.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.IConsumerOptions.Clone">
+            <summary>
+            Creates a new object that is a copy of the current instance.
+            </summary>
+            <returns>A new object that is a copy of this instance.</returns>
+        </member>
+        <member name="M:Maomi.MQ.IConsumerOptions.CopyFrom(Maomi.MQ.IConsumerOptions)">
+            <summary>
+            Copy from another object.
+            </summary>
+            <param name="options"></param>
+        </member>
+        <member name="T:Maomi.MQ.IConsumerTypeProvider">
+            <summary>
+            Consumer type provider.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.IConsumerTypeProvider.Consumers">
+            <summary>
+            Consumers.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.IDynamicConsumer">
+            <summary>
+            Dynamic consumer services that dynamically start or stop consumers at run time.<br />
+            动态消费者服务，在运行时动态启动或停止消费者.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.IDynamicConsumer.ConsumerAsync``2(Maomi.MQ.IConsumerOptions)">
+            <summary>
+            Launch a new consumer.<br />
+            启动一个新的消费者.
+            </summary>
+            <typeparam name="TConsumer"><see cref="T:Maomi.MQ.IConsumer`1"/>.</typeparam>
+            <typeparam name="TMessage">Message type.</typeparam>
+            <param name="consumerOptions"></param>
+            <returns>Return to Consumer identity.<br />返回消费者标识.</returns>
+        </member>
+        <member name="M:Maomi.MQ.IDynamicConsumer.EventBusAsync``1(Maomi.MQ.IConsumerOptions)">
+            <summary>
+            Launch a new consumer.<br />
+            启动一个新的消费者.
+            </summary>
+            <typeparam name="TMessage">Message type.</typeparam>
+            <param name="consumerOptions"></param>
+            <returns>Return to Consumer identity.<br />返回消费者标识.</returns>
+        </member>
+        <member name="M:Maomi.MQ.IDynamicConsumer.ConsumerAsync``1(Maomi.MQ.IConsumerOptions,Maomi.MQ.ConsumerExecuteAsync{``0},Maomi.MQ.ConsumerFaildAsync{``0},Maomi.MQ.ConsumerFallbackAsync{``0})">
+            <summary>
+            Launch a new consumer.<br />
+            启动一个新的消费者.
+            </summary>
+            <typeparam name="TMessage">Message type.</typeparam>
+            <param name="consumerOptions"></param>
+            <param name="execute">execute.</param>
+            <param name="faild">Callback invoked when message consumption fails.<br />消息消费失败时调用的回调.</param>
+            <param name="fallback">fallback.</param>
+            <returns>Return to Consumer identity.<br />返回消费者标识.</returns>
+        </member>
+        <member name="M:Maomi.MQ.IDynamicConsumer.StopConsumerAsync(System.String)">
+            <summary>
+            Stop the consumer using the queue name.<br />
+            使用队列名称停止消费者.
+            </summary>
+            <param name="queue"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.IDynamicConsumer.StopConsumerTagAsync(System.String)">
+            <summary>
+            Use the consumer logo to stop consumers.<see cref="M:RabbitMQ.Client.IChannel.BasicCancelAsync(System.String,System.Boolean,System.Threading.CancellationToken)"/> will be called to cancel the consumption.<br />
+            使用消费者标识停止消费者，将会调用 <see cref="M:RabbitMQ.Client.IChannel.BasicCancelAsync(System.String,System.Boolean,System.Threading.CancellationToken)"/> 取消消费.
+            </summary>
+            <param name="consumerTag"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="T:Maomi.MQ.IRouterKeyOptions">
+            <summary>
+            队列名称设置.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.IRouterKeyOptions.RoutingKey">
+            <summary>
+            Queue name or routing key name.<br />
+            队列名称或路由键名称.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.IRouterKeyOptions.Exchange">
+            <summary>
+            Exchange.<br />
+            绑定交换器.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.IRoutingProvider">
+            <summary>
+            Check exchange, routingKey, and queue.This interface will be called when publishing messages or creating consumer programs. <br />You can re-implement this interface to intercept and modify the routing information.<br />
+            在发布消息或创建消费者程序时会调用此接口，你可以重新实现此接口，以便拦截、修改路由信息.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.IRoutingProvider.Get(Maomi.MQ.IConsumerOptions)">
+            <summary>
+            Get options.
+            </summary>
+            <param name="consumerOptions"></param>
+            <returns><see cref="T:Maomi.MQ.IConsumerOptions"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.IRoutingProvider.Get(Maomi.MQ.IRouterKeyOptions)">
+            <summary>
+            Get options.
+            </summary>
+            <param name="queueNameOptions"></param>
+            <returns><see cref="T:Maomi.MQ.IConsumerOptions"/>.</returns>
+        </member>
+        <member name="T:Maomi.MQ.MaomiExtensions">
+            <summary>
+            Extension.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.MaomiExtensions.AddMaomiMQ(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Maomi.MQ.Models.MqOptionsBuilder},System.Reflection.Assembly[])">
+            <summary>
+            Use the Maomi.MQ service.<br />
+            注入 Maomi.MQ 服务.
+            </summary>
+            <param name="services">services.</param>
+            <param name="mqOptionsBuilder">Global MQ configuration.<br />全局 MQ 配置.</param>
+            <param name="assemblies">The assembly to be scanned.<br />需要扫描的程序集.</param>
+            <returns><see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.MaomiExtensions.AddMaomiMQ(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Maomi.MQ.Models.MqOptionsBuilder},System.Reflection.Assembly[],Maomi.MQ.Filters.ITypeFilter[])">
+            <summary>
+            Use the Maomi.MQ service.<br />
+            注入 Maomi.MQ 服务.
+            </summary>
+            <param name="services">services.</param>
+            <param name="builder">Global MQ configuration.<br />全局 MQ 配置.</param>
+            <param name="assemblies">The assembly to be scanned.<br />需要扫描的程序集.</param>
+            <param name="typeFilters"></param>
+            <returns><see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.</returns>
+        </member>
+        <member name="T:Maomi.MQ.Models.MqOptionsBuilder">
+            <summary>
+            Build options.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Models.MqOptionsBuilder.AppName">
+            <summary>
+            App name.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Models.MqOptionsBuilder.WorkId">
+            <summary>
+            0-64.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Models.MqOptionsBuilder.AutoQueueDeclare">
+            <summary>
+            Create queues on startup,see <see cref="M:RabbitMQ.Client.IChannel.QueueDeclareAsync(System.String,System.Boolean,System.Boolean,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.Object},System.Boolean,System.Boolean,System.Threading.CancellationToken)"/>.<br />
+            是否自动创建队列.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Models.MqOptionsBuilder.Rabbit">
+            <summary>
+            RabbitMQ connection factory.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Models.MqOptionsBuilder.MessageSerializers">
+            <summary>
+            Message serializers.<br />
+            消息序列化器，每个 ContentType 对应一个序列化器.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Models.RegisterQueue">
+            <summary>
+            Information about the registration queue.<br />
+            注册队列的信息.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Models.RegisterQueue.IsRegister">
+            <summary>
+            Whether to register the queue.<br />
+            是否注册该队列.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Models.RegisterQueue.Options">
+            <summary>
+            The consumption configuration of the queue.<br />
+            队列的消费配置.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Models.RegisterQueue.#ctor(System.Boolean,Maomi.MQ.IConsumerOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Models.RegisterQueue"/> class.
+            </summary>
+            <param name="isRegister"></param>
+            <param name="options"></param>
+        </member>
+        <member name="T:Maomi.MQ.Models.RoutingProvider">
+            <summary>
+            Check exchange, routingKey, and queue.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Models.RoutingProvider.Get(Maomi.MQ.IConsumerOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.Models.RoutingProvider.Get(Maomi.MQ.IRouterKeyOptions)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.MqOptions">
+            <summary>
+            Global configuration. <br />
+            全局配置.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.MqOptions.WorkId">
+            <summary>
+            0-64.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.MqOptions.AppName">
+            <summary>
+            App name.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.MqOptions.AutoQueueDeclare">
+            <summary>
+            Create queues on startup,see <see cref="M:RabbitMQ.Client.IChannel.QueueDeclareAsync(System.String,System.Boolean,System.Boolean,System.Boolean,System.Collections.Generic.IDictionary{System.String,System.Object},System.Boolean,System.Boolean,System.Threading.CancellationToken)"/>.<br />
+            是否自动创建队列.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.MqOptions.ConnectionFactory">
+            <summary>
+            RabbitMQ connection factory.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.MqOptions.MessageSerializers">
+            <summary>
+            Message serializers.<br />
+            消息序列化器，每个 ContentType 对应一个序列化器.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Pool.ConnectionObject">
+            <summary>
+            IConnection,IChannel pool.<br />
+            TCP 连接和通道.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Pool.ConnectionObject.Connection">
+            <summary>
+            IConnection.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Pool.ConnectionObject.DefaultChannel">
+            <summary>
+            IChannel.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Pool.ConnectionObject.#ctor(Maomi.MQ.MqOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Pool.ConnectionObject"/> class.
+            </summary>
+            <param name="mqOptions"></param>
+        </member>
+        <member name="M:Maomi.MQ.Pool.ConnectionObject.Dispose">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Pool.ConnectionObject.#ctor(Maomi.MQ.Pool.ConnectionObject)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Pool.ConnectionObject"/> class.
+            </summary>
+            <param name="connectionObject"></param>
+        </member>
+        <member name="T:Maomi.MQ.Pool.ConnectionPool">
+            <summary>
+            Object pool.<br />
+            连接对象池.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Pool.ConnectionPool.#ctor(Maomi.MQ.MqOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Pool.ConnectionPool"/> class.
+            </summary>
+            <param name="mqOptions"></param>
+        </member>
+        <member name="M:Maomi.MQ.Pool.ConnectionPool.Get">
+            <summary>
+            Gets an object from the pool if one is available, otherwise creates one.
+            </summary>
+            <returns><see cref="T:Maomi.MQ.Pool.ConnectionObject"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Pool.ConnectionPool.Create">
+            <summary>
+            Create <see cref="T:Maomi.MQ.Pool.ConnectionObject"/>.
+            </summary>
+            <returns><see cref="T:Maomi.MQ.Pool.ConnectionObject"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Pool.ConnectionPool.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="T:Maomi.MQ.Pool.IConnectionObject">
+            <summary>
+            IConnection,IChannel pool.<br />
+            TCP 连接和通道.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Pool.IConnectionObject.Connection">
+            <summary>
+            IConnection.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Pool.IConnectionObject.DefaultChannel">
+            <summary>
+            IChannel.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Pool.IDisposeConnectionObject">
+            <summary>
+            IConnection,IChannel pool.<br />
+            TCP 连接和通道.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.DefaultMessagePublisher">
+            <summary>
+            <inheritdoc />
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.DefaultMessagePublisher.#ctor(System.IServiceProvider,Maomi.MQ.MqOptions,Maomi.MQ.Pool.ConnectionPool,Maomi.MQ.IIdProvider,Microsoft.Extensions.Logging.ILoggerFactory)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.DefaultMessagePublisher"/> class.
+            </summary>
+            <param name="serviceProvider"></param>
+            <param name="mqOptions"></param>
+            <param name="connectionPool"></param>
+            <param name="idGen"></param>
+            <param name="loggerFactory"></param>
+        </member>
+        <member name="M:Maomi.MQ.DefaultMessagePublisher.#ctor(Maomi.MQ.DefaultMessagePublisher)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.DefaultMessagePublisher"/> class.
+            </summary>
+            <param name="publisher"></param>
+        </member>
+        <member name="M:Maomi.MQ.DefaultMessagePublisher.AutoPublishAsync``1(``0,System.Action{RabbitMQ.Client.BasicProperties},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.DefaultMessagePublisher.PublishAsync``1(System.String,System.String,``0,System.Action{RabbitMQ.Client.BasicProperties},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.DefaultMessagePublisher.PublishAsync``1(System.String,System.String,``0,RabbitMQ.Client.BasicProperties,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.DefaultMessagePublisher.CustomPublishAsync``1(System.String,System.String,``0,RabbitMQ.Client.BasicProperties,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.DefaultMessagePublisher.PublishChannelAsync``1(RabbitMQ.Client.IChannel,System.String,System.String,``0,RabbitMQ.Client.BasicProperties,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.DefaultMessagePublisher.PublishChannelAsync(RabbitMQ.Client.IChannel,System.String,System.String,Maomi.MQ.MessageHeader,System.Byte[],RabbitMQ.Client.BasicProperties,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:Maomi.MQ.IChannelMessagePublisher">
+            <summary>
+            A message publisher that has a separate IChannel channel.<br />
+            单独拥有一个 IChannel 通道的消息发布者.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.IChannelMessagePublisher.PublishChannelAsync``1(RabbitMQ.Client.IChannel,System.String,System.String,``0,RabbitMQ.Client.BasicProperties,System.Threading.CancellationToken)">
+            <summary>
+            Publish messagge.<br />
+            发布消息.
+            </summary>
+            <typeparam name="TMessage">Event model.<br />事件模型类.</typeparam>
+            <param name="channel"></param>
+            <param name="exchange">Exchange name.<br />交换器名称.</param>
+            <param name="routingKey">Queue name.<br />队列名称.</param>
+            <param name="message">Event object.<br />事件对象.</param>
+            <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
+            <param name="cancellationToken"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.IChannelMessagePublisher.PublishChannelAsync(RabbitMQ.Client.IChannel,System.String,System.String,Maomi.MQ.MessageHeader,System.Byte[],RabbitMQ.Client.BasicProperties,System.Threading.CancellationToken)">
+            <summary>
+            Publish messagge.<br />
+            发布消息.
+            </summary>
+            <param name="channel"></param>
+            <param name="exchange">Exchange name.<br />交换器名称.</param>
+            <param name="routingKey">Queue name.<br />队列名称.</param>
+            <param name="messageHeader">Message header.<br />Header 信息.</param>
+            <param name="message">Message body.<br />消息内容.</param>
+            <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
+            <param name="cancellationToken"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="T:Maomi.MQ.IMessagePublisher">
+            <summary>
+            Publish messagge.<br />
+            消息发布者.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.IMessagePublisher.AutoPublishAsync``1(``0,System.Action{RabbitMQ.Client.BasicProperties},System.Threading.CancellationToken)">
+            <summary>
+            When a message like TMessage is marked with the [<see cref="T:Maomi.MQ.RouterKeyAttribute"/>] attribute, it can be automatically published to the corresponding endpoint.<br />
+            当类似 TMessage 使用 [<see cref="T:Maomi.MQ.RouterKeyAttribute"/>] 特性标注时，可以自动发布消息到对应的端点.
+            </summary>
+            <typeparam name="TMessage">Event model.<br />事件模型类.</typeparam>
+            <param name="message">Event object.<br />事件对象.</param>
+            <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
+            <param name="cancellationToken"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.IMessagePublisher.PublishAsync``1(System.String,System.String,``0,System.Action{RabbitMQ.Client.BasicProperties},System.Threading.CancellationToken)">
+            <summary>
+            Publish messagge.<br />
+            发布消息.
+            </summary>
+            <typeparam name="TMessage">Event model.<br />事件模型类.</typeparam>
+            <param name="exchange">Exchange name.<br /> 交换器名称.</param>
+            <param name="routingKey">Queue name.<br />队列名称.</param>
+            <param name="message">Event object.<br />事件对象.</param>
+            <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
+            <param name="cancellationToken"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.IMessagePublisher.PublishAsync``1(System.String,System.String,``0,RabbitMQ.Client.BasicProperties,System.Threading.CancellationToken)">
+            <summary>
+            Publish messagge.<br />
+            发布消息.
+            </summary>
+            <typeparam name="TMessage">Event model.<br />事件模型类.</typeparam>
+            <param name="exchange">Exchange name.<br /> 交换器名称.</param>
+            <param name="routingKey">Queue name.<br />队列名称.</param>
+            <param name="message">Event object.<br />事件对象.</param>
+            <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
+            <param name="cancellationToken"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.IMessagePublisher.CustomPublishAsync``1(System.String,System.String,``0,RabbitMQ.Client.BasicProperties,System.Threading.CancellationToken)">
+            <summary>
+            Publish messagge.<br />
+            发布消息.
+            </summary>
+            <typeparam name="TMessage">Event model.<br />事件模型类.</typeparam>
+            <param name="exchange">Exchange name.<br /> 交换器名称.</param>
+            <param name="routingKey">Queue name.<br />队列名称.</param>
+            <param name="message">Event object.<br />事件对象.</param>
+            <param name="properties"><see href="https://rabbitmq.github.io/rabbitmq-dotnet-client/api/RabbitMQ.Client.IBasicProperties.html"/>.</param>
+            <param name="cancellationToken"></param>
+            <returns><see cref="T:System.Threading.Tasks.Task"/>.</returns>
+        </member>
+        <member name="T:Maomi.MQ.ISingleChannelPublisher">
+            <summary>
+            A message publisher that has a separate IChannel channel.<br />
+            单独拥有一个 IChannel 通道的消息发布者.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.ITransactionPublisher">
+            <summary>
+            RabbitMQ transaction.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.ITransactionPublisher.TxSelectAsync(System.Threading.CancellationToken)">
+            <inheritdoc cref="M:RabbitMQ.Client.IChannel.TxSelectAsync(System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:Maomi.MQ.ITransactionPublisher.TxCommitAsync(System.Threading.CancellationToken)">
+            <inheritdoc cref="M:RabbitMQ.Client.IChannel.TxCommitAsync(System.Threading.CancellationToken)"/>
+        </member>
+        <member name="M:Maomi.MQ.ITransactionPublisher.TxRollbackAsync(System.Threading.CancellationToken)">
+            <inheritdoc cref="M:RabbitMQ.Client.IChannel.TxRollbackAsync(System.Threading.CancellationToken)"/>
+        </member>
+        <member name="T:Maomi.MQ.SingleChannelPublisher">
+            <summary>
+            <inheritdoc cref="T:Maomi.MQ.DefaultMessagePublisher"/>
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.SingleChannelPublisher.#ctor(Maomi.MQ.DefaultMessagePublisher,RabbitMQ.Client.CreateChannelOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.SingleChannelPublisher"/> class.
+            </summary>
+            <param name="publisher"></param>
+            <param name="createChannelOptions"></param>
+        </member>
+        <member name="M:Maomi.MQ.SingleChannelPublisher.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.SingleChannelPublisher.Dispose(System.Boolean)">
+            <inheritdoc cref="M:System.IDisposable.Dispose"/>
+        </member>
+        <member name="T:Maomi.MQ.TransactionPublisher">
+            <summary>
+            RabbitMQ transaction.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.TransactionPublisher.#ctor(Maomi.MQ.DefaultMessagePublisher)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.TransactionPublisher"/> class.
+            </summary>
+            <param name="messagePublisher"></param>
+        </member>
+        <member name="M:Maomi.MQ.TransactionPublisher.TxSelectAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.TransactionPublisher.TxCommitAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Maomi.MQ.TransactionPublisher.TxRollbackAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:System.Diagnostics.DiagnosticsExtensions.AddException(System.Diagnostics.Activity,System.Exception,System.Diagnostics.TagList@,System.DateTimeOffset)">
+            <summary>
+            Add an <see cref="T:System.Diagnostics.ActivityEvent" /> object containing the exception information to the <see cref="P:System.Diagnostics.Activity.Events" /> list.
+            </summary>
+            <param name="activity"></param>
+            <param name="exception">The exception to add to the attached events list.</param>
+            <param name="tags">The tags to add to the exception event.</param>
+            <param name="timestamp">The timestamp to add to the exception event.</param>
+            <returns><see langword="this" /> for convenient chaining.</returns>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NSwag.AspNetCore" />
+    <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Maomi.MQ.RabbitMQ\Maomi.MQ.RabbitMQ.csproj" />
+    <ProjectReference Include="..\..\..\src\serializers\Maomi.MQ.Message.Protobuf-net\Maomi.MQ.Message.Protobuf-net.csproj" />
+    <ProjectReference Include="..\..\..\src\serializers\Maomi.MQ.Message.MessagePack\Maomi.MQ.Message.MessagePack.csproj" />
+  </ItemGroup>
+
+</Project>

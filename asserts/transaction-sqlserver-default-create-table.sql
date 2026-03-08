@@ -5,7 +5,7 @@
 IF OBJECT_ID(N'[mq_publisher]', N'U') IS NULL
 BEGIN
     CREATE TABLE [mq_publisher] (
-      [message_id] nvarchar(64) NOT NULL,
+  [message_id] bigint NOT NULL,
       [exchange] nvarchar(256) NOT NULL,
       [routing_key] nvarchar(256) NOT NULL,
       [message_header] nvarchar(max) NOT NULL,
@@ -37,7 +37,7 @@ IF OBJECT_ID(N'[mq_consumer]', N'U') IS NULL
 BEGIN
     CREATE TABLE [mq_consumer] (
       [consumer_name] nvarchar(200) NOT NULL,
-      [message_id] nvarchar(64) NOT NULL,
+  [message_id] bigint NOT NULL,
       [message_header] nvarchar(max) NOT NULL,
       [exchange] nvarchar(256) NOT NULL,
       [routing_key] nvarchar(256) NOT NULL,

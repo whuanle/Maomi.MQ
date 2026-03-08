@@ -14,7 +14,7 @@ public sealed class OutboxMessageEntity
     /// <summary>
     /// Gets or sets message id.
     /// </summary>
-    public string MessageId { get; set; } = string.Empty;
+    public long MessageId { get; set; }
 
     /// <summary>
     /// Gets or sets exchange.
@@ -32,7 +32,7 @@ public sealed class OutboxMessageEntity
     public string MessageHeader { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets base64 message body.
+    /// Gets or sets serialized message body text.
     /// </summary>
     public string MessageBody { get; set; } = string.Empty;
 

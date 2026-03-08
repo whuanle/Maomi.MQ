@@ -20,6 +20,13 @@ This folder contains the rebuilt sample projects for `Maomi.MQ`.
   - `protobuf-net` serializer sample with producer + consumer.
 - `06-BatchPublisher/Maomi.MQ.Examples.BatchPublisher.Worker`
   - New batch publishing worker sample (high-frequency producer scenario).
+- `07-Transaction/Maomi.MQ.Examples.Transaction.Api`
+  - Outbox + inbox barrier sample based on `Maomi.MQ.Transaction`.
+  - Includes API controller for manual outbox registration in DB transaction, then publish after commit.
+- `08-LoadTest/Maomi.MQ.Examples.LoadTest.Api`
+  - Pressure test API sample with one publish endpoint.
+  - `QueueNo` selects target queue (1=json, 2=protobuf-net, 3=messagepack, 4=raw-binary).
+  - Sends 1,000,000 messages in a loop by default.
 
 ## Run
 
@@ -28,13 +35,13 @@ This folder contains the rebuilt sample projects for `Maomi.MQ`.
 3. Build all samples:
 
 ```bash
-dotnet build example/samples/Maomi.MQ.Examples.sln
+dotnet build examples/Maomi.MQ.Examples.sln
 ```
 
 4. Run one sample:
 
 ```bash
-dotnet run --project example/samples/00-ScenarioHub/Maomi.MQ.Examples.ScenarioHub.Api
+dotnet run --project examples/00-ScenarioHub/Maomi.MQ.Examples.ScenarioHub.Api
 ```
 
 ## ScenarioHub APIs
@@ -46,6 +53,8 @@ dotnet run --project example/samples/00-ScenarioHub/Maomi.MQ.Examples.ScenarioHu
   - `POST /api/scenario/quickstart/publish`
 - EventBus
   - `POST /api/scenario/eventbus/publish`
+- Broadcast
+  - `POST /api/scenario/broadcast/publish`
 - Dynamic consumer
   - `POST /api/scenario/dynamic/start`
   - `DELETE /api/scenario/dynamic/stop/{queue}`
@@ -59,8 +68,22 @@ dotnet run --project example/samples/00-ScenarioHub/Maomi.MQ.Examples.ScenarioHu
   - `POST /api/scenario/batch/worker/start`
   - `POST /api/scenario/batch/worker/stop`
 
+## Transaction APIs
+
+- Register outbox row in DB transaction, commit, then publish message
+  - `POST /api/transaction/publish`
+- Query business table rows
+  - `GET /api/transaction/orders?take=20`
+- Query service status
+  - `GET /api/transaction/status`
+
+## LoadTest APIs
+
+- Queue-based pressure publish
+  - `POST /api/loadtest/publish`
+
 ## Notes
 
 - Sample project names are unified under `Maomi.MQ.Examples.*`.
 - Projects target `net8.0` and rely on central package management.
-- Swagger is enabled for API samples in Development environment.
+- Scalar API reference is enabled for API samples in Development environment.

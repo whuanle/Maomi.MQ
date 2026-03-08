@@ -40,7 +40,10 @@ public static class Extensions
         services.AddSingleton<IMQTransactionOptions>(transactionOptions);
         services.AddScoped<IDatabaseProvider>(DbProviderResolver.Resolve);
         services.AddScoped<ITransactionMessageSerializer, TransactionMessageSerializer>();
+        services.AddScoped<ITransactionOutboxService, TransactionOutboxService>();
+        services.AddScoped<ITransactionBarrierService, TransactionBarrierService>();
         services.AddHostedService<PublisherBackgroundService>();
+        services.AddHostedService<CleanupBackgroundService>();
 
         return services;
     }
@@ -78,7 +81,7 @@ public static class Extensions
     }
 
     /// <summary>
-    /// Builds transaction filters for <see cref="AddMaomiMQ(IServiceCollection, Action{MqOptionsBuilder}, System.Reflection.Assembly[], ITypeFilter[])"/>.
+    /// Builds transaction filters.
     /// </summary>
     /// <param name="consumerInterceptor">Consumer interceptor.</param>
     /// <returns>Type filters.</returns>

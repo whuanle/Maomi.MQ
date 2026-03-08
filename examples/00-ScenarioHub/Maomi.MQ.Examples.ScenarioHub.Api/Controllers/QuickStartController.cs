@@ -8,12 +8,12 @@ namespace Maomi.MQ.Samples.ScenarioHub.Controllers;
 public sealed class QuickStartController : ControllerBase
 {
     private readonly IMessagePublisher _publisher;
-    private readonly ScenarioRuntimeState _state;
+    private readonly ILogger<QuickStartController> _logger;
 
-    public QuickStartController(IMessagePublisher publisher, ScenarioRuntimeState state)
+    public QuickStartController(IMessagePublisher publisher, ILogger<QuickStartController> logger)
     {
         _publisher = publisher;
-        _state = state;
+        _logger = logger;
     }
 
     [HttpPost("publish")]
@@ -26,7 +26,7 @@ public sealed class QuickStartController : ControllerBase
         };
 
         await _publisher.AutoPublishAsync(message);
-        _state.AddLog($"quickstart published: {message.Id}");
+        _logger.LogInformation("QuickStart published. MessageId={MessageId}, Text={Text}", message.Id, message.Text);
         return Results.Ok(message);
     }
 }

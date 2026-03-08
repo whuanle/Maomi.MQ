@@ -8,12 +8,12 @@ namespace Maomi.MQ.Samples.ScenarioHub.Controllers;
 public sealed class ProtobufController : ControllerBase
 {
     private readonly IMessagePublisher _publisher;
-    private readonly ScenarioRuntimeState _state;
+    private readonly ILogger<ProtobufController> _logger;
 
-    public ProtobufController(IMessagePublisher publisher, ScenarioRuntimeState state)
+    public ProtobufController(IMessagePublisher publisher, ILogger<ProtobufController> logger)
     {
         _publisher = publisher;
-        _state = state;
+        _logger = logger;
     }
 
     [HttpPost("publish")]
@@ -26,7 +26,7 @@ public sealed class ProtobufController : ControllerBase
         };
 
         await _publisher.AutoPublishAsync(message);
-        _state.AddLog($"protobuf published: {message.Id} name={message.Name}");
+        _logger.LogInformation("Protobuf published. MessageId={MessageId}, Name={Name}", message.Id, message.Name);
         return Results.Ok(message);
     }
 }

@@ -9,6 +9,7 @@ using Maomi.MQ.Transaction.Models;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
 using System.Data.Common;
+using System.Globalization;
 using System.Transactions;
 
 namespace Maomi.MQ.Transaction.Default;
@@ -74,10 +75,13 @@ public class DBTransactionPublisher : DefaultMessagePublisher, IDBTransactionPub
 
         var serializer = _serializerSelector.GetSerializer(message);
 
-        var messageId = _idGen.NextId().ToString();
+        var messageId = string.IsNullOrWhiteSpace(properties.MessageId)
+            ? _idGen.NextId()
+            : MessageIdConverter.ParseRequired(properties.MessageId, "BasicProperties.MessageId");
+        var messageIdText = messageId.ToString(CultureInfo.InvariantCulture);
         MessageHeader messageHeader = new MessageHeader
         {
-            Id = messageId,
+            Id = messageIdText,
             Timestamp = DateTimeOffset.UtcNow,
             AppId = _mqOptions.AppName,
             ContentType = serializer.ContentType,
@@ -96,8 +100,8 @@ public class DBTransactionPublisher : DefaultMessagePublisher, IDBTransactionPub
             MessageId = messageId,
             Exchange = exchange,
             RoutingKey = reoutingKey,
-            MessageHeader = System.Text.Json.JsonSerializer.Serialize(messageHeader, _transactionOptions.JsonSerializerOptions),
-            MessageBody = Convert.ToBase64String(body),
+            MessageHeader = TransactionMessageStorageSerializer.SerializeHeader(messageHeader, _transactionOptions.JsonSerializerOptions),
+            MessageBody = TransactionMessageStorageSerializer.SerializeBody(body),
             MessageText = _transactionOptions.Publisher.DisplayMessageText
                 ? System.Text.Json.JsonSerializer.Serialize(message, _transactionOptions.JsonSerializerOptions)
                 : "{}",

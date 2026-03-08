@@ -153,6 +153,11 @@ public class EventBusTypeFilter : ITypeFilter
                 serviceType: typeof(IConsumer<>).MakeGenericType(eventType),
                 implementationType: typeof(EventBusConsumer<>).MakeGenericType(eventType),
                 lifetime: ServiceLifetime.Scoped));
+
+            services.Add(new ServiceDescriptor(
+                serviceType: typeof(EventBusConsumer<>).MakeGenericType(eventType),
+                implementationType: typeof(EventBusConsumer<>).MakeGenericType(eventType),
+                lifetime: ServiceLifetime.Scoped));
         }
 
         if (_eventInfos.Count == 0)

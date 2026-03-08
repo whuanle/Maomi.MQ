@@ -1,7 +1,6 @@
 using Maomi.MQ;
 using Maomi.MQ.Attributes;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading;
 
 namespace Maomi.MQ.Samples.ScenarioHub.Controllers;
 
@@ -11,13 +10,16 @@ public sealed class DynamicController : ControllerBase
 {
     private readonly IDynamicConsumer _dynamicConsumer;
     private readonly IMessagePublisher _publisher;
-    private readonly ScenarioRuntimeState _state;
+    private readonly ILogger<DynamicController> _logger;
 
-    public DynamicController(IDynamicConsumer dynamicConsumer, IMessagePublisher publisher, ScenarioRuntimeState state)
+    public DynamicController(
+        IDynamicConsumer dynamicConsumer,
+        IMessagePublisher publisher,
+        ILogger<DynamicController> logger)
     {
         _dynamicConsumer = dynamicConsumer;
         _publisher = publisher;
-        _state = state;
+        _logger = logger;
     }
 
     [HttpPost("start")]
@@ -39,24 +41,36 @@ public sealed class DynamicController : ControllerBase
             options,
             execute: async (header, message) =>
             {
-                Interlocked.Increment(ref _state.DynamicConsumed);
-                _state.AddLog($"dynamic consumed queue={queueName} id={message.Id}");
+                _logger.LogInformation(
+                    "Dynamic consumed. Queue={Queue}, HeaderId={HeaderId}, MessageId={MessageId}",
+                    queueName,
+                    header.Id,
+                    message.Id);
                 await Task.CompletedTask;
             },
             faild: async (header, ex, retryCount, message) =>
             {
-                _state.AddLog($"dynamic failed queue={queueName} id={message.Id} retry={retryCount} ex={ex.Message}");
+                _logger.LogWarning(
+                    ex,
+                    "Dynamic consume failed. Queue={Queue}, HeaderId={HeaderId}, MessageId={MessageId}, RetryCount={RetryCount}",
+                    queueName,
+                    header.Id,
+                    message.Id,
+                    retryCount);
                 await Task.CompletedTask;
             },
             fallback: (header, message, ex) =>
             {
-                _state.AddLog($"dynamic fallback queue={queueName} id={message?.Id} ex={ex?.Message}");
+                _logger.LogError(
+                    ex,
+                    "Dynamic fallback reached. Queue={Queue}, HeaderId={HeaderId}, MessageId={MessageId}",
+                    queueName,
+                    header.Id,
+                    message?.Id);
                 return Task.FromResult(ConsumerState.Ack);
             });
 
-        _state.DynamicConsumerTags[queueName] = tag;
-        Interlocked.Increment(ref _state.DynamicStarted);
-        _state.AddLog($"dynamic started queue={queueName} tag={tag}");
+        _logger.LogInformation("Dynamic consumer started. Queue={Queue}, ConsumerTag={Tag}", queueName, tag);
 
         return Results.Ok(new { Queue = queueName, ConsumerTag = tag });
     }
@@ -65,9 +79,7 @@ public sealed class DynamicController : ControllerBase
     public async Task<IResult> Stop(string queue)
     {
         await _dynamicConsumer.StopConsumerAsync(queue);
-        _state.DynamicConsumerTags.TryRemove(queue, out _);
-        Interlocked.Increment(ref _state.DynamicStopped);
-        _state.AddLog($"dynamic stopped queue={queue}");
+        _logger.LogInformation("Dynamic consumer stopped. Queue={Queue}", queue);
         return Results.Ok(new { Queue = queue, Stopped = true });
     }
 
@@ -80,7 +92,11 @@ public sealed class DynamicController : ControllerBase
         };
 
         await _publisher.PublishAsync(string.Empty, request.Queue, message);
-        _state.AddLog($"dynamic published queue={request.Queue} id={message.Id}");
+        _logger.LogInformation(
+            "Dynamic published. Queue={Queue}, MessageId={MessageId}, Text={Text}",
+            request.Queue,
+            message.Id,
+            message.Text);
         return Results.Ok(new { request.Queue, Message = message });
     }
 }

@@ -31,6 +31,22 @@ public interface IDatabaseProvider
     Task InsertOutboxAsync(DbCommand command, OutboxMessageEntity message, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Tries to lock one outbox message for immediate dispatch.
+    /// </summary>
+    /// <param name="command">Database command.</param>
+    /// <param name="messageId">Message id.</param>
+    /// <param name="lockId">Current lock id.</param>
+    /// <param name="now">Current utc time.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>True if lock acquired.</returns>
+    Task<bool> TryLockOutboxAsync(
+        DbCommand command,
+        long messageId,
+        string lockId,
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Tries to lock due outbox messages for processing.
     /// </summary>
     /// <param name="command">Database command.</param>
@@ -75,7 +91,7 @@ public interface IDatabaseProvider
     /// <returns>True if updated.</returns>
     Task<bool> MarkOutboxSucceededAsync(
         DbCommand command,
-        string messageId,
+        long messageId,
         string lockId,
         DateTimeOffset now,
         CancellationToken cancellationToken = default);
@@ -93,7 +109,7 @@ public interface IDatabaseProvider
     /// <returns>True if updated.</returns>
     Task<bool> MarkOutboxFailedAsync(
         DbCommand command,
-        string messageId,
+        long messageId,
         string lockId,
         DateTimeOffset now,
         DateTimeOffset nextRetryTime,
@@ -127,7 +143,7 @@ public interface IDatabaseProvider
     Task<bool> MarkInboxBarrierSucceededAsync(
         DbCommand command,
         string consumerName,
-        string messageId,
+        long messageId,
         string lockId,
         DateTimeOffset now,
         CancellationToken cancellationToken = default);
@@ -146,9 +162,81 @@ public interface IDatabaseProvider
     Task<bool> MarkInboxBarrierFailedAsync(
         DbCommand command,
         string consumerName,
-        string messageId,
+        long messageId,
         string lockId,
         DateTimeOffset now,
         string errorMessage,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Counts succeeded outbox rows.
+    /// </summary>
+    /// <param name="command">Database command.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Succeeded row count.</returns>
+    Task<long> CountSucceededOutboxAsync(
+        DbCommand command,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Counts succeeded inbox rows.
+    /// </summary>
+    /// <param name="command">Database command.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Succeeded row count.</returns>
+    Task<long> CountSucceededInboxAsync(
+        DbCommand command,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes succeeded outbox rows older than the cutoff time.
+    /// </summary>
+    /// <param name="command">Database command.</param>
+    /// <param name="cutoffTime">Rows with update time less than this value are deleted.</param>
+    /// <param name="take">Maximum deleted rows.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Deleted row count.</returns>
+    Task<int> DeleteSucceededOutboxBeforeAsync(
+        DbCommand command,
+        DateTimeOffset cutoffTime,
+        int take,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes succeeded inbox rows older than the cutoff time.
+    /// </summary>
+    /// <param name="command">Database command.</param>
+    /// <param name="cutoffTime">Rows with update time less than this value are deleted.</param>
+    /// <param name="take">Maximum deleted rows.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Deleted row count.</returns>
+    Task<int> DeleteSucceededInboxBeforeAsync(
+        DbCommand command,
+        DateTimeOffset cutoffTime,
+        int take,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes oldest succeeded outbox rows.
+    /// </summary>
+    /// <param name="command">Database command.</param>
+    /// <param name="take">Maximum deleted rows.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Deleted row count.</returns>
+    Task<int> DeleteOldestSucceededOutboxAsync(
+        DbCommand command,
+        int take,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes oldest succeeded inbox rows.
+    /// </summary>
+    /// <param name="command">Database command.</param>
+    /// <param name="take">Maximum deleted rows.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Deleted row count.</returns>
+    Task<int> DeleteOldestSucceededInboxAsync(
+        DbCommand command,
+        int take,
         CancellationToken cancellationToken = default);
 }

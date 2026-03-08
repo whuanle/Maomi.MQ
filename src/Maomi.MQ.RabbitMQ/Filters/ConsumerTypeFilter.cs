@@ -73,7 +73,10 @@ public class ConsumerTypeFilter : ITypeFilter
 
         if (_consumers.FirstOrDefault(x => x.Queue == consumerAttribute.Queue) is ConsumerType existConsumerType)
         {
-            throw new ArgumentException($"Multiple consumers are bound to the same queue. queue: [{consumerAttribute.Queue}],consumer: {existConsumerType.Consumer.Name} and {type.Name}");
+            if (existConsumerType.ConsumerOptions.IsBroadcast != true)
+            {
+                throw new ArgumentException($"Multiple consumers are bound to the same queue. queue: [{consumerAttribute.Queue}],consumer: {existConsumerType.Consumer.Name} and {type.Name}");
+            }
         }
 
         services.Add(new ServiceDescriptor(serviceType: type, implementationType: type, lifetime: ServiceLifetime.Scoped));

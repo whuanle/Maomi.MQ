@@ -1,0 +1,887 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Maomi.MQ.Transaction</name>
+    </assembly>
+    <members>
+        <member name="T:Maomi.MQ.Transaction.Backgroud.PublisherBackgroundService">
+            <summary>
+            Outbox dispatcher background service.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Backgroud.PublisherBackgroundService.#ctor(Maomi.MQ.Transaction.Models.IMQTransactionOptions,Microsoft.Extensions.DependencyInjection.IServiceScopeFactory,Maomi.MQ.Pool.ConnectionPool,Microsoft.Extensions.Logging.ILogger{Maomi.MQ.Transaction.Backgroud.PublisherBackgroundService})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Transaction.Backgroud.PublisherBackgroundService"/> class.
+            </summary>
+            <param name="transactionOptions">Transaction options.</param>
+            <param name="serviceScopeFactory">Scope factory.</param>
+            <param name="connectionPool">RabbitMQ connection pool.</param>
+            <param name="logger">Logger.</param>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Backgroud.PublisherBackgroundService.StopAsync(System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Backgroud.PublisherBackgroundService.ExecuteAsync(System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Database.DbProviderResolver">
+            <summary>
+            Resolves <see cref="T:Maomi.MQ.Transaction.Database.IDatabaseProvider"/> by provider name.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Database.DbProviderResolver.Resolve(System.IServiceProvider)">
+            <summary>
+            Resolves registered provider implementation.
+            </summary>
+            <param name="serviceProvider">Service provider.</param>
+            <returns><see cref="T:Maomi.MQ.Transaction.Database.IDatabaseProvider"/>.</returns>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Database.IDatabaseProvider">
+            <summary>
+            Database provider for outbox and inbox barrier operations.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Database.IDatabaseProvider.EnsureTablesExistAsync(System.Data.Common.DbCommand,System.Threading.CancellationToken)">
+            <summary>
+            Ensures required tables and indexes exist.
+            </summary>
+            <param name="command">Database command.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>A task representing the asynchronous operation.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Database.IDatabaseProvider.InsertOutboxAsync(System.Data.Common.DbCommand,Maomi.MQ.Transaction.Database.OutboxMessageEntity,System.Threading.CancellationToken)">
+            <summary>
+            Inserts an outbox message within caller transaction.
+            </summary>
+            <param name="command">Database command.</param>
+            <param name="message">Outbox message.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>A task representing the asynchronous operation.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Database.IDatabaseProvider.TryLockOutboxBatchAsync(System.Data.Common.DbCommand,System.String,System.DateTimeOffset,System.TimeSpan,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Tries to lock due outbox messages for processing.
+            </summary>
+            <param name="command">Database command.</param>
+            <param name="lockId">Current node lock id.</param>
+            <param name="now">Current utc time.</param>
+            <param name="lockTimeout">Lock timeout.</param>
+            <param name="maxRetry">Maximum retry count.</param>
+            <param name="take">Take count.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The lock count.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Database.IDatabaseProvider.GetLockedOutboxBatchAsync(System.Data.Common.DbCommand,System.String,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Gets outbox messages locked by current lock id.
+            </summary>
+            <param name="command">Database command.</param>
+            <param name="lockId">Current node lock id.</param>
+            <param name="take">Take count.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The outbox messages.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Database.IDatabaseProvider.MarkOutboxSucceededAsync(System.Data.Common.DbCommand,System.String,System.String,System.DateTimeOffset,System.Threading.CancellationToken)">
+            <summary>
+            Marks outbox message as succeeded.
+            </summary>
+            <param name="command">Database command.</param>
+            <param name="messageId">Message id.</param>
+            <param name="lockId">Current node lock id.</param>
+            <param name="now">Current utc time.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>True if updated.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Database.IDatabaseProvider.MarkOutboxFailedAsync(System.Data.Common.DbCommand,System.String,System.String,System.DateTimeOffset,System.DateTimeOffset,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Marks outbox message as failed and schedules next retry.
+            </summary>
+            <param name="command">Database command.</param>
+            <param name="messageId">Message id.</param>
+            <param name="lockId">Current node lock id.</param>
+            <param name="now">Current utc time.</param>
+            <param name="nextRetryTime">Next retry time.</param>
+            <param name="errorMessage">Error message.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>True if updated.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Database.IDatabaseProvider.TryEnterInboxBarrierAsync(System.Data.Common.DbCommand,Maomi.MQ.Transaction.Database.InboxBarrierEntity,System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Tries entering inbox barrier for a message.
+            </summary>
+            <param name="command">Database command.</param>
+            <param name="barrier">Inbox barrier row.</param>
+            <param name="lockTimeout">Lock timeout.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Enter result.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Database.IDatabaseProvider.MarkInboxBarrierSucceededAsync(System.Data.Common.DbCommand,System.String,System.String,System.String,System.DateTimeOffset,System.Threading.CancellationToken)">
+            <summary>
+            Marks inbox barrier as succeeded.
+            </summary>
+            <param name="command">Database command.</param>
+            <param name="consumerName">Consumer name.</param>
+            <param name="messageId">Message id.</param>
+            <param name="lockId">Current lock id.</param>
+            <param name="now">Current utc time.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>True if updated.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Database.IDatabaseProvider.MarkInboxBarrierFailedAsync(System.Data.Common.DbCommand,System.String,System.String,System.String,System.DateTimeOffset,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Marks inbox barrier as failed.
+            </summary>
+            <param name="command">Database command.</param>
+            <param name="consumerName">Consumer name.</param>
+            <param name="messageId">Message id.</param>
+            <param name="lockId">Current lock id.</param>
+            <param name="now">Current utc time.</param>
+            <param name="errorMessage">Error message.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>True if updated.</returns>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Database.IDatabaseProviderNamed">
+            <summary>
+            Named database provider metadata.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.IDatabaseProviderNamed.ProviderName">
+            <summary>
+            Gets provider name.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Database.InboxBarrierEnterResult">
+            <summary>
+            Inbox barrier enter result.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.Transaction.Database.InboxBarrierEnterResult.Entered">
+            <summary>
+            Entered successfully and can execute business logic.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.Transaction.Database.InboxBarrierEnterResult.AlreadyCompleted">
+            <summary>
+            Message has already been completed.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.Transaction.Database.InboxBarrierEnterResult.Busy">
+            <summary>
+            Message is currently being processed by another node.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Database.InboxBarrierEntity">
+            <summary>
+            Inbox barrier row.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.InboxBarrierEntity.ConsumerName">
+            <summary>
+            Gets or sets consumer queue name.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.InboxBarrierEntity.MessageId">
+            <summary>
+            Gets or sets message id.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.InboxBarrierEntity.MessageHeader">
+            <summary>
+            Gets or sets serialized message header.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.InboxBarrierEntity.Exchange">
+            <summary>
+            Gets or sets exchange.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.InboxBarrierEntity.RoutingKey">
+            <summary>
+            Gets or sets routing key.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.InboxBarrierEntity.Status">
+            <summary>
+            Gets or sets message status.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.InboxBarrierEntity.LockId">
+            <summary>
+            Gets or sets process lock id.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.InboxBarrierEntity.LockTime">
+            <summary>
+            Gets or sets process lock time.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.InboxBarrierEntity.LastError">
+            <summary>
+            Gets or sets last error message.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.InboxBarrierEntity.CreateTime">
+            <summary>
+            Gets or sets create time.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.InboxBarrierEntity.UpdateTime">
+            <summary>
+            Gets or sets update time.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Database.OutboxMessageEntity">
+            <summary>
+            Outbox message row.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.OutboxMessageEntity.MessageId">
+            <summary>
+            Gets or sets message id.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.OutboxMessageEntity.Exchange">
+            <summary>
+            Gets or sets exchange.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.OutboxMessageEntity.RoutingKey">
+            <summary>
+            Gets or sets routing key.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.OutboxMessageEntity.MessageHeader">
+            <summary>
+            Gets or sets serialized message header.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.OutboxMessageEntity.MessageBody">
+            <summary>
+            Gets or sets base64 message body.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.OutboxMessageEntity.MessageText">
+            <summary>
+            Gets or sets debug message text.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.OutboxMessageEntity.Status">
+            <summary>
+            Gets or sets message status.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.OutboxMessageEntity.RetryCount">
+            <summary>
+            Gets or sets retry count.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.OutboxMessageEntity.NextRetryTime">
+            <summary>
+            Gets or sets next retry time.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.OutboxMessageEntity.LockId">
+            <summary>
+            Gets or sets process lock id.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.OutboxMessageEntity.LockTime">
+            <summary>
+            Gets or sets process lock time.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.OutboxMessageEntity.LastError">
+            <summary>
+            Gets or sets last error message.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.OutboxMessageEntity.CreateTime">
+            <summary>
+            Gets or sets create time.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Database.OutboxMessageEntity.UpdateTime">
+            <summary>
+            Gets or sets update time.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.DbTransactionTypeFilter">
+            <summary>
+            Scans and registers <see cref="T:Maomi.MQ.Transaction.IDbTransactionConsumer`1"/> consumers.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.DbTransactionTypeFilter.#ctor(Maomi.MQ.ConsumerInterceptor)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Transaction.DbTransactionTypeFilter"/> class.
+            </summary>
+            <param name="consumerInterceptor">Consumer interceptor.</param>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.DbTransactionTypeFilter.Build(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.DbTransactionTypeFilter.Filter(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Type)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Default.DbTransactionConsumer`1">
+            <summary>
+            Wraps <see cref="T:Maomi.MQ.Transaction.IDbTransactionConsumer`1"/> with inbox barrier.
+            </summary>
+            <typeparam name="TMessage">Message type.</typeparam>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.DbTransactionConsumer`1.#ctor(Maomi.MQ.Transaction.IDbTransactionConsumer{`0},System.IServiceProvider,Maomi.MQ.Transaction.Models.IMQTransactionOptions,Maomi.MQ.Transaction.Database.IDatabaseProvider,Microsoft.Extensions.Logging.ILogger{Maomi.MQ.Transaction.Default.DbTransactionConsumer{`0}},System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Transaction.Default.DbTransactionConsumer`1"/> class.
+            </summary>
+            <param name="innerConsumer">Inner consumer.</param>
+            <param name="serviceProvider">Service provider.</param>
+            <param name="transactionOptions">Transaction options.</param>
+            <param name="databaseProvider">Database provider.</param>
+            <param name="logger">Logger.</param>
+            <param name="consumerName">Consumer queue name.</param>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.DbTransactionConsumer`1.ExecuteAsync(Maomi.MQ.MessageHeader,`0)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.DbTransactionConsumer`1.FaildAsync(Maomi.MQ.MessageHeader,System.Exception,System.Int32,`0)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.DbTransactionConsumer`1.FallbackAsync(Maomi.MQ.MessageHeader,`0,System.Exception)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Default.DBTransactionPublisher">
+            <summary>
+            Message publisher that writes outbox rows in local transaction.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.DBTransactionPublisher.#ctor(Maomi.MQ.DefaultMessagePublisher,System.Data.Common.DbConnection,System.Data.Common.DbTransaction)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Transaction.Default.DBTransactionPublisher"/> class.
+            </summary>
+            <param name="publisher">Base publisher.</param>
+            <param name="dbConnection">Database connection.</param>
+            <param name="dbTransaction">Database transaction.</param>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.DBTransactionPublisher.#ctor(Maomi.MQ.DefaultMessagePublisher)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Transaction.Default.DBTransactionPublisher"/> class.
+            </summary>
+            <param name="publisher">Base publisher.</param>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.DBTransactionPublisher.PublishChannelAsync``1(RabbitMQ.Client.IChannel,System.String,System.String,``0,RabbitMQ.Client.BasicProperties,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Default.TransactionBarrierService">
+            <summary>
+            Default implementation of <see cref="T:Maomi.MQ.Transaction.ITransactionBarrierService"/>.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.TransactionBarrierService.#ctor(Maomi.MQ.Transaction.Models.IMQTransactionOptions,Maomi.MQ.Transaction.Database.IDatabaseProvider)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Transaction.Default.TransactionBarrierService"/> class.
+            </summary>
+            <param name="transactionOptions">Transaction options.</param>
+            <param name="databaseProvider">Database provider.</param>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.TransactionBarrierService.EnterAsync(System.Data.Common.DbConnection,System.Data.Common.DbTransaction,System.String,Maomi.MQ.MessageHeader,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.TransactionBarrierService.MarkSucceededAsync(System.Data.Common.DbConnection,System.Data.Common.DbTransaction,Maomi.MQ.Transaction.TransactionBarrierContext,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.TransactionBarrierService.MarkFailedAsync(System.Data.Common.DbConnection,System.Data.Common.DbTransaction,Maomi.MQ.Transaction.TransactionBarrierContext,System.Exception,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Default.TransactionEventMiddleware`1">
+            <summary>
+            Event middleware with inbox barrier.
+            </summary>
+            <typeparam name="TMessage">Message type.</typeparam>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.TransactionEventMiddleware`1.#ctor(System.IServiceProvider,Maomi.MQ.Transaction.Models.IMQTransactionOptions,Maomi.MQ.Transaction.Database.IDatabaseProvider,Maomi.MQ.IConsumerTypeProvider,Microsoft.Extensions.Logging.ILogger{Maomi.MQ.Transaction.Default.TransactionEventMiddleware{`0}})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Transaction.Default.TransactionEventMiddleware`1"/> class.
+            </summary>
+            <param name="serviceProvider">Service provider.</param>
+            <param name="transactionOptions">Transaction options.</param>
+            <param name="databaseProvider">Database provider.</param>
+            <param name="consumerTypeProvider">Consumer type provider.</param>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.TransactionEventMiddleware`1.ExecuteAsync(Maomi.MQ.MessageHeader,`0,Maomi.MQ.EventHandlerDelegate{`0})">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.TransactionEventMiddleware`1.FaildAsync(Maomi.MQ.MessageHeader,System.Exception,System.Int32,`0)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.TransactionEventMiddleware`1.FallbackAsync(Maomi.MQ.MessageHeader,`0,System.Exception)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Default.TransactionMessageSerializer">
+            <summary>
+            Selects serializer from configured serializers.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.TransactionMessageSerializer.#ctor(Maomi.MQ.MqOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Transaction.Default.TransactionMessageSerializer"/> class.
+            </summary>
+            <param name="mqOptions">MQ options.</param>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.TransactionMessageSerializer.GetSerializer``1(``0)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Default.TransactionOutboxService">
+            <summary>
+            Default implementation of <see cref="T:Maomi.MQ.Transaction.ITransactionOutboxService"/>.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.TransactionOutboxService.#ctor(System.IServiceProvider,Maomi.MQ.IIdProvider,Maomi.MQ.MqOptions,Maomi.MQ.IRoutingProvider,Maomi.MQ.Transaction.ITransactionMessageSerializer,Maomi.MQ.Transaction.Models.IMQTransactionOptions,Maomi.MQ.Transaction.Database.IDatabaseProvider)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Transaction.Default.TransactionOutboxService"/> class.
+            </summary>
+            <param name="serviceProvider">Service provider.</param>
+            <param name="idProvider">Id provider.</param>
+            <param name="mqOptions">MQ options.</param>
+            <param name="routingProvider">Routing provider.</param>
+            <param name="serializerSelector">Transaction serializer selector.</param>
+            <param name="transactionOptions">Transaction options.</param>
+            <param name="databaseProvider">Database provider.</param>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.TransactionOutboxService.RegisterAutoAsync``1(System.Data.Common.DbConnection,System.Data.Common.DbTransaction,``0,System.Action{RabbitMQ.Client.BasicProperties},System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.TransactionOutboxService.RegisterAsync``1(System.Data.Common.DbConnection,System.Data.Common.DbTransaction,System.String,System.String,``0,RabbitMQ.Client.BasicProperties,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.Default.TransactionOutboxService.MarkAsSucceededAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.EventBusTransactionTypeFilter">
+            <summary>
+            Registers eventbus consumers using transaction middleware.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.EventBusTransactionTypeFilter.#ctor(Maomi.MQ.ConsumerInterceptor)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Maomi.MQ.Transaction.EventBusTransactionTypeFilter"/> class.
+            </summary>
+            <param name="consumerInterceptor">Consumer interceptor.</param>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.EventBusTransactionTypeFilter.Filter(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Type)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.EventBusTransactionTypeFilter.Build(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.IDbTransactionConsumer`1">
+            <summary>
+            IDbTransactionConsumer interface.
+            </summary>
+            <typeparam name="TMessage">Event model.</typeparam>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.ITransactionConsumer`1">
+            <summary>
+            Alias of <see cref="T:Maomi.MQ.Transaction.IDbTransactionConsumer`1"/>.
+            </summary>
+            <typeparam name="TMessage">Event model.</typeparam>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.IDBTransactionPublisher">
+            <summary>
+            RabbitMQ local transaction.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.ITransactionMessagePublisher">
+            <summary>
+            Alias of <see cref="T:Maomi.MQ.Transaction.IDBTransactionPublisher"/>.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.IRetryTransactionHandler">
+            <summary>
+            Handles outbox retry failures.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.IRetryTransactionHandler.HandleSendFailedAsync(System.String,System.String,Maomi.MQ.Transaction.Database.OutboxMessageEntity,System.Exception,System.Threading.CancellationToken)">
+            <summary>
+            Invoked when sending outbox message failed.
+            </summary>
+            <param name="exchange">Exchange.</param>
+            <param name="routingKey">Routing key.</param>
+            <param name="entity">Outbox entity.</param>
+            <param name="exception">Exception.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>A task representing the asynchronous operation.</returns>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.ITransactionBarrierService">
+            <summary>
+            Inbox barrier service for manual consumer transaction flow.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.ITransactionBarrierService.EnterAsync(System.Data.Common.DbConnection,System.Data.Common.DbTransaction,System.String,Maomi.MQ.MessageHeader,System.Threading.CancellationToken)">
+            <summary>
+            Tries to enter inbox barrier in caller transaction.
+            </summary>
+            <param name="dbConnection">Opened database connection.</param>
+            <param name="dbTransaction">Current business transaction.</param>
+            <param name="consumerName">Consumer name or queue name.</param>
+            <param name="messageHeader">Message header.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Barrier context.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.ITransactionBarrierService.MarkSucceededAsync(System.Data.Common.DbConnection,System.Data.Common.DbTransaction,Maomi.MQ.Transaction.TransactionBarrierContext,System.Threading.CancellationToken)">
+            <summary>
+            Marks barrier row as succeeded in caller transaction.
+            </summary>
+            <param name="dbConnection">Opened database connection.</param>
+            <param name="dbTransaction">Current business transaction.</param>
+            <param name="context">Barrier context from <see cref="M:Maomi.MQ.Transaction.ITransactionBarrierService.EnterAsync(System.Data.Common.DbConnection,System.Data.Common.DbTransaction,System.String,Maomi.MQ.MessageHeader,System.Threading.CancellationToken)"/>.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>True if updated.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.ITransactionBarrierService.MarkFailedAsync(System.Data.Common.DbConnection,System.Data.Common.DbTransaction,Maomi.MQ.Transaction.TransactionBarrierContext,System.Exception,System.Threading.CancellationToken)">
+            <summary>
+            Marks barrier row as failed in caller transaction.
+            </summary>
+            <param name="dbConnection">Opened database connection.</param>
+            <param name="dbTransaction">Current business transaction.</param>
+            <param name="context">Barrier context from <see cref="M:Maomi.MQ.Transaction.ITransactionBarrierService.EnterAsync(System.Data.Common.DbConnection,System.Data.Common.DbTransaction,System.String,Maomi.MQ.MessageHeader,System.Threading.CancellationToken)"/>.</param>
+            <param name="exception">Exception.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>True if updated.</returns>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.TransactionBarrierContext">
+            <summary>
+            Barrier context returned by <see cref="T:Maomi.MQ.Transaction.ITransactionBarrierService"/>.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.TransactionBarrierContext.ConsumerName">
+            <summary>
+            Gets or sets consumer name.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.TransactionBarrierContext.MessageId">
+            <summary>
+            Gets or sets message id.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.TransactionBarrierContext.LockId">
+            <summary>
+            Gets or sets lock id.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.TransactionBarrierContext.EnterResult">
+            <summary>
+            Gets or sets enter result.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.ITransactionMessageSerializer">
+            <summary>
+            Selects serializer for transaction publisher.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.ITransactionMessageSerializer.GetSerializer``1(``0)">
+            <summary>
+            Gets serializer for message instance.
+            </summary>
+            <typeparam name="TMessage">Message type.</typeparam>
+            <param name="message">Message instance.</param>
+            <returns>Serializer.</returns>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.ITransactionOutboxService">
+            <summary>
+            Service for registering outbox messages inside a business transaction.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.ITransactionOutboxService.RegisterAutoAsync``1(System.Data.Common.DbConnection,System.Data.Common.DbTransaction,``0,System.Action{RabbitMQ.Client.BasicProperties},System.Threading.CancellationToken)">
+            <summary>
+            Registers an outbox row by resolving exchange and routing key from message type.
+            </summary>
+            <typeparam name="TMessage">Message type.</typeparam>
+            <param name="dbConnection">Opened database connection.</param>
+            <param name="dbTransaction">Current business transaction.</param>
+            <param name="message">Message payload.</param>
+            <param name="properties">Optional message properties mutator.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Registered outbox info.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.ITransactionOutboxService.RegisterAsync``1(System.Data.Common.DbConnection,System.Data.Common.DbTransaction,System.String,System.String,``0,RabbitMQ.Client.BasicProperties,System.Threading.CancellationToken)">
+            <summary>
+            Registers an outbox row with explicit exchange and routing key.
+            </summary>
+            <typeparam name="TMessage">Message type.</typeparam>
+            <param name="dbConnection">Opened database connection.</param>
+            <param name="dbTransaction">Current business transaction.</param>
+            <param name="exchange">Exchange name.</param>
+            <param name="routingKey">Routing key.</param>
+            <param name="message">Message payload.</param>
+            <param name="properties">Optional message properties.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Registered outbox info.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Transaction.ITransactionOutboxService.MarkAsSucceededAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Marks an outbox row as succeeded after message is published manually.
+            </summary>
+            <param name="messageId">Message id.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>True if row was updated.</returns>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.TransactionOutboxRegistration">
+            <summary>
+            Registered outbox message metadata.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.TransactionOutboxRegistration.MessageId">
+            <summary>
+            Gets or sets message id.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.TransactionOutboxRegistration.Exchange">
+            <summary>
+            Gets or sets exchange.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.TransactionOutboxRegistration.RoutingKey">
+            <summary>
+            Gets or sets routing key.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.TransactionOutboxRegistration.CreateTime">
+            <summary>
+            Gets or sets create time.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Models.IMQTransactionOptions">
+            <summary>
+            Options.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.IMQTransactionOptions.Connection">
+            <summary>
+            Create database connection.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.IMQTransactionOptions.ProviderName">
+            <summary>
+            Provider name used to resolve SQL implementation.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.IMQTransactionOptions.NodeId">
+            <summary>
+            Node id used for distributed lock records.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.IMQTransactionOptions.JsonSerializerOptions">
+            <summary>
+            Json serializer options for serializing and deserializing message properties.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.IMQTransactionOptions.Publisher">
+            <summary>
+            Publisher options.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.IMQTransactionOptions.Consumer">
+            <summary>
+            Consumer options.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.IMQTransactionOptions.AutoCreateTable">
+            <summary>
+            Automatically create table.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.IMQTransactionOptions.EnableBackgroundDispatcher">
+            <summary>
+            Whether the outbox background dispatcher is enabled.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Models.MQTransactionOptions">
+            <summary>
+            Options.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQTransactionOptions.Connection">
+            <summary>
+            Create database connection.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQTransactionOptions.ProviderName">
+            <summary>
+            Provider name used to resolve SQL implementation.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQTransactionOptions.NodeId">
+            <summary>
+            Node id used for distributed lock records.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQTransactionOptions.JsonSerializerOptions">
+            <summary>
+            Json serializer options for serializing and deserializing message properties.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQTransactionOptions.Publisher">
+            <summary>
+            Publisher options.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQTransactionOptions.Consumer">
+            <summary>
+            Consumer options.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQTransactionOptions.AutoCreateTable">
+            <summary>
+            Automatically create table.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQTransactionOptions.EnableBackgroundDispatcher">
+            <summary>
+            Whether the outbox background dispatcher is enabled.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Models.RetryPolicyFactory">
+            <summary>
+            Retry policy factory delegate.
+            </summary>
+            <param name="serviceProvider"></param>
+            <param name="queue"></param>
+            <param name="messageHeader"></param>
+            <param name="retryCount"></param>
+            <returns>The waiting time for retrying.</returns>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Models.MessageStatus">
+            <summary>
+            Indicate the sending or receiving status of a message.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.Transaction.Models.MessageStatus.Pending">
+            <summary>
+            Not processed yet.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.Transaction.Models.MessageStatus.Processing">
+            <summary>
+            Message is being processed.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.Transaction.Models.MessageStatus.Succeeded">
+            <summary>
+            The message has been completed successfully.
+            </summary>
+        </member>
+        <member name="F:Maomi.MQ.Transaction.Models.MessageStatus.Failed">
+            <summary>
+            Failure in handling.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Models.MQConsumerTransactionOptions">
+            <summary>
+            Consumer transaction options.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQConsumerTransactionOptions.TableName">
+            <summary>
+            Inbox barrier table name.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQConsumerTransactionOptions.ProcessingTimeout">
+            <summary>
+            Processing timeout for a message barrier row.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQConsumerTransactionOptions.MaxErrorLength">
+            <summary>
+            Maximum length of the stored error message.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Transaction.Models.MQPublisherTransactionOptions">
+            <summary>
+            Publisher transaction options.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQPublisherTransactionOptions.TableName">
+            <summary>
+            Outbox table name.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQPublisherTransactionOptions.MaxRetry">
+            <summary>
+            Maximum retry count for publisher.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQPublisherTransactionOptions.DisplayMessageText">
+            <summary>
+            The message content will be recorded in the database. It is recommended to use this feature only in debug mode.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQPublisherTransactionOptions.RetryInterval">
+            <summary>
+            Retry interval factory for publisher.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQPublisherTransactionOptions.ScanDbInterval">
+            <summary>
+            Interval for scanning the database.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQPublisherTransactionOptions.LockTimeout">
+            <summary>
+            Lock timeout for an outbox message in processing state.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQPublisherTransactionOptions.MaxFetchCountPerLoop">
+            <summary>
+            Maximum count of messages fetched per polling loop.
+            </summary>
+        </member>
+        <member name="P:Maomi.MQ.Transaction.Models.MQPublisherTransactionOptions.MaxErrorLength">
+            <summary>
+            Maximum length of the stored error message.
+            </summary>
+        </member>
+        <member name="T:Maomi.MQ.Extensions">
+            <summary>
+            Extensions for Maomi MQ transaction support.
+            </summary>
+        </member>
+        <member name="M:Maomi.MQ.Extensions.AddMaomiMQTransaction(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Maomi.MQ.Transaction.Models.MQTransactionOptions})">
+            <summary>
+            Registers Maomi MQ transaction module.
+            </summary>
+            <param name="services">Services.</param>
+            <param name="options">Configure options.</param>
+            <returns><see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Extensions.CreateDBTransaction(Maomi.MQ.IMessagePublisher)">
+            <summary>
+            Creates a transaction publisher that writes outbox rows in ambient transaction.
+            </summary>
+            <param name="messagePublisher">Message publisher.</param>
+            <returns><see cref="T:Maomi.MQ.Transaction.IDBTransactionPublisher"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Extensions.CreateDBTransaction(Maomi.MQ.IMessagePublisher,System.Data.Common.DbConnection,System.Data.Common.DbTransaction)">
+            <summary>
+            Creates a transaction publisher using explicit db transaction.
+            </summary>
+            <param name="messagePublisher">Message publisher.</param>
+            <param name="dbConnection">Database connection.</param>
+            <param name="dbTransaction">Database transaction.</param>
+            <returns><see cref="T:Maomi.MQ.Transaction.IDBTransactionPublisher"/>.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Extensions.CreateTransactionFilters(Maomi.MQ.ConsumerInterceptor)">
+            <summary>
+            Builds transaction filters for <see cref="!:AddMaomiMQ(IServiceCollection, Action&lt;MqOptionsBuilder&gt;, System.Reflection.Assembly[], ITypeFilter[])"/>.
+            </summary>
+            <param name="consumerInterceptor">Consumer interceptor.</param>
+            <returns>Type filters.</returns>
+        </member>
+        <member name="M:Maomi.MQ.Extensions.AddEventBusTransactionMiddleware``1(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Creates eventbus middleware wrapped with transaction inbox barrier.
+            </summary>
+            <typeparam name="TMessage">Message type.</typeparam>
+            <param name="services">Service collection.</param>
+            <returns>Service collection.</returns>
+        </member>
+    </members>
+</doc>
