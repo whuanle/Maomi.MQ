@@ -1,7 +1,7 @@
 <Project>
 	<PropertyGroup>
 		<MaomiMqRepoRoot>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)..\'))</MaomiMqRepoRoot>
-		<PackageVersion>2.1.0</PackageVersion>
+		<PackageVersion>2.3.0</PackageVersion>
 		<Description>RabbitMQ Publisher and consumer communication model framework.</Description>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -14,7 +14,7 @@
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 		<OutputType>Library</OutputType>
-		<TargetFrameworks>net7.0;net8.0;net9.0;net10.0</TargetFrameworks>
+		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<IsPackable>true</IsPackable>
